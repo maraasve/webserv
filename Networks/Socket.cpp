@@ -11,8 +11,8 @@ Socket::Socket(int domain, int service, int protocol, u_long interface, int port
 }
 
 Socket::~Socket() {
+    close(socketfd); //close can fail you need to protect that
     std::cout << "Socket " << socketfd << "is destroyed" << std::endl;
-    close(socketfd);
 }
 
 void Socket::bindSocket(int fd, int port) {
