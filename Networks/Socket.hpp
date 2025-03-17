@@ -9,8 +9,11 @@
 #include <exception>
 #include <iostream>
 #include <unistd.h>
+#include <fcntl.h>
+#include <cerrno>
+#include <cstring>
 
-class Socket : public std::exception {
+class Socket {
 private:
     int socketfd;
     int addrlen;
@@ -25,6 +28,7 @@ public:
     void bindSocket(int fd, int port);
     void listenSocket(int backlog);
     int acceptConnection();
+    void setNonBlockingSocket();
 };
 
 #endif
