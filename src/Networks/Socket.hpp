@@ -2,6 +2,7 @@
 #define SOCKET_HPP
 
 #define BACKLOG 10
+#define PORT 8080
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -9,7 +10,6 @@
 #include <exception>
 #include <iostream>
 #include <unistd.h>
-#include <fcntl.h>
 #include <cerrno>
 #include <cstring>
 
@@ -22,13 +22,13 @@ private:
     void error_check(int val, const std::string& msg) const;
     
 public:
-    Socket(int domain, int service, int protocol, u_long interface, int port);
+    Socket(int domain, int service, int protocol, u_long interface, int port = PORT);
     ~Socket();
     
-    void bindSocket(int fd, int port);
-    void listenSocket(int backlog);
+    void bindSocket();
+    void listenSocket(int backlog = BACKLOG);
     int acceptConnection();
-    void setNonBlockingSocket();
+    int getSocketFd();
 };
 
 #endif

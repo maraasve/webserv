@@ -17,18 +17,19 @@ is ignored but it must be greater than zero.
 
 class Epoll {
 private:
-	// Socket socket;
+
 	int epollfd;
 	int ready_fds;
 	struct epoll_event events[MAX_EVENTS];
+	void error_check(int val, const std::string& msg) const;
 
 public:
 	Epoll();
 	~Epoll();
 
-	void addFD(int event_type, int client_fd);
-	void deleteFD(int client_fd);
-	int getReadyFDs();
+	void addFd(int client_fd, int event_type);
+	void deleteFd(int client_fd);
+	int getReadyFd();
 	struct epoll_event* getEvents();
 
 };

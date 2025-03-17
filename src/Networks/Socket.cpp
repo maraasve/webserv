@@ -1,6 +1,6 @@
 #include "Socket.hpp"
 
-Socket::Socket(int domain, int service, int protocol, u_long interface, int port = 8080) 
+Socket::Socket(int domain, int service, int protocol, u_long interface, int port) 
 : socketfd(socket(domain, service, protocol)) {
     error_check(socketfd, "Socket Creation");
     server_addr.sin_family = domain;
@@ -11,11 +11,13 @@ Socket::Socket(int domain, int service, int protocol, u_long interface, int port
 }
 
 Socket::~Socket() {
-    close(socketfd); //close can fail you need to protect that
-    std::cout << "Socket " << socketfd << "is destroyed" << std::endl;
+    if (socketfd >= 0) {
+        close(socketfd);
+        std::cout << "Socket " << socketfd << "is destroyed" << std::endl;
+    }
 }
 
-void Socket::bindSocket(int fd, int port) {
+void Socket::bindSocket() {
     int val = bind(socketfd, reinterpret_cast<struct sockaddr *>(&server_addr), sizeof(server_addr));
     error_check(val, "Binding Socket");
     std::cout << "Socket " << socketfd << " is binded to an IP & Port" << std::endl;
@@ -30,12 +32,16 @@ void Socket::listenSocket(int backlog) {
 int Socket::acceptConnection() {
     int new_socketfd = accept(socketfd, reinterpret_cast<struct sockaddr *>(&server_addr), reinterpret_cast<socklen_t*>(&addrlen));
     error_check(new_socketfd, "Accepting Socket");
-    std::cout << "New Socket non-listening " << new_socketfd << " is accepted" << std::endl;
+    std::cout << "New client socket " << new_socketfd << " is created" << std::endl;
     return new_socketfd;
 }
 
 void Socket::error_check(int val, const std::string& msg) const {
     if (val < 0) {
-        throw std::runtime_error("Socket error: " + msg);
+        throw std::runtime_error(msg + ": " + strerror(errno));
     }
+}
+
+int Socket::getSocketFd() {
+    return socketfd;
 }
