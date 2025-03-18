@@ -18,6 +18,8 @@ void handle_client(int clientfd, Epoll& epoll) {
 			send(clientfd, response.c_str(), response.size(), 0);
 		} else if (request.find("POST")) {
 			//handle Post, probably uploading a file
+		} else if (request.find("DELETE")) {
+			//handle Post, probably uploading a file
 		} else {
 			std::string response = "HTTP/1.1 400 Bad Request\r\nContent-Type: text/html\r\n\r\n";
 			response += "<html><body><h1>400 BAD REQUEST</h1></body></html>";
@@ -45,7 +47,7 @@ int main() {
 				struct epoll_event event = epoll.getEvents()[i];
 				if (event.data.fd == server_socket.getSocketFd()) {
 					int client_fd = server_socket.acceptConnection();
-					epoll.addFd(client_fd, EPOLLIN);
+					epoll.addFd(client_fd, EPOLLIN | EPOLLOUT); //EPOLLOUT --> 
 				} else if (event.events & EPOLLIN) {
 					handle_client(event.data.fd, epoll);
 				}
