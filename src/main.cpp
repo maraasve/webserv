@@ -4,6 +4,7 @@
 
 #define PORT 8080
 
+//we need to make sure that it only works with HTTP/1.1
 void handle_client(int clientfd, Epoll& epoll) {
 	char buffer[1024] {'\0'};
 	ssize_t bytes = recv(clientfd, buffer, sizeof(buffer), 0);
@@ -15,6 +16,8 @@ void handle_client(int clientfd, Epoll& epoll) {
 			std::string response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n";
 			response += "<html><body><h1>Hello, World!</h1></body></html>";
 			send(clientfd, response.c_str(), response.size(), 0);
+		} else if (request.find("POST")) {
+			//handle Post, probably uploading a file
 		} else {
 			std::string response = "HTTP/1.1 400 Bad Request\r\nContent-Type: text/html\r\n\r\n";
 			response += "<html><body><h1>400 BAD REQUEST</h1></body></html>";
