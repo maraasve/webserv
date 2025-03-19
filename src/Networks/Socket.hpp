@@ -2,7 +2,6 @@
 #define SOCKET_HPP
 
 #define BACKLOG 10
-#define PORT 8080
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -22,7 +21,7 @@ private:
     void error_check(int val, const std::string& msg) const;
     
 public:
-    Socket(int domain, int service, int protocol, u_long interface, int port = PORT);
+    Socket(int port, u_long host);
     ~Socket();
     
     void bindSocket();

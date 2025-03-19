@@ -1,6 +1,7 @@
 #include "./Networks/Epoll.hpp"
 #include "./Networks/Socket.hpp"
 #include <iostream>
+#include "./Parsing/ConfigParser.hpp"
 
 #define PORT 8080
 
@@ -32,9 +33,15 @@ void handle_client(int clientfd, Epoll& epoll) {
 	close(clientfd);
 }
 
-int main() {
+int main(int argc, char *argv[]) {
+	if (argc != 2) {
+		return 1;
+	}
+
+	ConfigParser ConfigParser(argv[1]);
+
 	try {
-		Socket server_socket(AF_INET, SOCK_STREAM, 0, INADDR_ANY);
+		Socket server_socket(8080, INADDR_ANY);
 		server_socket.bindSocket();
 		server_socket.listenSocket();
 

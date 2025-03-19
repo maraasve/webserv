@@ -1,10 +1,10 @@
 #include "Socket.hpp"
 
-Socket::Socket(int domain, int service, int protocol, u_long interface, int port) 
-: socketfd(socket(domain, service, protocol)) {
+Socket::Socket(int port, u_long host) 
+: socketfd(socket(AF_INET, SOCK_STREAM, 0)) {
     error_check(socketfd, "Socket Creation");
-    server_addr.sin_family = domain;
-    server_addr.sin_addr.s_addr = htonl(interface);
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = htonl(host);
     server_addr.sin_port = htons(port);
     addrlen = sizeof(server_addr);
     std::cout << "Socket " << socketfd << " is created" << std::endl;
