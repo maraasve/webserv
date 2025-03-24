@@ -1,8 +1,7 @@
 #include "./Server.hpp"
 
-// Server::Server(): server_socket() {
-
-// }
+Server::Server(int port, u_long host): port(port), host(host), server_socket(port, host) {
+}
 
 void Server::setPort(int port) {
 	this->port = port;
@@ -20,6 +19,10 @@ void Server::setServerNames(std::vector<std::string>& server_names) {
 	for (auto it = server_names.begin(); it != server_names.end(); ++it) {
 		this->server_names.push_back(*it);
 	}
+}
+
+Socket& Server::getServerSocket() {
+	return this->server_socket;
 }
 
 int Server::getPort() const {

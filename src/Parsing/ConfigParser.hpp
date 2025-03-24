@@ -9,8 +9,8 @@
 #include "../Server/Server.hpp"
 
 class ConfigParser {
-private:
-	std::vector<Server> servers;
+// private:
+// 	std::vector<Server> servers;
 
 public:
 	ConfigParser(const std::string& filename);

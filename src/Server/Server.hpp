@@ -27,8 +27,13 @@ private:
 	std::unordered_map<std::string, Location> locations {};
 
 public:
-	Server();
+	Server(int port, u_long host);
 	~Server() = default;
+
+	void handleRequest(int client_fd, const std::string& request);
+	void handleGET(int client_fd, const std::string& path);
+	void handlePOST(int client_fd, const std::string& path);
+	void handleDELETE(int client_fd, const std::string& path);
 
 	void setPort(int port);
 	void setHost(u_long host);
@@ -36,6 +41,7 @@ public:
 	void setServerNames(std::vector<std::string>& server_names);
 	void setLocations();
 
+	Socket& getServerSocket();
 	int getPort() const;
 	u_long getHost() const;
 	int getClientMaxBody() const;

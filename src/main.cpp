@@ -2,6 +2,7 @@
 #include "./Networks/Socket.hpp"
 #include <iostream>
 #include "./Parsing/ConfigParser.hpp"
+#include "./Server/WebServer.hpp"	
 
 #define PORT 8080
 
@@ -14,12 +15,15 @@ void handle_client(int clientfd, Epoll& epoll) {
 	if (bytes > 0) {
 		std::string request(buffer, bytes);
 		if (request.find("GET") == 0) {
+			//need to see if we can handle the client's GET Method
 			std::string response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n";
 			response += "<html><body><h1>Hello, World!</h1></body></html>";
 			send(clientfd, response.c_str(), response.size(), 0);
 		} else if (request.find("POST")) {
+			//need to see if we can handle the clients Get Method
 			//handle Post, probably uploading a file
 		} else if (request.find("DELETE")) {
+			
 			//handle Post, probably uploading a file
 		} else {
 			std::string response = "HTTP/1.1 400 Bad Request\r\nContent-Type: text/html\r\n\r\n";
@@ -35,33 +39,49 @@ void handle_client(int clientfd, Epoll& epoll) {
 
 int main(int argc, char *argv[]) {
 	if (argc != 2) {
+		std::cerr << "Wrong Argument Count" << std::endl;
 		return 1;
 	}
 
-	ConfigParser ConfigParser(argv[1]);
-
 	try {
-		Socket server_socket(8080, INADDR_ANY);
-		server_socket.bindSocket();
-		server_socket.listenSocket();
-
-		Epoll epoll;
-		epoll.addFd(server_socket.getSocketFd(), EPOLLIN);
-
-		while(true) {
-			int ready_fds = epoll.getReadyFd();
-			for (int i = 0; i < ready_fds; ++i) {
-				struct epoll_event event = epoll.getEvents()[i];
-				if (event.data.fd == server_socket.getSocketFd()) {
-					int client_fd = server_socket.acceptConnection();
-					epoll.addFd(client_fd, EPOLLIN | EPOLLOUT); //EPOLLOUT --> 
-				} else if (event.events & EPOLLIN) {
-					handle_client(event.data.fd, epoll);
-				}
-			}
-		}
+		WebServer webserver(argv[1]);
+		webserver.run();
 	} catch (const std::runtime_error& e) {
 		std::cerr << "Error: " << e.what() << std::endl;
+		return 1;
 	}
 	return 0;
 }
+
+// int main(int argc, char *argv[]) {
+// 	if (argc != 2) {
+// 		return 1;
+// 	}
+
+// 	ConfigParser ConfigParser(argv[1]);
+
+// 	try {
+// 		Socket server_socket(8080, INADDR_ANY);
+// 		server_socket.bindSocket();
+// 		server_socket.listenSocket();
+
+// 		Epoll epoll;
+// 		epoll.addFd(server_socket.getSocketFd(), EPOLLIN);
+
+// 		while(true) {
+// 			int ready_fds = epoll.getReadyFd();
+// 			for (int i = 0; i < ready_fds; ++i) {
+// 				struct epoll_event event = epoll.getEvents()[i];
+// 				if (event.data.fd == server_socket.getSocketFd()) {
+// 					int client_fd = server_socket.acceptConnection();
+// 					epoll.addFd(client_fd, EPOLLIN | EPOLLOUT); //EPOLLOUT --> 
+// 				} else if (event.events & EPOLLIN) {
+// 					handle_client(event.data.fd, epoll);
+// 				}
+// 			}
+// 		}
+// 	} catch (const std::runtime_error& e) {
+// 		std::cerr << "Error: " << e.what() << std::endl;
+// 	}
+// 	return 0;
+// }
