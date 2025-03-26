@@ -12,7 +12,7 @@ struct Location {
 	std::string path;
 	std::string root;
 	std::string index;
-	bool directory_listing;
+	bool directory_listing = false;
 	std::vector<std::string> methods; //GET POST
 	std::pair<int, std::string> HTTP_redirection; //301 (code: int) http://new_webstie (redirection: string)
 };
@@ -22,7 +22,7 @@ private:
 	Socket server_socket;
 	int port = 8080;
 	u_long host = INADDR_ANY;
-	int client_max_body = 10485760;
+	unsigned long long client_max_body = 1048576; //max is 4GB (4294967296)
 	std::vector<std::string> server_names {};
 	std::unordered_map<std::string, Location> locations {};
 
