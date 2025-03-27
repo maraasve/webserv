@@ -19,9 +19,9 @@ struct Location {
 
 class Server {
 private:
-	Socket server_socket;
 	int port = 8080;
 	u_long host = INADDR_ANY;
+	Socket server_socket;
 	int client_max_body = 10485760;
 	std::vector<std::string> server_names {};
 	std::unordered_map<std::string, Location> locations {};

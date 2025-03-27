@@ -13,17 +13,16 @@ class ConfigParser
 {
 private:
 	std::vector<Server> servers;
-	// std::string config_in_one_line;
 	ConfigTokenizer Tokenizer;
 
 public:
 	ConfigParser(const std::string &filename);
 
-	std::string parseToLine(std::ifstream &file);
-	void parseServer(std::ifstream &file, Server &server);
-	void parseLocation(std::ifstream &file, Location &location);
+	std::string loadFileAsString(std::ifstream &file);
+	void parseServer(std::vector<Token> tokens);
+	// void parseLocation(std::ifstream &file, Location &location);
 
-	u_long convertHost(const std::string &host);
+	// u_long convertHost(const std::string &host);
 
 	const std::vector<Server> &getServers() const;
 	void error_check(const std::string &msg) const;
