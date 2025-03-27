@@ -6,6 +6,7 @@ WebServer::WebServer(const std::string& config_file) {
     for (auto& server : servers) {
         server.getServerSocket().bindSocket();
         server.getServerSocket().listenSocket();
+        server_sockets[server.getServerSocket().getSocketFd()] = &server;
         epoll.addFd(server.getServerSocket().getSocketFd(), EPOLLIN);
     }
 }
@@ -19,16 +20,16 @@ void WebServer::run() {
         int ready_fds = epoll.getReadyFd();
         for (int i = 0; i < ready_fds; ++i) {
             struct epoll_event event = epoll.getEvents()[i];
-            for (auto& server : servers) { //this loop connects clients to the their specific server
+            //this is not okay because it loops through the servers even if they have no clients to accept
+            if (server_sockets.find(event.data.fd) != std::nposstd:) //this loop connects clients to the their specific server
                 if (event.data.fd == server.getServerSocket().getSocketFd()) {
                     int client_fd = server.getServerSocket().acceptConnection();
-                    clients[client_fd] = &server;
+                    clients_to_servers[client_fd] = &server;
                     epoll.addFd(client_fd, EPOLLIN | EPOLLOUT);
                 } 
-            }
             //check if the event comes from a client --> handleclient event
-            auto it = clients.find(event.data.fd); //after we process this, this instance needs to be deleted
-            if (it != clients.end()) {
+            auto it = clients_to_servers.find(event.data.fd); //after we process this, this instance needs to be deleted
+            if (it != clients_to_servers.end()) {
                 Server* correct_server = it->second;
                 if (correct_server) {
                     this->handleClient(*correct_server, event.data.fd);

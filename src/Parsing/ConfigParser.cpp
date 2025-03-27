@@ -1,79 +1,64 @@
 #include "ConfigParser.hpp"
 
-ConfigParser::ConfigParser(const std::string& filename) {
+ConfigParser::ConfigParser(const std::string &filename) {
 	std::ifstream file(filename);
-	if (!file.is_open()) {
-		//we need to check if there is no config file then we act accordingly
-		error_check("Unable to open " + filename);
+	if (!file) {
+		error_check("Failed to Open File: " + filename);
 	}
-	int server_blocks = this->countServerBlocks(file);
-	file.clear();
-	file.seekg(0, std::ios_base::beg);
-	for (int i = 0; i < server_blocks; ++i) {
-		try {
-			this->parseServer(file, servers[i]);
-			this->parseLocation(file, servers[i].getLocations());
-		} catch (...) {
-			//if something goes wrong with another server do not fill in that server so do:
-			--i;
-			continue ;
-		}
+	std::string config_in_one_line = parseToLine(file);
+	if (config_in_one_line.empty()){
+		error_check("Config File " + filename + " is empty");
 	}
+	Tokenizer(config_in_one_line);
 }
 
-int ConfigParser::countServerBlocks(std::ifstream& file) {
-	int server_blocks = 0;
-	std::string line;
-	while(std::getline(file, line)) {
-		if (line.find("server {") != std::string::npos) {
-			++server_blocks;
-		}
+std::string ConfigParser::parseToLine(std::ifstream &file)
+{
+	std::stringstream ss;
+	ss << file.rdbuf();
+	if (file.fail()) {
+		error_check("Config File Failed to Read");
 	}
-	return server_blocks;
+	return ss.str();
 }
 
-void parseServer(std::ifstream& file, Server& server) {
-	std::string line
-	while
-}
+// u_long ConfigParser::convertHost(const std::string &host)
+// {
 
-void parseLocation(std::ifstream& file, Location& location){
+// 	std::vector<int> bytes;
+// 	u_long ip{0};
+// 	std::stringstream ss(host);
+// 	std::string ip_segment;
 
-}
+// 	while (std::getline(ss, ip_segment, '.'))
+// 	{
+// 		try
+// 		{
+// 			int num = std::stoi(ip_segment);
+// 			if (num < 0 || num > 255)
+// 			{
+// 				error_check("Invalid IP Number: " + ip_segment);
+// 			}
+// 			bytes.push_back(num);
+// 		}
+// 		catch (const std::exception &e)
+// 		{
+// 			error_check(e.what());
+// 		}
+// 	}
+// 	if (bytes.size() != 4)
+// 	{
+// 		error_check("Invalid IP Length: " + host);
+// 	}
+// 	ip = (bytes[0] << 24) | (bytes[1] << 16) | (bytes[2] << 8) | bytes[3];
+// 	return ip;
+// }
 
-u_long ConfigParser::convertHost(const std::string& host) {
-
-	std::vector<int> bytes;
-	u_long ip {0};
-	std::stringstream ss(host);
-	std::string ip_segment;
-
-	while(std::getline(ss, ip_segment, '.')) {
-		try {
-			int num = std::stoi(ip_segment);
-			if (num < 0 || num > 255) {
-				error_check("Invalid IP Number: " + ip_segment);
-			}
-			bytes.push_back(num);
-		} catch (const std::exception& e) {
-			error_check(e.what());
-		}	
-	}
-	if (bytes.size() != 4) {
-		error_check("Invalid IP Length: " + host);
-	}
-	ip = (bytes[0] << 24) | (bytes[1] << 16) | (bytes[2] << 8) | bytes[3];
-	return ip;
-}
-
-const std::vector<Server>& ConfigParser::getServers() const {
+const std::vector<Server> &ConfigParser::getServers() const {
 	return this->servers;
 }
 
-
-
-
-void ConfigParser::error_check(const std::string& msg) const {
+void ConfigParser::error_check(const std::string &msg) const {
 	std::cerr << "Error in Parser : " + msg << std::endl;
-	//close or quit do something here
+	// close or quit do something here
 }
