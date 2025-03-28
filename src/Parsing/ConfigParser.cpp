@@ -1,79 +1,117 @@
 #include "ConfigParser.hpp"
 
-ConfigParser::ConfigParser(const std::string& filename) {
+std::string printEnum(int i) {
+	switch (i) {
+		case 0:
+			return ("KEYWORD");
+		case 1:
+			return ("BRACE_OPEN");
+		case 2:
+			return ("BRACE_CLOSE");
+		case 3:
+			return ("COLON");
+		case 4:
+			return ("SEMI_COLON");
+	}
+	return ("");
+}
+
+
+ConfigParser::ConfigParser(const std::string &filename) {
 	std::ifstream file(filename);
-	if (!file.is_open()) {
-		//we need to check if there is no config file then we act accordingly
-		error_check("Unable to open " + filename);
+	if (!file) {
+		error_check("Failed to Open File: " + filename);
 	}
-	int server_blocks = this->countServerBlocks(file);
-	file.clear();
-	file.seekg(0, std::ios_base::beg);
-	for (int i = 0; i < server_blocks; ++i) {
-		try {
-			this->parseServer(file, servers[i]);
-			this->parseLocation(file, servers[i].getLocations());
-		} catch (...) {
-			//if something goes wrong with another server do not fill in that server so do:
-			--i;
-			continue ;
+	Tokenizer = ConfigTokenizer(loadFileAsString(file));
+	// for (auto tokens : Tokenizer.getTokens()) {
+	// 	std::cout << printEnum(tokens.token_type) << " --> " << tokens.value << std::endl;
+	// }
+	parseServer(Tokenizer.getTokens());
+}
+
+void ConfigParser::parseServer(std::vector<Token> tokens) {
+	int open_braces {0}, closing_braces {0};
+
+	for (auto token : tokens) {
+		
+		if (token.token_type == BRACE_OPEN) {
+			open_braces++;
+		} else if (token.token_type == BRACE_CLOSE) {
+			closing_braces++;
 		}
 	}
+	if (open_braces != closing_braces) {
+		error_check("Uneven number of Opening/Closing Braces");
+	}
 }
 
-int ConfigParser::countServerBlocks(std::ifstream& file) {
-	int server_blocks = 0;
-	std::string line;
-	while(std::getline(file, line)) {
-		if (line.find("server {") != std::string::npos) {
-			++server_blocks;
+//ideally make this function in a place where you only need to loop once rather than having to loop again and again
+bool ConfigParser::validateBraces(std::vector<Token> tokens) {
+	int open_braces {0};
+	int closing_braces {0};
+
+	for (auto token : tokens) {
+		if (token.token_type == BRACE_OPEN) {
+			open_braces++;
+		} else if (token.token_type == BRACE_CLOSE) {
+			closing_braces++;
 		}
 	}
-	return server_blocks;
-}
-
-void parseServer(std::ifstream& file, Server& server) {
-	std::string line
-	while
-}
-
-void parseLocation(std::ifstream& file, Location& location){
-
-}
-
-u_long ConfigParser::convertHost(const std::string& host) {
-
-	std::vector<int> bytes;
-	u_long ip {0};
-	std::stringstream ss(host);
-	std::string ip_segment;
-
-	while(std::getline(ss, ip_segment, '.')) {
-		try {
-			int num = std::stoi(ip_segment);
-			if (num < 0 || num > 255) {
-				error_check("Invalid IP Number: " + ip_segment);
-			}
-			bytes.push_back(num);
-		} catch (const std::exception& e) {
-			error_check(e.what());
-		}	
+	if (open_braces != closing_braces) {
+		return false;
 	}
-	if (bytes.size() != 4) {
-		error_check("Invalid IP Length: " + host);
-	}
-	ip = (bytes[0] << 24) | (bytes[1] << 16) | (bytes[2] << 8) | bytes[3];
-	return ip;
+	return true;
 }
 
-const std::vector<Server>& ConfigParser::getServers() const {
+std::string ConfigParser::loadFileAsString(std::ifstream &file) {
+	std::stringstream ss;
+	ss << file.rdbuf();
+	if (file.fail()) {
+		error_check("Config File Failed to Read");
+	}
+	if (ss.str().empty()) {
+		error_check("Config File is empty");
+	}
+	return ss.str();
+}
+
+// u_long ConfigParser::convertHost(const std::string &host)
+// {
+
+// 	std::vector<int> bytes;
+// 	u_long ip{0};
+// 	std::stringstream ss(host);
+// 	std::string ip_segment;
+
+// 	while (std::getline(ss, ip_segment, '.'))
+// 	{
+// 		try
+// 		{
+// 			int num = std::stoi(ip_segment);
+// 			if (num < 0 || num > 255)
+// 			{
+// 				error_check("Invalid IP Number: " + ip_segment);
+// 			}
+// 			bytes.push_back(num);
+// 		}
+// 		catch (const std::exception &e)
+// 		{
+// 			error_check(e.what());
+// 		}
+// 	}
+// 	if (bytes.size() != 4)
+// 	{
+// 		error_check("Invalid IP Length: " + host);
+// 	}
+// 	ip = (bytes[0] << 24) | (bytes[1] << 16) | (bytes[2] << 8) | bytes[3];
+// 	return ip;
+// }
+
+
+const std::vector<Server> &ConfigParser::getServers() const {
 	return this->servers;
 }
 
-
-
-
-void ConfigParser::error_check(const std::string& msg) const {
+void ConfigParser::error_check(const std::string &msg) const {
 	std::cerr << "Error in Parser : " + msg << std::endl;
-	//close or quit do something here
 }

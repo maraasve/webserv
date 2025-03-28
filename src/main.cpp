@@ -7,35 +7,35 @@
 #define PORT 8080
 
 //we need to make sure that it only works with HTTP/1.1
-void handle_client(int clientfd, Epoll& epoll) {
-	char buffer[1024] {'\0'};
-	ssize_t bytes = recv(clientfd, buffer, sizeof(buffer), 0);
-	std::cout << "---Client Request---" << std::endl;
-	std::cout << buffer << std::endl;
-	if (bytes > 0) {
-		std::string request(buffer, bytes);
-		if (request.find("GET") == 0) {
-			//need to see if we can handle the client's GET Method
-			std::string response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n";
-			response += "<html><body><h1>Hello, World!</h1></body></html>";
-			send(clientfd, response.c_str(), response.size(), 0);
-		} else if (request.find("POST")) {
-			//need to see if we can handle the clients Get Method
-			//handle Post, probably uploading a file
-		} else if (request.find("DELETE")) {
+// void handle_client(int clientfd, Epoll& epoll) {
+// 	char buffer[1024] {'\0'};
+// 	ssize_t bytes = recv(clientfd, buffer, sizeof(buffer), 0);
+// 	std::cout << "---Client Request---" << std::endl;
+// 	std::cout << buffer << std::endl;
+// 	if (bytes > 0) {
+// 		std::string request(buffer, bytes);
+// 		if (request.find("GET") == 0) {
+// 			//need to see if we can handle the client's GET Method
+// 			std::string response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n";
+// 			response += "<html><body><h1>Hello, World!</h1></body></html>";
+// 			send(clientfd, response.c_str(), response.size(), 0);
+// 		} else if (request.find("POST")) {
+// 			//need to see if we can handle the clients Get Method
+// 			//handle Post, probably uploading a file
+// 		} else if (request.find("DELETE")) {
 			
-			//handle Post, probably uploading a file
-		} else {
-			std::string response = "HTTP/1.1 400 Bad Request\r\nContent-Type: text/html\r\n\r\n";
-			response += "<html><body><h1>400 BAD REQUEST</h1></body></html>";
-			send(clientfd, response.c_str(), response.size(), 0);
-		}
-	} else {
-		std::cout << "Client not sending data" << std::endl;
-	}
-	epoll.deleteFd(clientfd);
-	close(clientfd);
-}
+// 			//handle Post, probably uploading a file
+// 		} else {
+// 			std::string response = "HTTP/1.1 400 Bad Request\r\nContent-Type: text/html\r\n\r\n";
+// 			response += "<html><body><h1>400 BAD REQUEST</h1></body></html>";
+// 			send(clientfd, response.c_str(), response.size(), 0);
+// 		}
+// 	} else {
+// 		std::cout << "Client not sending data" << std::endl;
+// 	}
+// 	epoll.deleteFd(clientfd);
+// 	close(clientfd);
+// }
 
 int main(int argc, char *argv[]) {
 	if (argc != 2) {

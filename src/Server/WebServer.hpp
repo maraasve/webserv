@@ -11,7 +11,8 @@
 class WebServer {
 private:
     std::vector<Server> servers;
-    std::unordered_map<int, Server*> clients;
+    // std::unordered_map<int, Server*> server_sockets;
+    std::unordered_map<int, Server*> clients_to_servers;
     Epoll epoll;
 
 public:

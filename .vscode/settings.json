@@ -1,5 +1,6 @@
 {
 	"files.associations": {
+		"stdexcept": "cpp",
 		"array": "cpp",
 		"atomic": "cpp",
 		"bit": "cpp",
@@ -18,7 +19,6 @@
 		"cwchar": "cpp",
 		"cwctype": "cpp",
 		"deque": "cpp",
-		"map": "cpp",
 		"unordered_map": "cpp",
 		"vector": "cpp",
 		"exception": "cpp",
@@ -47,10 +47,9 @@
 		"ostream": "cpp",
 		"ranges": "cpp",
 		"span": "cpp",
-		"stdexcept": "cpp",
+		"sstream": "cpp",
 		"streambuf": "cpp",
 		"cinttypes": "cpp",
-		"typeinfo": "cpp",
-		"sstream": "cpp"
+		"typeinfo": "cpp"
 	}
 }
