@@ -41,12 +41,15 @@ void ConfigParser::parseServer(std::vector<Token> tokens) {
 	auto it = tokens.begin();
 	int i = -1;
 	bool inside_server_block = false;
-
-/*
-	server {
-	server {
-
-*/
+	/*
+		server {
+			listen
+			location {
+			}
+		}
+		server{
+		}
+	*/
 	while (it != tokens.end()) {
 		if (it->value == "server" && !inside_server_block) {
 			++it;
@@ -76,24 +79,26 @@ void ConfigParser::parseServer(std::vector<Token> tokens) {
 		std::string value = it->value;
 		++it;
 		if (directive == "listen") {
-
+			check_duplicates[directive] = true;
+			required_directives.has_index = true;
 		} else if (directive == "server_name") {
-
+			check_duplicates[directive] = true;
 		} else if (directive == "root") {
-
+			check_duplicates[directive] = true;
+			required_directives.has_root = true;
 		} else if (directive == "index") {
-
+			check_duplicates[directive] = true;
+			required_directives.has_index = true;
 		} else if (directive == "auto_index") {
-
+			check_duplicates[directive] = true;
 		} else if (directive == "client_max_body") {
-
+			check_duplicates[directive] = true;
 		} else if (directive == "error_page") {
 			check_duplicates[directive] = true;
 		} else if (directive == "location") {
 			if (!isValidPath(value)) {
 				error_check("Invalid path for location directive: " + value);
 			}
-			//add the path to location
 			++it;
 			if (it != tokens.end() && it->token_type == BRACE_OPEN) {
 				++open_braces;
@@ -107,6 +112,9 @@ void ConfigParser::parseServer(std::vector<Token> tokens) {
 			error_check("Missing semicolon for directive: " + directive);
 		} else if (it->token_type == BRACE_CLOSE) {
 			--open_braces;
+			if (!required_directives.has_index || !required_directives.has_listen || !required_directives.has_root) {
+				error_check("Missing directives");
+			}
 			if (open_braces == 0) {
 				inside_server_block = false;
 			}
@@ -167,12 +175,14 @@ void ConfigParser::parseLocation(std::vector<Token>::iterator& it, std::vector<T
 			}
 			//fill in root
 			check_duplicates[directive] = true;
+			required_directives.has_root = true;
 		} else if (directive == "index") {
 			if (!isValidIndex(value)) {
 				error_check("Invalid index file: " + value);
 			}
 			//save index
 			check_duplicates[directive] = true;
+			required_directives.has_index = true;
 		} else if (directive == "auto_index") {
 			if (value != "on" && value != "off") {
 				error_check("Invalid auto_index value: " + value);
@@ -188,8 +198,18 @@ void ConfigParser::parseLocation(std::vector<Token>::iterator& it, std::vector<T
 	error_check("Missing closing braces");
 }
 
+bool ConfigParser::isValidErrorCode(std::string& error_code) {
+	const std::regex error_code_regex(R"(^(?:403|404|405|408|413|500|502|503|504|505)$)");
+	return std::regex_match(error_code, error_code_regex);
+}
+
+bool ConfigParser::isValidClientBodySize(std::string& client_body_size) {
+	const std::regex client_body_regex(R"(^[1-9][0-9]*+[mMkKgG]$)");
+	return std::regex_match(client_body_size, client_body_regex);
+}
+
 bool ConfigParser::isValidIndex(std::string& index) {
-	const std::regex index_regex("R()");
+	const std::regex index_regex(R"(^[a-zA-Z][a-zA-Z0-9_\-]*\.(?:html?|php)$)");
 	return std::regex_match(index, index_regex);
 }
 
