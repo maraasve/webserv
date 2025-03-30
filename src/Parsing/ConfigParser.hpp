@@ -31,10 +31,13 @@ public:
 	std::string loadFileAsString(std::ifstream &file);
 	void parseServer(std::vector<Token> tokens);
 	void parseLocation(std::vector<Token>::iterator& it, std::vector<Token>::iterator end);
+	std::vector<std::string> parseServerName(std::string value, std::vector<Token>::iterator& it, std::vector<Token>::iterator& end);
 
 	bool isValidPath(std::string& path);
+	bool isValidServerName(std::string& server_name);
+	bool isValidPort(std::string& port);
 	bool isValidIndex(std::string& index);
-	bool isValidClientBodySize(std::string& client_body_size);
+	unsigned long long isValidClientBodySize(std::string& client_body_size);
 	bool isValidErrorCode(std::string& error_code);
 
 	// u_long convertHost(const std::string &host);
