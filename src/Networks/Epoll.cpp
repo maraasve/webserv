@@ -2,14 +2,14 @@
 
 Epoll::Epoll(): epollfd(epoll_create(1024)), ready_fds(0) {
 	error_check(epollfd, "Epoll create");
-	std::cout << "Epoll instance created" << std::endl;
+	// std::cout << "Epoll instance created" << std::endl;
 }
 
 Epoll::~Epoll() {
 	if (epollfd > 0) {
 		close(epollfd); //close can fail you need to protect that
 	}
-	std::cout << "Epoll instance closed" << std::endl;
+	// std::cout << "Epoll instance closed" << std::endl;
 }
 
 void Epoll::addFd(int client_fd, int event_type) {

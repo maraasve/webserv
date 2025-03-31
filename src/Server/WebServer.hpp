@@ -11,16 +11,16 @@
 class WebServer {
 private:
     std::vector<Server> servers;
-    // std::unordered_map<int, Server*> server_sockets;
-    std::unordered_map<int, Server*> clients_to_servers;
-    Epoll epoll;
+    std::unordered_map<int, Server*> socketToServer;
+    std::unordered_map<int, Server*> clientsToServer;
+    void setupServerSockets(Epoll& epoll);
+    void cleanServersResources(Epoll& epoll);
 
 public:
     WebServer(const std::string& config_file);
     ~WebServer();
 
     void run();
-    void handleClient(Server& server, int client_fd);
 };
 
 #endif

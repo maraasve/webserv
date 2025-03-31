@@ -21,10 +21,10 @@ private:
     void error_check(int val, const std::string& msg) const;
     
 public:
-    Socket(int port, u_long host);
+    Socket();
     ~Socket();
     
-    void bindSocket();
+    void bindSocket(int port, u_long host);
     void listenSocket(int backlog = BACKLOG);
     int acceptConnection();
     int getSocketFd();

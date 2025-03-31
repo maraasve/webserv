@@ -1,7 +1,9 @@
 #include "./Server.hpp"
 
-// Server::Server(int port, u_long host): port(port), host(host), server_socket(port, host) {
-// }
+void Server::handleRequest(int client_fd) {
+	//we need to read and store the response of the client, parse it into meaningful values and use it
+	Request request(client_fd);
+}
 
 void Server::setErrorPage(std::string error_code, std::string path) {
 	this->error_page.first = error_code;
@@ -36,7 +38,7 @@ void Server::setRoot(std::string root) {
 	this->root = root;
 }
 
-void Server::setServerNames(std::vector<std::string>& server_names) {
+void Server::setServerNames(std::vector<std::string> server_names) {
 	for (auto it = server_names.begin(); it != server_names.end(); ++it) {
 		this->server_names.push_back(*it);
 	}

@@ -1,23 +1,24 @@
 #include "Socket.hpp"
 
-Socket::Socket(int port, u_long host) 
+Socket::Socket() 
 : socketfd(socket(AF_INET, SOCK_STREAM, 0)) {
     error_check(socketfd, "Socket Creation");
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = htonl(host);
-    server_addr.sin_port = htons(port);
-    addrlen = sizeof(server_addr);
     std::cout << "Socket " << socketfd << " is created" << std::endl;
 }
 
 Socket::~Socket() {
     if (socketfd >= 0) {
         close(socketfd);
-        std::cout << "Socket " << socketfd << "is destroyed" << std::endl;
+        std::cout << "Socket " << socketfd << " is destroyed" << std::endl;
     }
 }
 
-void Socket::bindSocket() {
+void Socket::bindSocket(int port, u_long host) {
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = htonl(host);
+    server_addr.sin_port = htons(port);
+    addrlen = sizeof(server_addr);
+    
     int val = bind(socketfd, reinterpret_cast<struct sockaddr *>(&server_addr), sizeof(server_addr));
     error_check(val, "Binding Socket");
     std::cout << "Socket " << socketfd << " is binded to an IP & Port" << std::endl;
