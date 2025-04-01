@@ -8,14 +8,16 @@
 
 class Request {
 private:
-	std::string method;
-	std::string path;
-	std::string http_version;
+	std::string _method;
+	std::string _path;
+	std::string _http_version;
 	
 	void sendResponse();
 
 public:
 	Request(int client_fd);
+
+	std::string readRequest(int client_fd);
 
 	void handleGET();
 	void handlePOST();

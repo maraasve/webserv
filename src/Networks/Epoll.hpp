@@ -2,6 +2,7 @@
 #define EPOLL_HPP
 
 #include "Socket.hpp"
+#include <iostream>
 #include <sys/epoll.h>
 #include <unistd.h>
 
@@ -29,6 +30,7 @@ public:
 
 	void addFd(int client_fd, int event_type);
 	void deleteFd(int client_fd);
+	void modifyFd(int client_fd, int event_type)
 	int getReadyFd();
 	struct epoll_event* getEvents();
 

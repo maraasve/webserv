@@ -1,38 +1,42 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
+#include "./Request.hpp"
+#include "../Networks/Socket.hpp"
+#include "../Networks/Epoll.hpp"
+
 #include <iostream>
 #include <string>
 #include <vector>
 #include <stdbool.h>
 #include <unordered_map>
-#include "./Request.hpp"
-#include "../Networks/Socket.hpp"
 
 struct Location {
-	std::string path;
-	std::string root;
-	std::string index;
-	bool auto_index = false;
-	unsigned long long client_max_body = 0;
-	std::vector<std::string> allowed_methods;
-	std::pair<std::string, std::string> error_page;
+	std::string _path;
+	std::string _root;
+	std::string _index;
+	bool _auto_index = false;
+	unsigned long long _client_max_body = 0;
+	std::vector<std::string> _allowed_methods;
+	std::pair<std::string, std::string> _error_page;
 	// std::pair<std::string, std::string> HTTP_redirection; //301 (code: int) http://new_webstie (redirection: string)
 };
 
 class Server {
 private:
-	unsigned int port = 8080;
-	u_long host_u_long = INADDR_ANY;
-	std::string host_string = "0.0.0.0";
-	unsigned long long client_max_body = 1048576;
-	std::vector<std::string> server_names {""};
-	std::string root;
-	std::string index;
-	bool auto_index = false;
-	std::pair<std::string, std::string> error_page;
-	std::vector<Location> locations;
-	Socket server_socket;
+	unsigned int _port = 8080;
+	u_long _host_u_long = INADDR_ANY;
+	std::string _host_string = "0.0.0.0";
+	unsigned long long _client_max_body = 1048576;
+	std::vector<std::string> _server_names {""};
+	std::string _root;
+	std::string _index;
+	bool _auto_index = false;
+	std::pair<std::string, std::string> _error_page;
+	std::vector<Location> _locations;
+
+	Socket _server_socket;
+	std::unordered_map<int, std::string> _clientsResponse;
 
 public:
 	Server() = default;

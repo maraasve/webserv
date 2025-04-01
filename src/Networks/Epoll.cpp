@@ -2,26 +2,36 @@
 
 Epoll::Epoll(): epollfd(epoll_create(1024)), ready_fds(0) {
 	error_check(epollfd, "Epoll create");
-	// std::cout << "Epoll instance created" << std::endl;
+	std::cout << "Epoll instance created" << std::endl;
 }
 
 Epoll::~Epoll() {
 	if (epollfd > 0) {
 		close(epollfd); //close can fail you need to protect that
 	}
-	// std::cout << "Epoll instance closed" << std::endl;
+	std::cout << "Epoll instance closed" << std::endl;
 }
 
 void Epoll::addFd(int client_fd, int event_type) {
 	struct epoll_event event {};
 
-	// event.events = EPOLLIN | EPOLLOUT;
 	event.events = event_type;
 	event.data.fd = client_fd;
 
 	int val = epoll_ctl(epollfd, EPOLL_CTL_ADD, client_fd, &event);
 	error_check(val, "Epoll add file descriptor");
 	std::cout << "Socket fd: " << client_fd << " has been added to the epoll watch list" << std::endl;
+
+}
+
+void Epoll::modifyFd(int client_fd, int event_type) {
+	struct epoll_event event {};
+
+	event.events = event_type;
+	event.data.fd = client_fd;
+	int val = epoll_ctl(epollfd, EPOLL_CTL_MOD, client_fd, &event);
+	error_check(val, "Epoll modify file descriptor");
+	std::cout << "Socket fd: " << client_fd << " has been modified in the epoll watch list" << std::endl;
 
 }
 
