@@ -43,24 +43,24 @@ void printServerDetails(Server& server) {
 			std::cout << "\nLocations:\n";
 			for (const auto& loc : locations) {
 					std::cout << "----------------------------------\n";
-					std::cout << "Path: " << loc.path << "\n";
-					std::cout << "Root: " << loc.root << "\n";
-					std::cout << "Index: " << loc.index << "\n";
-					std::cout << "Auto Index: " << (loc.auto_index ? "On" : "Off") << "\n";
-					std::cout << "Client Max Body: " << loc.client_max_body << " bytes\n";
+					std::cout << "Path: " << loc._path << "\n";
+					std::cout << "Root: " << loc._root << "\n";
+					std::cout << "Index: " << loc._index << "\n";
+					std::cout << "Auto Index: " << (loc._auto_index ? "On" : "Off") << "\n";
+					std::cout << "Client Max Body: " << loc._client_max_body << " bytes\n";
 
 					// Print Methods
 					std::cout << "Allowed Methods: ";
-					for (const auto& method : loc.allowed_methods) {
+					for (const auto& method : loc._allowed_methods) {
 							std::cout << method << " ";
 					}
 					std::cout << "\n";
 
 					// Print Error Page for Location
-					std::cout << "Error Page: Code " << loc.error_page.first << " -> " << loc.error_page.second << "\n";
+					std::cout << "Error Page: Code " << loc._error_page.first << " -> " << loc._error_page.second << "\n";
 
 					// Print HTTP Redirection
-					std::cout << "HTTP Redirection: " << loc.HTTP_redirection.first << " -> " << loc.HTTP_redirection.second << "\n";
+					//std::cout << "HTTP Redirection: " << loc.HTTP_redirection.first << " -> " << loc.HTTP_redirection.second << "\n";
 			}
 	}
 	std::cout << "----------------------------------\n";
@@ -201,7 +201,7 @@ void ConfigParser::parseServer(std::vector<Token> tokens) {
 				++open_braces;
 				++it;
 				servers[i].getLocations().emplace_back();
-				servers[i].getLocations()[i].path = value;
+				servers[i].getLocations()[i]._path = value;
 				parseLocation(servers[i].getLocations()[i], it, tokens.end());
 			} 
 			else {
@@ -254,8 +254,8 @@ void ConfigParser::parseLocation(Location& location, std::vector<Token>::iterato
 			if (it == end || it->token_type != KEYWORD || !isValidPath(it->value)) {
 				error_check("Invalid error_page path");
 			}
-			location.error_page.first = value;
-			location.error_page.second = it->value;
+			location._error_page.first = value;
+			location._error_page.second = it->value;
 			++it;
 		} 
 		else if (directive == "allowed_methods") {
@@ -267,7 +267,7 @@ void ConfigParser::parseLocation(Location& location, std::vector<Token>::iterato
 				if (!unique_methods.insert(value).second) {
 					error_check("Duplicated method in allowed_method directive: " + value);
 				}
-				location.allowed_methods.push_back(value);
+				location._allowed_methods.push_back(value);
 				if(it->token_type != KEYWORD) {
 					break;
 				}
@@ -280,27 +280,27 @@ void ConfigParser::parseLocation(Location& location, std::vector<Token>::iterato
 			if (!bytes) {
 				error_check("Invalid client's body size: " + value);
 			}
-			location.client_max_body = bytes;
+			location._client_max_body = bytes;
 		}
 		else if (directive == "root") {
 			if (!isValidPath(value)) {
 				error_check("Invalid root path: " + value);
 			}
-			location.root = value;
+			location._root = value;
 			required_directives.has_root = true;
 		}
 		else if (directive == "index") {
 			if (!isValidIndex(value)) {
 				error_check("Invalid index file: " + value);
 			}
-			location.index = value;
+			location._index = value;
 			required_directives.has_index = true;
 		}
 		else if (directive == "auto_index") {
 			if (value != "on" && value != "off") {
 				error_check("Invalid auto_index value: " + value);
 			}
-			location.auto_index = (value == "on");
+			location._auto_index = (value == "on");
 		}
 		if (it == end || it->token_type != SEMI_COLON) {
 			error_check("Missing semicolon for directive: " + directive);

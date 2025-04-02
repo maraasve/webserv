@@ -1,37 +1,64 @@
 #include "./Server.hpp"
 
-void Server::handleReadRequest(int client_fd, Epoll& epoll) {
-	try {
-		//Handle read through the request, remember that you cannot read everything in one chunk.
-		//parse information from the socket and save it in the request.
-		Request request(client_fd);
-		Response response(request); //create the response based on the request
-		if (request._method = "GET") {
-			request.handleGET();
-		}
-		else if (request.method == "POST") {
-			request.handlePOST();
-		}
-		else if (request.method == "DELETE") {
-			request.handleDELETE();
-		}
-		//saving the response to that client for later.
-		_clientsResponse[client_fd] = response.buffer;
-		epoll.modifyFd(client_fd, EPOLLOUT);
-	} catch (...) {
-		//idk
+// void Server::handleReadRequest(int client_fd, Epoll& epoll) {
+// 	try {
+// 		//Handle read through the request, remember that you cannot read everything in one chunk.
+// 		//parse information from the socket and save it in the request.
+// 		Request request(client_fd);
+// 		Response response(request); //create the response based on the request
+// 		if (request.getMethod() == "GET") {
+// 			request.handleGET();
+// 		}
+// 		else if (request.getMethod() == "POST") {
+// 			request.handlePOST();
+// 		}
+// 		else if (request.getMethod() == "DELETE") {
+// 			request.handleDELETE();
+// 		}
+// 		//saving the response to that client for later.
+// 		_clientsResponse[client_fd] = response.buffer;
+// 		epoll.modifyFd(client_fd, EPOLLOUT);
+// 	} catch (...) {
+// 		//idk
+// 	}
+// }
+
+void Server::handleRequest(int client_fd, Epoll& epoll) {
+	std::string& request = _clientsRequest[client_fd];
+	char	buffer[BUFSIZ];
+	ssize_t bytes = recv(client_fd, buffer, BUFSIZ, MSG_DONTWAIT);
+	if (bytes < 0) {
+		std::cerr << "Error: reading data from client " + client_fd << std::endl;
+		closeClientConnection(client_fd);
+		return ;
 	}
+	if (bytes)
+		request.append(buffer, bytes);
+	else
+	{
+		epoll.modifyFd(client_fd, EPOLLOUT);
+		//parse
+		Request request(request);
+	}
+			//only when "\r\n\rn" for GET
+		//only when Content-Lenght and i are equal for POST
+		//DELETE?
+			//change the epoll to EPOLLOUT
+			//We add the response we made at sometime to the client_fd map so that handleResponse has it
 }
 
 
-void Server::handleWriteRequest(int client_fd, Epoll& epoll) {
+
+
+void Server::handleResponse(int client_fd, Epoll& epoll) {
 	std::string& response = _clientsResponse[client_fd];
-	ssize_t bytes = send(client_fd, response.c_str(), response.size(), 0);
-	if (bytes <= 0) {
+	ssize_t bytes = send(client_fd, response.c_str(), response.size(), MSG_DONTWAIT);
+	if (bytes < 0) {
 		std::cerr << "Error: sending data to client " + client_fd << std::endl;
 		closeClientConnection(client_fd);
 		return ;
 	}
+	//what happebns when bytes == 0??
 	respone.erase(0, bytes);
 	if (response.emtpy()) {
 		closeClientConnection(client_fd);
@@ -39,7 +66,7 @@ void Server::handleWriteRequest(int client_fd, Epoll& epoll) {
 }
 
 void Server::closeClientConnection(int client_fd) {
-	_clientsResponse.erase(client_fd);
+	_clientsResponse.erase(client_fd); //what if there i
 	epoll.deleteFd(client_fd);
 	close(client_fd);
 }

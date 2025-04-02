@@ -30,7 +30,7 @@ public:
 
 	void addFd(int client_fd, int event_type);
 	void deleteFd(int client_fd);
-	void modifyFd(int client_fd, int event_type)
+	void modifyFd(int client_fd, int event_type);
 	int getReadyFd();
 	struct epoll_event* getEvents();
 

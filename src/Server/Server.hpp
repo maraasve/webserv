@@ -2,6 +2,7 @@
 #define SERVER_HPP
 
 #include "./Request.hpp"
+#include "./Response.hpp"
 #include "../Networks/Socket.hpp"
 #include "../Networks/Epoll.hpp"
 

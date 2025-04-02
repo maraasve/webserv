@@ -1,26 +1,62 @@
 #include "./Request.hpp"
 
-Request::Request(int client_fd) {
-	std::string request = readRequest(client_fd);
+Request::Request(std::string& request): _error_code("200") {
 	if (request.empty()) {
-		
+		_error_code = "400";
+		return ;
 	}
 }
 
-std::string Request::readRequest(int client_fd) {
-	char buffer[4096];
-	std::string request;
-	ssize_t bytes{0};
-	while(true) {
-		bytes = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
-		if (!bytes) {
-			break ;
-		}
-		buffer[bytes] = '\0';
-		request += buffer;
-		if (request.find("\r\n\r\n") != std::string::npos) {
-			break;
-		}
+std::string	Request::getMethod() {
+	return (_method);
+}
+
+void	Request::parseRequest(std::string &request) {
+	std::istringstream stream(request);
+	stream >> _method >> _uri >> _http_version;
+	if (!checkMethod()){
+		_error_code = "501";
+		return ;
 	}
-	return request;
+	if (!checkUri()){
+		_error_code = "400";
+		return ;
+	}
+	if (!checkHTTP()){
+		_error_code = "505";
+		return ;
+	}
+	parseHeaders(stream.str());
+}
+
+bool	Request::checkMethod() const {
+	return (_method == "GET" || _method == "POST" || _method == "DELETE");
+}
+
+bool	Request::checkUri() {
+	std::regex uri_regex(R"(^\/([a-zA-Z0-9\-_~.]+(?:\/[a-zA-Z0-9\-_~.]+)*)\??([^#]*)#?.*$)");
+	std::smatch match;
+	if (std::regex_match(_uri, match, uri_regex) || _uri == "/")
+	{
+		size_t pos = _uri.find("?");
+		if (pos != std::string::npos){
+			_query_string = _uri.substr(pos + 1);
+			_uri.erase(pos, _uri.length() - pos);
+		}
+		return (true);
+	}
+	return (false);
+}
+
+bool	Request::checkHTTP() const {
+	return (_http_version != "HTTP/1.1\r\n");
+}
+
+void	Request::parseHeaders(std::string &request){
+	if (_method == "POST"){
+		if (request.find("Content-Length:") != std::string::npos){
+			_headers["Content-Length"] = re
+		}
+
+	}
 }
