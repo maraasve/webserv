@@ -56,6 +56,7 @@
         "optional": "cpp",
         "ranges": "cpp",
         "span": "cpp",
-        "cinttypes": "cpp"
+        "cinttypes": "cpp",
+        "set": "cpp"
     }
 }

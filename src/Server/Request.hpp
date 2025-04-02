@@ -21,11 +21,13 @@ private:
 	std::string _error_code;
 	
 	void sendResponse();
-
-public:
+	
+	public:
+	ssize_t												_bytesToRead {0};
+	ssize_t												_bytesRead{0};
+ 
 	Request(std::string& request);
 
-	// std::string readRequest(int client_fd);
 	void	parseRequest(std::string &request);
 	void	parseHeaders(std::string &request);
 
@@ -33,10 +35,15 @@ public:
 	bool	checkMethod() const;
 	bool	checkHTTP() const;
 
-	void handleGET();
-	void handlePOST();
-	void handleDELETE();
+	void setErrorCode(std::string error_code);
+
 	std::string	getMethod();
+	std::string getURI();
+	std::string getQueryString();
+	std::string getHTTPVersion();
+	std::string getBody();
+	std::unordered_map<std::string, std::string> getHeaders();
+	std::string getErrorCode();
 
 };
 

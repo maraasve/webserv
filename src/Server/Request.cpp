@@ -41,7 +41,7 @@ bool	Request::checkUri() {
 		size_t pos = _uri.find("?");
 		if (pos != std::string::npos){
 			_query_string = _uri.substr(pos + 1);
-			_uri.erase(pos, _uri.length() - pos);
+			_uri.erase(pos, _uri.length() - pos); //should it be length or size?
 		}
 		return (true);
 	}
@@ -53,10 +53,36 @@ bool	Request::checkHTTP() const {
 }
 
 void	Request::parseHeaders(std::string &request){
-	if (_method == "POST"){
-		if (request.find("Content-Length:") != std::string::npos){
-			_headers["Content-Length"] = re
-		}
+}
 
-	}
+void Request::setErrorCode(std::string error_code) {
+	_error_code = error_code;
+}
+
+std::string	Request::getMethod() {
+	return _method;
+}
+
+std::string Request::getURI() {
+	return _uri;
+}
+
+std::string Request::getQueryString() {
+	return _query_string;
+}
+
+std::string Request::getHTTPVersion() {
+	return _http_version;
+}
+
+std::string Request::getBody() {
+	return _body;
+}
+
+std::unordered_map<std::string, std::string> Request::getHeaders() {
+	return _headers;
+}
+
+std::string Request::getErrorCode() {
+	return _error_code;
 }

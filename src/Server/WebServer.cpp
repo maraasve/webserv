@@ -24,7 +24,7 @@ void WebServer::run() {
             if (it_server != _socketToServer.end()) {
                 Server* server = it_server->second;
                 int client_fd = server->getServerSocket().acceptConnection();
-                _clientsToServer[client_fd] = server;
+                // _clientsToServer[client_fd] = server;
                 epoll.addFd(client_fd, EPOLLIN);
             }
             auto it_client = _clientsToServer.find(event.data.fd);

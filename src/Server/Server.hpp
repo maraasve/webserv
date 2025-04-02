@@ -37,13 +37,16 @@ private:
 	std::vector<Location> _locations;
 
 	Socket _server_socket;
-	std::unordered_map<int, std::string> _clientsResponse;
+	std::unordered_map<int, std::string> _clientsRequestString;
+	std::unordered_map<int, std::string> _clientsResponseString;
+	std::unordered_map<int, Request*> _clientsRequestObject;
 
 public:
 	Server() = default;
 	~Server() = default;
 
-	void handleRequest(int client_fd);
+	void handleRequest(int client_fd, Epoll& epoll);
+	void handleResponse(int client_fd, Epoll& epoll);
 
 	void setPort(int port);
 	void setAutoIndex(bool auto_index);
@@ -55,6 +58,8 @@ public:
 	void setIndex(std::string index);
 	void setRoot(std::string root);
 	void setLocations();
+
+	void closeClientConnection(int client_fd, Epoll& epoll);
 
 	Socket& getServerSocket();
 	std::pair<std::string, std::string> getErrorPage() const;
