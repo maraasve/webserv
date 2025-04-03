@@ -20,7 +20,7 @@ public:
 	~Client() = default;
 
 	void					handleRequest(int event_fd, Epoll& epoll);
-	void					handleResponse(int event_fd, Epoll& epoll);
+	void					handleResponse(Epoll& epoll);
 
 	void					setRequestStr(std::string request);
 	void					setResopnseStr(std::string response);

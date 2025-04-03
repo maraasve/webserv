@@ -42,9 +42,6 @@ public:
 	Server() = default;
 	~Server() = default;
 
-	void handleRequest(int client_fd, Epoll& epoll);
-	void handleResponse(int client_fd, Epoll& epoll);
-
 	void setPort(int port);
 	void setAutoIndex(bool auto_index);
 	void setErrorPage(std::string error_code, std::string path);

@@ -14,7 +14,7 @@ class WebServer {
 private:
 	std::vector<Server>								_servers;
 	std::unordered_map<int, Server*>	_socketToServer;
-	std::vector<Client>								_clients;
+	std::unordered_map<int, Client>		_clients;
 
 	void	setupServerSockets(Epoll& epoll);
 	void	cleanServersResources(Epoll& epoll);
