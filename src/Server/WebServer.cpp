@@ -17,30 +17,32 @@ void WebServer::run() {
     Epoll epoll;
     setupServerSockets(epoll);
     while(true) {
-        int ready_fds = epoll.getReadyFd();
+        int	ready_fds = epoll.getReadyFd();
+        struct epoll_event *ready_events = epoll.getEvents(); //more readable or better to understand name?
         for (int i = 0; i < ready_fds; ++i) {
-            struct epoll_event event = epoll.getEvents()[i];
-            auto it_server = _socketToServer.find(event.data.fd);
+            struct	epoll_event event = ready_events[i];
+						int	 		event_fd = event.data.fd;//more readable or better to understand name?
+            auto it_server = _socketToServer.find(event_fd); //finding which socket belongs to which server, what happens if I have to servers listening to the same port and IP, what should I do?
             if (it_server != _socketToServer.end()) {
                 Server* server = it_server->second;
                 int client_fd = server->getServerSocket().acceptConnection();
-                // _clientsToServer[client_fd] = server;
+								_clients.emplace_back(client_fd);
                 epoll.addFd(client_fd, EPOLLIN);
             }
-            auto it_client = _clientsToServer.find(event.data.fd);
-            if (it_client != _clientsToServer.end()) {
-                Server* client_server = it_client->second;
-                if (!client_server) {
+            // auto it_client = _clients.find(event_fd);
+						_clients[event_fd];
+            if (it_client != _clients.end()) {
+                Client *client = _clients[event_fd];
+                if (!client) {
                     throw std::runtime_error("Error: client server is null");
                 }
-                if (event.data.fd & EPOLLIN) {
-                    client_server->handleReadRequest(event.data.fd, epoll);
+                if (event_fd & EPOLLIN) {
+                    client->handleRequest(event_fd, epoll);
                 }
-                if (event.data.fd & EPOLLOUT) {
-                    client_server->handleWriteRequest(event.data.fd, epoll);
+                if (event_fd & EPOLLOUT) {
+                    client->handleResponse(event_fd, epoll);
+										//after this re
                 }
-                // epoll.deleteFd(event.data.fd);
-                // close(event.data.fd);
             }
         }
     }

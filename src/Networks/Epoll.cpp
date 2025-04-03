@@ -44,17 +44,9 @@ void Epoll::deleteFd(int client_fd) {
 int Epoll::getReadyFd()
 {
 	int timeout = 100;
-	//this needs to be called in a while loop so that you keep on getting the events again and again
 	ready_fds = epoll_wait(epollfd, events, MAX_EVENTS, timeout);
-	//if the socket has data available to read, epoll_wait() will return with EPOLLIN set
-	//if the socket has data ready to write (i.e., the send buffer is not full), epoll_wait() will return with EPOLLOUT set.
-	//To handle this:
-	//if (events[i].events & EPOLLIN)
-	//if (events[i].events & EPOLLOUT)
 	error_check(ready_fds, "Epoll waiting on file descriptor");
 	return ready_fds;
-	//you must loop and read until recv() returns EAGAIN or EWOULDBLOCK, which means there's not more data for now
-	//if bytes_read is == -1 and EAGAIN (no more data for now), then continue
 }
 
 struct epoll_event* Epoll::getEvents() {

@@ -37,9 +37,6 @@ private:
 	std::vector<Location> _locations;
 
 	Socket _server_socket;
-	std::unordered_map<int, std::string> _clientsRequestString;
-	std::unordered_map<int, std::string> _clientsResponseString;
-	std::unordered_map<int, Request*> _clientsRequestObject;
 
 public:
 	Server() = default;
