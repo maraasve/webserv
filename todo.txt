@@ -1,5 +1,6 @@
 [] 501 add html and image.
 [X] Change the run function.
 [X] Make a new client class and store the client_fd, client stuff that where inside the client.
-[] Work on the response so that the response checks the error_code.
+[X] Work on handleResponse.
+[] Create a response based on the client request
 [] Clean Up the Parsing 

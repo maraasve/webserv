@@ -1,20 +1,20 @@
 #ifndef REQUEST_HPP
 #define REQUEST_HPP
 
-#include "../Parsing/ConfigParser.hpp"
-
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <regex>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <unordered_map>
 
 class Request {
 private:
 	std::string 									_method;
 	std::string 									_uri;
-	std::string 									_query_string;
+	std::string										_path;
+	std::string 									_query;
 	std::string 									_http_version;
 	std::string 									_body;
 	std::unordered_map<std::string, std::string>	_headers;
@@ -29,11 +29,18 @@ private:
 	Request(std::string& request);
 
 	void	parseRequest(std::string &request);
-	void	parseHeaders(std::string &request);
+	void	parseRequestLine(std::istringstream &request);
+	void	parseHeaders(std::istringstream &request);
+	void	parseBody();
 
-	bool	checkUri();
+	void	splitUri();
+
+	bool	checkPath() const;
+	bool	checkQuery() const;
 	bool	checkMethod() const;
 	bool	checkHTTP() const;
+
+	std::string	trim(std::string str);
 
 	void setErrorCode(std::string error_code);
 
