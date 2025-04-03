@@ -16,55 +16,55 @@
 // 	return ("");
 // }
 
-void printServerDetails(Server& server) {
-	std::cout << "Server Details:\n";
-	std::cout << "----------------------------------\n";
-	std::cout << "Host: " << server.getHost_string() << "\n";
-	std::cout << "Port: " << server.getPort() << "\n";
-	std::cout << "Client Max Body Size: " << server.getClientMaxBody() << " bytes\n";
-	std::cout << "Root: " << server.getRoot() << "\n";
-	std::cout << "Index: " << server.getIndex() << "\n";
-	std::cout << "Auto Index: " << (server.getAutoIndex() ? "On" : "Off") << "\n";
+// void printServerDetails(Server& server) {
+// 	std::cout << "Server Details:\n";
+// 	std::cout << "----------------------------------\n";
+// 	std::cout << "Host: " << server.getHost_string() << "\n";
+// 	std::cout << "Port: " << server.getPort() << "\n";
+// 	std::cout << "Client Max Body Size: " << server.getClientMaxBody() << " bytes\n";
+// 	std::cout << "Root: " << server.getRoot() << "\n";
+// 	std::cout << "Index: " << server.getIndex() << "\n";
+// 	std::cout << "Auto Index: " << (server.getAutoIndex() ? "On" : "Off") << "\n";
 
-	// Print Server Names
-	std::cout << "Server Names: ";
-	for (const auto& name : server.getServerNames()) {
-			std::cout << name << " ";
-	}
-	std::cout << "\n";
+// 	// Print Server Names
+// 	std::cout << "Server Names: ";
+// 	for (const auto& name : server.getServerNames()) {
+// 			std::cout << name << " ";
+// 	}
+// 	std::cout << "\n";
 
-	// Print Error Page
-	std::pair<std::string, std::string> error_page = server.getErrorPage();
-	std::cout << "Error Page: Code " << error_page.first << " -> " << error_page.second << "\n";
+// 	// Print Error Page
+// 	std::pair<std::string, std::string> error_page = server.getErrorPage();
+// 	std::cout << "Error Page: Code " << error_page.first << " -> " << error_page.second << "\n";
 
-	// Print Locations
-	std::vector<Location> locations = server.getLocations();
-	if (!locations.empty()) {
-			std::cout << "\nLocations:\n";
-			for (const auto& loc : locations) {
-					std::cout << "----------------------------------\n";
-					std::cout << "Path: " << loc._path << "\n";
-					std::cout << "Root: " << loc._root << "\n";
-					std::cout << "Index: " << loc._index << "\n";
-					std::cout << "Auto Index: " << (loc._auto_index ? "On" : "Off") << "\n";
-					std::cout << "Client Max Body: " << loc._client_max_body << " bytes\n";
+// 	// Print Locations
+// 	std::vector<Location> locations = server.getLocations();
+// 	if (!locations.empty()) {
+// 			std::cout << "\nLocations:\n";
+// 			for (const auto& loc : locations) {
+// 					std::cout << "----------------------------------\n";
+// 					std::cout << "Path: " << loc._path << "\n";
+// 					std::cout << "Root: " << loc._root << "\n";
+// 					std::cout << "Index: " << loc._index << "\n";
+// 					std::cout << "Auto Index: " << (loc._auto_index ? "On" : "Off") << "\n";
+// 					std::cout << "Client Max Body: " << loc._client_max_body << " bytes\n";
 
-					// Print Methods
-					std::cout << "Allowed Methods: ";
-					for (const auto& method : loc._allowed_methods) {
-							std::cout << method << " ";
-					}
-					std::cout << "\n";
+// 					// Print Methods
+// 					std::cout << "Allowed Methods: ";
+// 					for (const auto& method : loc._allowed_methods) {
+// 							std::cout << method << " ";
+// 					}
+// 					std::cout << "\n";
 
-					// Print Error Page for Location
-					std::cout << "Error Page: Code " << loc._error_page.first << " -> " << loc._error_page.second << "\n";
+// 					// Print Error Page for Location
+// 					std::cout << "Error Page: Code " << loc._error_page.first << " -> " << loc._error_page.second << "\n";
 
-					// Print HTTP Redirection
-					//std::cout << "HTTP Redirection: " << loc.HTTP_redirection.first << " -> " << loc.HTTP_redirection.second << "\n";
-			}
-	}
-	std::cout << "----------------------------------\n";
-}
+// 					// Print HTTP Redirection
+// 					//std::cout << "HTTP Redirection: " << loc.HTTP_redirection.first << " -> " << loc.HTTP_redirection.second << "\n";
+// 			}
+// 	}
+// 	std::cout << "----------------------------------\n";
+// }
 
 
 ConfigParser::ConfigParser(const std::string &filename, std::vector<Server>& webservers): open_braces(0), servers(webservers){
@@ -77,8 +77,8 @@ ConfigParser::ConfigParser(const std::string &filename, std::vector<Server>& web
 	// 	std::cout << printEnum(tokens.token_type) << " --> " << tokens.value << std::endl;
 	// }
 	parseServer(Tokenizer.getTokens());
-	for(auto& server : servers) {
-		printServerDetails(server);
+	// for(auto& server : servers) {
+	// 	printServerDetails(server);
 	}
 }
 
