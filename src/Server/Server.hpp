@@ -53,8 +53,6 @@ public:
 	void setRoot(std::string root);
 	void setLocations();
 
-	void closeClientConnection(int client_fd, Epoll& epoll);
-
 	Socket& getServerSocket();
 	std::pair<std::string, std::string> getErrorPage() const;
 	std::string getRoot() const;

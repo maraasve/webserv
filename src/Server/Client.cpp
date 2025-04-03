@@ -1,25 +1,25 @@
 #include "./Client.hpp"
 
-Client::Client(int fd): _fd(fd), _server_ptr(nullptr){
+Client::Client(int fd, Epoll& epoll): _fd(fd), _server_ptr(nullptr), _epoll(epoll) {
 	std::cout << "Client socket(" << _fd << ") is created" << std::endl;
 }
 
-void Client::handleResponse(Epoll& epoll) {
-	// std::string& response = _clientsResponseString[client_fd];
-	std::string& response = _responseString; //_responseString we did something to it before 
-	ssize_t bytes = send(client_fd, response.c_str(), response.size(), MSG_DONTWAIT);
+bool Client::handleResponse() {
+	std::string& response = _responseString; //_responseString is initialized in a Response object that checks the request 
+	ssize_t bytes = send(_fd, response.c_str(), response.size(), MSG_DONTWAIT);
 	if (bytes < 0) {
-		std::cerr << "Error: sending data to client " + client_fd << std::endl;
-		closeClientConnection(client_fd);
-		return ;
+		std::cerr << "Error: sending data to client " + _fd << std::endl;		
+		return false;
 	}
-	//what happebns when bytes == 0??
-	respone.erase(0, bytes); 
-	if (response.emtpy()) {
-		closeClientConnection(client_fd, epoll);
-	}
+	response.erase(0, bytes);
+	return !response.empty();
 }
 
+void Client::closeConnection() {
+	std::cout << "Closing connection for client socket(" << _fd << ")" << std::endl;
+	_epoll.deleteFd(_fd);
+	close(_fd);
+}
 
 void	Client::setRequestStr(std::string request) {
 	_requestString = request;

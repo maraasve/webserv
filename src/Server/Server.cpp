@@ -1,11 +1,5 @@
 #include "./Server.hpp"
 
-void Server::closeClientConnection(int client_fd, Epoll& epoll) {
-	_clientsResponseString.erase(client_fd); //what if there i
-	epoll.deleteFd(client_fd);
-	close(client_fd);
-}
-
 void Server::setErrorPage(std::string error_code, std::string path) {
 	_error_page.first = error_code;
 	_error_page.second = path;

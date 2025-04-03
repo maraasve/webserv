@@ -30,7 +30,7 @@ void WebServer::run() {
 			if (it_server != _socketToServer.end()) {
 				Server* server = it_server->second;
 				int client_fd = server->getServerSocket().acceptConnection();
-				_clients.emplace(client_fd, Client(client_fd));
+				_clients.emplace(client_fd, Client(client_fd, epoll));
 				epoll.addFd(client_fd, EPOLLIN);
 			}
 			auto it_client = _clients.find(event_fd);
@@ -40,7 +40,9 @@ void WebServer::run() {
 					// client.handleRequest(event_fd, epoll);
 			}
 			if (event_fd & EPOLLOUT) {
-				// client.handleResponse(event_fd, epoll);
+				if (!client.handleResponse())
+					client.closeConnection();
+					_clients.erase(it_client);
 			}
 		}
 	}

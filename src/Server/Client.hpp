@@ -12,15 +12,16 @@ class Client {
 private:
 	int					_fd;
 	Server*			_server_ptr;
+	Epoll&			_epoll;
 	std::string	_requestString;
 	std::string	_responseString;
 
 public:
-	Client(int fd);
+	Client(int fd, Epoll& epoll);
 	~Client() = default;
 
-	void					handleRequest(int event_fd, Epoll& epoll);
-	void					handleResponse(Epoll& epoll);
+	// void					handleRequest(int event_fd);
+	bool					handleResponse();
 
 	void					setRequestStr(std::string request);
 	void					setResopnseStr(std::string response);
@@ -30,6 +31,8 @@ public:
 	std::string&	getRequestStr();
 	std::string&	getResponseStr();
 	Server*				getServer();
+
+	void closeConnection();
 
 };
 
