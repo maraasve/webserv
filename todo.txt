@@ -9,4 +9,5 @@
 []	handleRequest in Server class
 []	we should set default client_max_body if its not specified
 	and probably limit the max size in config aswell
+[] Check if GET has a body, if so then send 400 BAD REQUEST
 
