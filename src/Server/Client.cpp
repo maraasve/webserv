@@ -6,7 +6,7 @@
 /*   By: maraasve <maraasve@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:06:22 by maraasve          #+#    #+#             */
-/*   Updated: 2025/04/07 17:42:31 by maraasve         ###   ########.fr       */
+/*   Updated: 2025/04/07 18:19:57 by maraasve         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,7 +53,7 @@ bool	Client::readRequest() {
 	return true;
 }
 
-bool Client::handleResponse() {
+bool Client::sendResponse() {
 	std::string& response = _responseString; //_responseString is initialized in a Response object that checks the request 
 	ssize_t bytes = send(_fd, response.c_str(), response.size(), MSG_DONTWAIT);
 	if (bytes < 0) {
@@ -73,12 +73,19 @@ void Client::closeConnection() {
 void	Client::setRequestStr(std::string request) {
 	_requestString = request;
 }
-void	Client::setResopnseStr(std::string response) {
-	_responseString = response;
+void	Client::setResponseStr(Request& request) {
+	_responseString = _response.createResponseStr(request);
 }
 
-void	Client::setServer(Server* server) {
-	_server_ptr = server;
+void	Client::setServer(std::vector<Server>& servers) {
+	_server_ptr
+	//servers & _request.headers
+	// getsockname() -> to get port and IP client is trying to connect with
+	// find "host" in headermap for the servername
+		// if everything matches
+			//connect with server
+		// else
+			//error
 }
 
 int	Client::getFd(){

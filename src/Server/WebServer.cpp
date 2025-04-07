@@ -43,9 +43,15 @@ void WebServer::run() {
 				}
 			}
 			if (event_fd & EPOLLOUT) {
-				if (!client.handleResponse())
+				//make the response so that then it can be sent
+				if (client.getResponseStr().empty()) {
+					client.setServer(_servers);
+					client.setResponseStr(client.getRequest());
+				}
+				if (!client.sendResponse()) {
 					client.closeConnection();
 					_clients.erase(it_client);
+				}
 			}
 		}
 	}
