@@ -1,24 +1,56 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   Client.cpp                                         :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: maraasve <maraasve@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/04/07 15:06:22 by maraasve          #+#    #+#             */
+/*   Updated: 2025/04/07 17:42:31 by maraasve         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "./Client.hpp"
 
 Client::Client(int fd, Epoll& epoll): _fd(fd), _server_ptr(nullptr), _epoll(epoll) {
 	std::cout << "Client socket(" << _fd << ") is created" << std::endl;
 }
 
-void	Client::readRequest() {
-	char	buffer[BUFSIZ];
-	int		bytes_read;
+// void	Client::readRequest() {
+// 	char	buffer[BUFSIZ];
+// 	int		bytes_read;
 
-	while (true) {
-		bytes_read = recv(_fd, buffer, BUFSIZ, MSG_DONTWAIT);
-		if (bytes_read < 0) {
-			std::cerr << "recv() error on client " << _fd << std::endl;
-			// erase client, maybe make a function for this?? - error handling
-			return ;
-		}
-		if (bytes_read == 0)
-			return ;
-		_requestString.append(buffer, bytes_read);
+// 		bytes_read = recv(_fd, buffer, BUFSIZ, MSG_DONTWAIT);
+// 		if (bytes_read < 0) {
+// 			std::cerr << "recv() error on client " << _fd << std::endl;
+// 			// erase client, maybe make a function for this?? - error handling
+// 			return ;
+// 		}
+// 		if (bytes_read == 0)
+// 			return ;
+// 		_requestString.append(buffer, bytes_read);
+// }
+
+
+bool	Client::readRequest() {
+	char buffer[BUFSIZ];
+
+	ssize_t bytes = recv(_fd, buffer, BUFSIZ, MSG_DONTWAIT);
+	if (bytes > 0) {
+		return false;
 	}
+	_requestString.append(buffer, bytes);
+	if (!_request._header_ready) {
+
+		_request.parseHeader(_requestString);
+	}
+	else if (!_request._request_ready) {
+		_request.parseBody(_requestString, bytes);
+	}
+	if (_request._request_ready) {
+		_epoll.modifyFd(_fd, EPOLLOUT);
+	}
+	return true;
 }
 
 bool Client::handleResponse() {

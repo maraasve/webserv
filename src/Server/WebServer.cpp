@@ -37,7 +37,10 @@ void WebServer::run() {
 			if (it_client != _clients.end()) {
 					Client &client = it_client->second;
 			if (event_fd & EPOLLIN) {
-					// client.handleRequest();
+				if (!client.readRequest()) {
+					client.closeConnection();
+					_clients.erase(it_client);
+				}
 			}
 			if (event_fd & EPOLLOUT) {
 				if (!client.handleResponse())

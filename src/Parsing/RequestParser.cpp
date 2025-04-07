@@ -1,65 +1,92 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Request.cpp                                        :+:      :+:    :+:   */
+/*   RequestParser.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: maraasve <maraasve@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/04/07 15:06:00 by maraasve          #+#    #+#             */
-/*   Updated: 2025/04/07 15:06:04 by maraasve         ###   ########.fr       */
+/*   Created: 2025/04/07 15:06:13 by maraasve          #+#    #+#             */
+/*   Updated: 2025/04/07 17:41:22 by maraasve         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "./Request.hpp"
+#include "RequestParser.hpp"
 
-Request::Request(std::string& request): _error_code("200") {
-	if (request.empty()) {
-		_error_code = "400";
-		return ;
-	}
-}
-
-std::string	Request::getMethod() {
+std::string&	RequestParser::getMethod() {
 	return (_method);
 }
 
-void	Request::parseRequest(std::string& request) {
-	std::string			header, body;
-	size_t pos = request.find("\r\n\r\n");
-	if (pos != std::string::npos) {
-		header = request.substr(0, pos);
-		body = request.substr(pos + 4);
-		parseBody(body);
-	}
-	else
-		header = request;
-	std::istringstream	stream(header);
-	parseRequestLine(stream);  //maybe check first if should be parsed
-	parseHeaders(stream); //maybe check first if should be parsed
+std::string& RequestParser::getURI() {
+	return (_uri);
 }
 
-void	Request::parseRequestLine(std::istringstream& stream) {
+std::string& RequestParser::getQueryString() {
+	return (_query);
+}
+
+std::string& RequestParser::getHTTPVersion() {
+	return (_http_version);
+}
+
+std::string& RequestParser::getBody() {
+	return (_body);
+}
+
+std::unordered_map<std::string, std::string>& RequestParser::getHeaders() {
+	return (_headers);
+}
+
+std::string& RequestParser::getErrorCode() {
+	return (_error_code);
+}
+
+void RequestParser::parseHeader(std::string& request) {
+
+	std::string			header, body;
+	size_t				pos = request.find("\r\n\r\n");
+	if (pos != std::string::npos) {
+		header = request.substr(0, pos);
+		if (request.find("POST")) {
+			_bytes_read = request.size() - pos - 4;
+		}
+	}
+	std::istringstream	stream(header);
+	parseRequestLine(stream);
+	parseHeaders(stream);
+	_header_ready = true;
+	if (_method == "GET") { //does delete have a body?
+		_request_ready = true;
+	}
+}
+
+void	RequestParser::parseBody(std::string& request, ssize_t bytes) {
+	_bytes_read += bytes;
+	//define content length
+	if (_bytes_read == _content_length) {
+		_request_ready = true;
+		size_t pos = request.find("\r\n\r\n");
+		_body = request.substr(pos, _bytes_read);
+	}
+}
+
+void	RequestParser::parseRequestLine(std::istringstream& stream) {
 	stream >> _method >> _uri >> _http_version;
 	if (!checkMethod()){
 		_error_code = "501"; 
-		return ;
-	}
-	splitUri();
-	if (!checkPath()){
-		_error_code = "400";
-		return ;
-	}
-	if (!checkQuery()){
-		_error_code = "400";
 		return ;
 	}
 	if (!checkHTTP()){
 		_error_code = "505";
 		return ;
 	}
+	splitUri();
+	if (!checkPath() || !checkQuery()){
+		_error_code = "400";
+		return ;
+	}
 }
 
-void	Request::parseHeaders(std::istringstream& stream) {
+void	RequestParser::parseHeaders(std::istringstream& stream) {
 	std::string	line, key, value;
 	stream >> std::ws;
 	while (std::getline(stream, line))
@@ -77,17 +104,19 @@ void	Request::parseHeaders(std::istringstream& stream) {
 		}
 		_headers.emplace(key, value);
 	}
+	//checkHeaders()
 }
 
-void	Request::parseBody() {
-	
+bool	RequestParser::checkHeaders()
+{
+
 }
 
-bool	Request::checkMethod() const {
+bool	RequestParser::checkMethod() const {
 	return (_method == "GET" || _method == "POST" || _method == "DELETE");
 }
 
-bool	Request::checkPath() const {
+bool	RequestParser::checkPath() const {
 	std::regex path_regex(R"(^\/([a-zA-Z0-9\-_~.]+(?:\/[a-zA-Z0-9\-_~.]+)*$))");
 	std::smatch match;
 	if (std::regex_match(_path, match, path_regex) && _uri.find('\n') == std::string::npos &&_uri.find('\r') == std::string::npos) {
@@ -96,61 +125,36 @@ bool	Request::checkPath() const {
 	return (true);
 }
 
-bool	Request::checkQuery() const {
+bool	RequestParser::checkQuery() const {
 	std::regex query_regex(R"(^([a-zA-Z0-9\-_.~]+)=([a-zA-Z0-9\-_.~%]+))");
 	std::smatch match;
-	if (_query.empty() || std::regex_match(_query, match, query_regex))
+	if (_query.empty() || std::regex_match(_query, match, query_regex)) {
 		return (true);
+	}
 	return (false);
 }
 
-bool	Request::checkHTTP() const {
+bool	RequestParser::checkHTTP() const {
 	return (_http_version == "HTTP/1.1");
 }
 
-void	Request::splitUri() {
+void	RequestParser::splitUri() {
 	size_t pos = _uri.find("?");
 	if (pos != std::string::npos){
 		_query = _uri.substr(pos + 1);
 		_path = _uri.substr(0, pos);
 	}
-	else
+	else {
 		_path = _uri;
-}
+	}
+}	
 
-std::string	Request::trim(std::string str) {
+std::string	RequestParser::trim(std::string str) {
 	size_t first, last;
 	first = str.find_first_not_of(" \n\t\r\f\v");
 	last = str.find_last_not_of(" \n\t\r\f\v");
-	if (first == std::string::npos || last == std::string::npos)
+	if (first == std::string::npos || last == std::string::npos) {
 		return ("");
+	}
 	return (str.substr(first, (last - first + 1)));
-}
-
-void Request::setErrorCode(std::string error_code) {
-	_error_code = error_code;
-}
-
-std::string Request::getURI() {
-	return (_uri);
-}
-
-std::string Request::getQueryString() {
-	return (_query);
-}
-
-std::string Request::getHTTPVersion() {
-	return (_http_version);
-}
-
-std::string Request::getBody() {
-	return (_body);
-}
-
-std::unordered_map<std::string, std::string> Request::getHeaders() {
-	return (_headers);
-}
-
-std::string Request::getErrorCode() {
-	return (_error_code);
 }

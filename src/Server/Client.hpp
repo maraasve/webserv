@@ -1,12 +1,24 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   Client.hpp                                         :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: maraasve <maraasve@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/04/07 15:06:59 by maraasve          #+#    #+#             */
+/*   Updated: 2025/04/07 17:02:01 by maraasve         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #ifndef CLIENT_HPP
-#define CLIENT_HPP
+# define CLIENT_HPP
 
-#include "./Request.hpp"
-#include "./Server.hpp"
-#include "../Networks/Epoll.hpp"
+# include "./Request.hpp"
+# include "./Server.hpp"
+# include "../Networks/Epoll.hpp"
 
-#include <string>
-#include <unordered_map>
+# include <string>
+# include <unordered_map>
 
 class Client {
 	private:
@@ -15,12 +27,13 @@ class Client {
 		Epoll&			_epoll;
 		std::string		_requestString;
 		std::string		_responseString;
+		Request			_request; //--> RequestParser
 
 	public:
 		Client(int fd, Epoll& epoll);
 		~Client() = default;
 
-		void					readRequest();
+		bool					readRequest();
 		bool					handleResponse();
 
 		void					setRequestStr(std::string request);
