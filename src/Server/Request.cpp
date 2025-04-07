@@ -22,8 +22,8 @@ void	Request::parseRequest(std::string& request) {
 	else
 		header = request;
 	std::istringstream	stream(header);
-	parseRequestLine(stream);  //maybe check first if should be parsed
-	parseHeaders(stream); //maybe check first if should be parsed
+	parseRequestLine(stream);
+	parseHeaders(stream);
 }
 
 void	Request::parseRequestLine(std::istringstream& stream) {
