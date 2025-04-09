@@ -79,7 +79,6 @@ ConfigParser::ConfigParser(const std::string &filename, std::vector<Server>& web
 	parseServer(Tokenizer.getTokens());
 	// for(auto& server : servers) {
 	// 	printServerDetails(server);
-	}
 }
 
 void ConfigParser::parseServer(std::vector<Token> tokens) {

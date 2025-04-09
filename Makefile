@@ -1,11 +1,12 @@
 NAME = webserv
 CPP = c++
-CPPFLAGS = -Wall -Werror -Wextra -g -std=c++11 -fno-limit-debug-info
+CPPFLAGS = -Wall -Werror -Wextra -std=c++11 -MDD
 RM = rm -rf
 SRC_DIR = src
 OBJ_DIR = obj
 SRCS = $(wildcard $(SRC_DIR)/*.cpp) $(wildcard $(SRC_DIR)/Networks/*.cpp) $(wildcard $(SRC_DIR)/Parsing/*.cpp) $(wildcard $(SRC_DIR)/Server/*.cpp)
 OBJS = $(SRCS:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
+DEPS = $(OBJS:.o=.d)
 
 all: $(OBJ_DIR) $(NAME)
 
@@ -20,6 +21,8 @@ $(NAME):$(OBJS)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp | $(OBJ_DIR)
 	$(CPP) $(CPPFLAGS) -c $< -o $@
+
+-include $(DEPS)
 
 clean:
 	$(RM) $(OBJ_DIR)

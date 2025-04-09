@@ -2,7 +2,6 @@
 #define SERVER_HPP
 
 #include "./Request.hpp"
-#include "./Response.hpp"
 #include "../Networks/Socket.hpp"
 #include "../Networks/Epoll.hpp"
 
@@ -36,7 +35,7 @@ private:
 	std::pair<std::string, std::string> _error_page;
 	std::vector<Location> _locations;
 
-	Socket _server_socket;
+	//Socket _server_socket;
 
 public:
 	Server() = default;
@@ -53,17 +52,17 @@ public:
 	void setRoot(std::string root);
 	void setLocations();
 
-	Socket& getServerSocket();
-	std::pair<std::string, std::string> getErrorPage() const;
-	std::string getRoot() const;
-	std::string getIndex() const;
-	bool getAutoIndex() const;
-	int getPort() const;
-	u_long getHost_u_long() const;
-	std::string getHost_string() const;
-	unsigned long long getClientMaxBody() const;
-	std::vector<std::string> getServerNames() const;
-	std::vector<Location>& getLocations();
+	// Socket& getServerSocket();
+	std::pair<std::string, std::string>	getErrorPage() const;
+	std::string 						getRoot() const;
+	std::string 						getIndex() const;
+	bool 								getAutoIndex() const;
+	int 								getPort() const;
+	u_long 								getHost_u_long() const;
+	std::string 						getHost_string() const;
+	unsigned long long					getClientMaxBody() const;
+	std::vector<std::string>			getServerNames() const;
+	std::vector<Location>&				getLocations();
 
 };
 

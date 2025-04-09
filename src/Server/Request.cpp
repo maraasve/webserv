@@ -18,3 +18,6 @@ Request::Request(std::string& request) {
 		return ;
 	}
 }
+
+Request::~Request(){
+}

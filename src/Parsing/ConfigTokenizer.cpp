@@ -53,7 +53,7 @@ void ConfigTokenizer::handleKeys(std::string line) {
 }
 
 bool ConfigTokenizer::isSymbol(char c) {
-	return (c == '{' | c == '}' | c == ';' | c == ':');
+	return ((c == '{') || (c == '}') || (c == ';') || (c == ':'));
 }
 
 void ConfigTokenizer::addToken(TokenType type, std::string value) {

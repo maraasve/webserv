@@ -20,6 +20,7 @@ void Socket::bindSocket(int port, u_long host) {
     addrlen = sizeof(server_addr);
     
     int val = bind(socketfd, reinterpret_cast<struct sockaddr *>(&server_addr), sizeof(server_addr));
+    std::cout << "Bind failed with errno " << errno << ": " << strerror(errno) << std::endl;
     error_check(val, "Binding Socket");
     std::cout << "Socket " << socketfd << " is binded to an IP & Port" << std::endl;
 }
@@ -43,6 +44,6 @@ void Socket::error_check(int val, const std::string& msg) const {
     }
 }
 
-int Socket::getSocketFd() {
+int Socket::getSocketFd() const{
     return socketfd;
 }

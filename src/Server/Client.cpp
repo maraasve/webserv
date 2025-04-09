@@ -12,7 +12,7 @@
 
 #include "./Client.hpp"
 
-Client::Client(int fd, Epoll& epoll): _fd(fd), _server_ptr(nullptr), _epoll(epoll) {
+Client::Client(int fd, Epoll& epoll): _fd(fd), _serverPtr(nullptr), _epoll(epoll) {
 	std::cout << "Client socket(" << _fd << ") is created" << std::endl;
 }
 
@@ -73,20 +73,35 @@ void Client::closeConnection() {
 void	Client::setRequestStr(std::string request) {
 	_requestString = request;
 }
-void	Client::setResponseStr(Request& request) {
-	_responseString = _response.createResponseStr(request);
-}
+// void	Client::setResponseStr(Request& request) {
+// 	_responseString = _response.createResponseStr(request);
+// }
 
-void	Client::setServer(std::vector<Server>& servers) {
-	_server_ptr
-	//servers & _request.headers
+void	Client::setServer(std::unordered_map<int, std::vector<Server*>>	_socketFdToServer) {
+	// _server_ptr
+	// servers & _request.headers
 	// getsockname() -> to get port and IP client is trying to connect with
 	// find "host" in headermap for the servername
-		// if everything matches
-			//connect with server
-		// else
-			//error
+	// 	if everything matches
+	// 		connect with server
+	// 	else
+	// 		error
+
+	auto it = _socketFdToServer.find(_fd);
+	if (it != _socketFdToServer.end()) {
+		std::vector<Server*>& serverVector = it->second;
+		if (serverVector.size() == 1) {
+			_serverPtr = serverVector.at(0);
+		}
+		else {
+			//find client.request.hostname in serverVector
+			//assign _serverPtr to specific server
+		}
+	}
+	//set error_code?? server not found?
 }
+
+
 
 int	Client::getFd(){
 	return _fd;
@@ -101,5 +116,5 @@ std::string&	Client::getResponseStr(){
 }
 
 Server*	Client::getServer(){
-	return _server_ptr;
+	return _serverPtr;
 }

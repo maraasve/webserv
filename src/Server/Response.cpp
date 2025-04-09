@@ -4,6 +4,10 @@
 
 // }
 
+Response::~Response() {
+
+}
+
 std::string Response::loadErrorPage(int status_code) {
     std::string filename = "/var/errors/" + std::to_string(status_code) + ".html";
     std::ifstream file(filename);

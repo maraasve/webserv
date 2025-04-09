@@ -12,6 +12,9 @@
 
 #include "RequestParser.hpp"
 
+RequestParser::~RequestParser() {
+}
+
 std::string&	RequestParser::getMethod() {
 	return (_method);
 }
@@ -107,9 +110,8 @@ void	RequestParser::parseHeaders(std::istringstream& stream) {
 	//checkHeaders()
 }
 
-bool	RequestParser::checkHeaders()
-{
-
+bool	RequestParser::checkHeaders() const {
+	return (true);
 }
 
 bool	RequestParser::checkMethod() const {

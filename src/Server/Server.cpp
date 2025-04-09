@@ -34,9 +34,7 @@ void Server::setRoot(std::string root) {
 }
 
 void Server::setServerNames(std::vector<std::string> server_names) {
-	for (auto it = _server_names.begin(); it != _server_names.end(); ++it) {
-		_server_names.push_back(*it);
-	}
+	_server_names.insert(_server_names.end(), server_names.begin(), server_names.end());
 }
 
 bool Server::getAutoIndex() const {
@@ -47,9 +45,9 @@ std::pair<std::string, std::string> Server::getErrorPage() const {
 	return _error_page;
 }
 
-Socket& Server::getServerSocket() {
-	return _server_socket;
-}
+// Socket& Server::getServerSocket() {
+// 	return _server_socket;
+// }
 
 std::string Server::getIndex() const {
 	return _index;

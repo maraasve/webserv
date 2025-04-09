@@ -15,6 +15,7 @@
 
 # include "./Request.hpp"
 # include "./Server.hpp"
+# include "./Response.hpp"
 # include "../Networks/Epoll.hpp"
 
 # include <string>
@@ -23,7 +24,7 @@
 class Client {
 	private:
 		int				_fd;
-		Server*			_server_ptr;
+		Server*			_serverPtr;
 		Epoll&			_epoll;
 		std::string		_requestString; //better in request class?
 		std::string		_responseString; //better in response clasee??
@@ -39,7 +40,7 @@ class Client {
 
 		void					setRequestStr(std::string request);
 		void					setResponseStr(Request& request);
-		void					setServer(std::vector<Server>& servers);
+		void					setServer(std::unordered_map<int, std::vector<Server*>>	_socketFdToServer);
 
 		int				getFd();
 		std::string&	getRequestStr();

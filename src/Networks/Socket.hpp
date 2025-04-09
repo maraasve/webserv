@@ -27,7 +27,7 @@ public:
     void bindSocket(int port, u_long host);
     void listenSocket(int backlog = BACKLOG);
     int acceptConnection();
-    int getSocketFd();
+    int getSocketFd() const;
 };
 
 #endif
