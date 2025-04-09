@@ -32,7 +32,6 @@ class Client {
 
 	public:
 		Client(int fd, Epoll& epoll);
-		~Client() = default;
 
 		bool					readRequest();
 		bool					sendResponse();

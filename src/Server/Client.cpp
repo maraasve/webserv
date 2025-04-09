@@ -16,22 +16,6 @@ Client::Client(int fd, Epoll& epoll): _fd(fd), _server_ptr(nullptr), _epoll(epol
 	std::cout << "Client socket(" << _fd << ") is created" << std::endl;
 }
 
-// void	Client::readRequest() {
-// 	char	buffer[BUFSIZ];
-// 	int		bytes_read;
-
-// 		bytes_read = recv(_fd, buffer, BUFSIZ, MSG_DONTWAIT);
-// 		if (bytes_read < 0) {
-// 			std::cerr << "recv() error on client " << _fd << std::endl;
-// 			// erase client, maybe make a function for this?? - error handling
-// 			return ;
-// 		}
-// 		if (bytes_read == 0)
-// 			return ;
-// 		_requestString.append(buffer, bytes_read);
-// }
-
-
 bool	Client::readRequest() {
 	char buffer[BUFSIZ];
 
@@ -74,7 +58,7 @@ void	Client::setRequestStr(std::string request) {
 	_requestString = request;
 }
 void	Client::setResponseStr(Request& request) {
-	_responseString = _response.createResponseStr(request);
+	_responseString = _response.createResponseStr(request, _server_ptr);
 }
 
 void	Client::setServer(std::vector<Server>& servers) {

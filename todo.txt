@@ -7,7 +7,7 @@
 [X]	Make a separate requestParser class
 [X]	readRequest in Client class
 []	sentRequest in Server class instead of Client???
-[]	we should set default client_max_body if its not specified
+[X]	we should set default client_max_body if its not specified
 	and probably limit the max size in config aswell
 []	Check if GET has a body, if so then send 400 BAD REQUEST
 []	CheckHeaders

@@ -43,9 +43,8 @@ void WebServer::run() {
 				}
 			}
 			if (event_fd & EPOLLOUT) {
-				//make the response so that then it can be sent
 				if (client.getResponseStr().empty()) {
-					client.setServer(_servers);
+					client.setServer(_servers); //find the right server to the client based on (server_name, ip and port)
 					client.setResponseStr(client.getRequest());
 				}
 				if (!client.sendResponse()) {
