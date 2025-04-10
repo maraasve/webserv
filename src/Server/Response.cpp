@@ -194,10 +194,6 @@ std::string Response::checkRequestURI(const std::string& rooted_uri, int mode) {
     }
 }
 
-bool Response::checkEnabledAutoIndex() {
-    return _location._auto_index || _server->getAutoIndex();
-}
-
 std::string Response::createDirectoryListing(const std::string& dir_path, const std::string& uri_path) {
     DIR* dirp = opendir(dir_path.c_str());
     if (!dirp) {
@@ -220,22 +216,78 @@ std::string Response::createDirectoryListing(const std::string& dir_path, const 
     return html.str();
 }
 
+void Response::serverDirectoryListing(const std::string& dir_path, const std::string& uri_path) {
+_body = createDirectoryListing(dir_path, uri_path);
+        if (!_error_code.empty()) {
+            createHeaders("text/html", std::to_string(_body.size()));
+            _error_code = "200";
+            _error_text = "OK";
+        }
+}
+
+//html
+//png
+//jpg
+//
+
+std::string Response::setContentType(const std::string& path) {
+    size_t pos = path.find_last_of(".");
+    if (pos == std::string::npos) {
+        return "application/octet-stream";
+    }
+    std::string extension = path.substr(pos + 1);
+    if (extension == "html" | extension == "htm") {
+        return "text/html";
+    } else if (extension == "jpg" | extension == "jpeg") {
+        return "image/jpeg";
+    } else if (extension == "txt") {
+        return "text/plain";
+    } else if (extension == "png") {
+        return "image/png";
+    } else if ()
+}
+
+void Response::serveFile(const std::string& file_path) {
+    if (access(file_path.c_str(), R_OK) != 0) {
+        setErrorResponse("403");
+        return ;
+    }
+    std::ifstream file(file_path);
+    if (!file) {
+        setErrorResponse("500");
+        return ;
+    }
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    _body = buffer.str();
+    if (!_error_code.empty()) {
+        std::content_type = checkContentType(file_path);
+        createHeaders("text/html", std::to_string(_body.size()));
+        _error_code = "200";
+        _error_text = "OK";
+    }
+    file.close();
+}
+
 void Response::handleGET(Request& request) {
     std::string file_type = checkRequestURI(_rooted_uri, R_OK);
     if (file_type == "ERROR") {
         setErrorResponse(_error_code);
     } else if (file_type == "ISDIR") {
-        if (checkEnabledAutoIndex() && check) {
-            _body = createDirectoryListing(_rooted_uri, request.getURI());
-            if (!_error_code.empty()) {
-                createHeaders("text/html", std::to_string(_body.size()));
-                _error_code = "200";
-                _error_text = "OK";
-            }
+        if (!_location._index.empty()) {
+            serveFile(_rooted_uri + "/" + _location._index);
+        } else if (_location._auto_index ) {
+            serverDirectoryListing(_rooted_uri, request.getURI());
+        } else if (!_server->getIndex().empty()) {
+            serveFile(_rooted_uri + "/" + _server->getIndex());
+        } else if (_server->getAutoIndex()) {
+            serverDirectoryListing(_rooted_uri, request.getURI());
+        } else {
+            setErrorResponse("404");
         }
 
     } else if (file_type == "ISFILE") {
-        //serve the file
+        serveFile(_rooted_uri);
     }
 }
 
