@@ -81,6 +81,12 @@ void Response::setServer(Server* server) {
     _server = server;
 }
 
+void Response::createHeaders(const std::string& content_type, const std::string& content_length) {
+    _headers["Content-Type"] = content_type;
+    _headers["Content-Length"] = content_length;
+    _headers["Connection"] = "close";
+}
+
 std::string Response::createErrorPage(const std::string& error_code) {
     std::string filename = "/var/errors/" + error_code + ".html";
     std::ifstream file(filename);
@@ -107,17 +113,14 @@ void Response::setErrorText(const std::string& error_code) {
 void Response::setErrorResponse(const std::string& error_code) {
     setErrorText(error_code);
     _body = loadErrorPage(error_code);
-    _headers["Content-Type"] = "text/html";
-    _headers["Content-Length"] = std::to_string(_body.size());
-    _headers["Connection"] = "close";
+    createHeaders("text/html", std::to_string(_body.size()));
 }
 
-
-std::string Response::createStatusLine() {
+std::string Response::formatStatusLine() {
     return "HTTP/1.1 " + _error_code + " " + _error_text + "\r\n";
 }
 
-std::string Response::createHeaders() {
+std::string Response::formatHeaders() {
     std::stringstream ss;
     for (const auto& [key, value] : _headers) {
         ss << key << ": " << value << "\r\n";
@@ -174,23 +177,15 @@ bool Response::checkPostTooBig(const std::unordered_map<std::string, std::string
     return true;
 }
 
-//check if access
-//what is stat?
-//opendir
-//readdir
-//closeddir
-//chdir
-//open
-//read
-//write
-
 std::string Response::checkRequestURI(const std::string& rooted_uri, int mode) {
     struct stat sb;
     if (stat(rooted_uri.c_str(), &sb) == -1) {
-        return "404";
+        _error_code = "404";
+        return "ERROR";
     }
     if (access(_rooted_uri.c_str(), mode) != 0) {
-        return "403";
+        _error_code = "403";
+        return "ERROR";
     }
     if (S_ISDIR(sb.st_mode)) {
         return "ISDIR";
@@ -203,22 +198,40 @@ bool Response::checkEnabledAutoIndex() {
     return _location._auto_index || _server->getAutoIndex();
 }
 
-std::string Response::createResponseStr(const std::string& dir_path, const std::string& uri_path) {
-    DIR* dir = opendir(dir_path.c_str());
-    if (!dir) {
+std::string Response::createDirectoryListing(const std::string& dir_path, const std::string& uri_path) {
+    DIR* dirp = opendir(dir_path.c_str());
+    if (!dirp) {
         setErrorResponse("404");
         return "";
     }
+    std::stringstream html;
+    html << "<html><body><h1>Index of " << uri_path << "</h1><ul>";
+
+    struct dirent *dp;
+    while (!(dp = readdir(dirp))) {
+        std::string name = dp->d_name;
+        if (name == "." || name == "..") {
+            continue;
+        }
+        html << "<li><a href=" << uri_path << "/" << name << "\">" << "</a></li>";
+    }
+    html << "</ul></body></html>";
+    closedir(dirp);
+    return html.str();
 }
 
-void Response::handleGET() {
+void Response::handleGET(Request& request) {
     std::string file_type = checkRequestURI(_rooted_uri, R_OK);
-    if (file_type == "404" || file_type == "403") {
-        setErrorResponse(file_type);
+    if (file_type == "ERROR") {
+        setErrorResponse(_error_code);
     } else if (file_type == "ISDIR") {
-        if (checkEnabledAutoIndex()) {
-            _body = createDirectoryListing();
-
+        if (checkEnabledAutoIndex() && check) {
+            _body = createDirectoryListing(_rooted_uri, request.getURI());
+            if (!_error_code.empty()) {
+                createHeaders("text/html", std::to_string(_body.size()));
+                _error_code = "200";
+                _error_text = "OK";
+            }
         }
 
     } else if (file_type == "ISFILE") {
@@ -235,7 +248,7 @@ void Response::handlePOST(Request& request) {
 
 }
 
-void Response::handleDELETE() {
+void Response::handleDELETE(Request& request) {
 
 }
 
@@ -252,13 +265,13 @@ void Response::handleRequest(Request& request) {
         setErrorResponse("405");
     }
     else if (method == "GET") {
-        handleGET();
+        handleGET(request);
     } else if (method == "POST") {
-        handlePost(request);
+        handlePOST(request);
     } else if (method == "DELETE") {
-        handleDELETE();
+        handleDELETE(request);
     } else {
-        setErrorResponse("400"); //BAD REQUEST
+        setErrorResponse("400");
     }
 }
 
@@ -267,8 +280,8 @@ std::string Response::createResponseStr(Request& request, Server* server) {
     handleRequest(request);
     
     std::stringstream response;
-    response << createStatusLine();
-    response << createHeaders();
+    response << formatStatusLine();
+    response << formatHeaders();
     response << "\r\n";
     response << _body;
     return response.str();

@@ -8,6 +8,7 @@
 #include <sstream>
 #include <fstream>
 #include <sys/types.h>
+#include <dirent.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 
@@ -23,14 +24,16 @@ private:
     std::unordered_map<std::string, std::string> _headers;
     Location _location;
 
-    std::string createStatusLine();
-    std::string createHeaders();
-    std::string createBody();
+    std::string formatStatusLine();
+    std::string formatHeaders();
+
+    void createHeaders(const std::string& content_type, const std::string& content_length);
+    std::string createDirectoryListing(const std::string& dir_path, const std::string& uri_path);
     std::string createErrorPage(const std::string& error_code);
     
-    void handleGET();
+    void handleGET(Request& request);
     void handlePOST(Request& request);
-    void handleDELETE();
+    void handleDELETE(Request& request);
 
     void setErrorText(const std::string& error_code);
     void setErrorResponse(const std::string& error_code);
