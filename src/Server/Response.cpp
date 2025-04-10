@@ -145,9 +145,12 @@ bool Response::checkMatchURI(const std::string& uri) {
     for (const auto& location : _server->getLocations()) {
         if (location._path == uri) {
             if (!location._root.empty()) {
-                _rooted_uri = location._root + uri;
+                std::string rest_uri = uri.substr()/////////////
+                _rooted_uri = location._root + uri; //I NEED TO CHECK THIS AGGGGGGGGGGGGGGGGGGGG SEND HELP
+                //REMEMBER THAT IF IMG/CAT.JPG THEN i HAVE TO HAVE JUST THE ROOT/CAT.JPG
             } else {
                 _rooted_uri = _server->getRoot() + uri;
+                 //REMEMBER THAT IF IMG/CAT.JPG THEN i HAVE TO HAVE JUST THE ROOT/CAT.JPG
             }
             _location = location;
             return true;
@@ -244,7 +247,9 @@ std::string Response::setContentType(const std::string& path) {
         return "text/plain";
     } else if (extension == "png") {
         return "image/png";
-    } else if ()
+    } else {
+        return "application/octet-stream";
+    }
 }
 
 void Response::serveFile(const std::string& file_path) {
@@ -261,8 +266,7 @@ void Response::serveFile(const std::string& file_path) {
     buffer << file.rdbuf();
     _body = buffer.str();
     if (!_error_code.empty()) {
-        std::content_type = checkContentType(file_path);
-        createHeaders("text/html", std::to_string(_body.size()));
+        createHeaders(setContentType(file_path), std::to_string(_body.size()));
         _error_code = "200";
         _error_text = "OK";
     }
