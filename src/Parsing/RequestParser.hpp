@@ -36,7 +36,7 @@ public:
 	bool											_request_ready;
 	bool											_header_ready;
 
-	RequestParser() = default;
+	RequestParser();
 	virtual ~RequestParser();
 
 	void	parseRequestLine(std::istringstream& stream);

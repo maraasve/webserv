@@ -12,6 +12,9 @@
 
 #include "RequestParser.hpp"
 
+RequestParser::RequestParser() : _error_code("200") {
+}
+
 RequestParser::~RequestParser() {
 }
 
@@ -96,6 +99,7 @@ void	RequestParser::parseRequestLine(std::istringstream& stream) {
 	}
 	splitUri();
 	if (!checkPath() || !checkQuery()){
+		// std::cout << "ERROR 4" << std::endl;
 		_error_code = "400";
 		return ;
 	}
@@ -108,18 +112,21 @@ void	RequestParser::parseHeaders(std::istringstream& stream) {
 	{
 		size_t pos = line.find(':');
 		if (pos == std::string::npos) {
+			// std::cout << "ERROR 1" << std::endl;
 			_error_code = "400";
 			return;
 		}
 		key = trim(line.substr(0, pos));
 		value = trim(line.substr(pos + 1));
 		if (key.empty() || value.empty()) {
+			// std::cout << "ERROR 2" << std::endl;
 			_error_code = "400";
 			return ;
 		}
 		_headers.emplace(key, value);
 	}
 	if (!checkHeaders()) {
+		// std::cout << "ERROR 3" << std::endl;
 		_error_code = "400";
 	}
 }

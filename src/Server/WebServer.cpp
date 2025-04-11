@@ -59,7 +59,7 @@ void WebServer::run() {
 			if (it_socket != _fdToSocket.end()) {
 				Socket* socket = it_socket->second;
 				int client_fd = socket->acceptConnection();
-				_clients.emplace(client_fd, Client(client_fd, epoll));
+				_clients.emplace(client_fd, Client(client_fd, epoll, socket->getSocketFd()));
 				epoll.addFd(client_fd, EPOLLIN);
 			}
 			auto it_client = _clients.find(event_fd);
@@ -72,8 +72,6 @@ void WebServer::run() {
 					}
 				}
 				if (event_fd & EPOLLOUT) {
-					std::cout << "This is outside in the epoll instace: " << std::endl;
-					std::cout << client.getRequest().getMethod() << std::endl;
 					if (client.getResponseStr().empty()) {
 						client.setServer(_socketFdToServer);
 						client.setResponseStr(client.getRequest());
