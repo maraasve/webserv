@@ -59,19 +59,10 @@ void	Client::setRequestStr(std::string request) {
 }
 
 void	Client::setResponseStr(Request& request) {
-	_responseString = _response.createResponseStr(request, _server_ptr);
+	_responseString = _response.createResponseStr(request, _serverPtr);
 }
 
 void	Client::setServer(std::unordered_map<int, std::vector<Server*>>	_socketFdToServer) {
-	// _server_ptr
-	// servers & _request.headers
-	// getsockname() -> to get port and IP client is trying to connect with
-	// find "host" in headermap for the servername
-	// 	if everything matches
-	// 		connect with server
-	// 	else
-	// 		error
-
 	auto it = _socketFdToServer.find(_fd);
 	if (it != _socketFdToServer.end()) {
 		std::vector<Server*>& serverVector = it->second;
