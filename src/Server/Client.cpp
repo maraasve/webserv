@@ -94,11 +94,18 @@ void	Client::setServer(std::unordered_map<int, std::vector<Server*>>	_socketFdTo
 			_serverPtr = serverVector.at(0);
 		}
 		else {
-			//find client.request.hostname in serverVector
-			//assign _serverPtr to specific server
+			for (Server *server : serverVector) {
+				for (std::string serverName : server->getServerNames()) {
+					if (_request.getHost() == serverName) {
+						_serverPtr = server;
+					}
+				} 
+			}
 		}
 	}
-	//set error_code?? server not found?
+	else {
+		_request.setErrorCode("400");
+	}
 }
 
 

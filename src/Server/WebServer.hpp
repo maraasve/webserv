@@ -14,7 +14,7 @@
 class WebServer {
 private:
 	std::vector<Server>								_servers;
-	std::vector<Socket*>							_sockets;
+	std::unordered_map<int, Socket*>				_fdToSocket;
 	std::unordered_map<int, Client>					_clients;
 	std::unordered_map<int, std::vector<Server*>>	_socketFdToServer;
 

@@ -50,10 +50,9 @@ public:
 	bool	checkQuery() const;
 	bool	checkMethod() const;
 	bool	checkHTTP() const;
-	bool	checkHeaders() const;
+	bool	checkHeaders();
 
 	std::string	trim(std::string str);
-
 
 	std::string&	getMethod();
 	std::string&	getURI();
@@ -62,7 +61,9 @@ public:
 	std::string&	getBody();
 	std::unordered_map<std::string, std::string>& getHeaders();
 	std::string&	getErrorCode();
+	std::string		getHost();
 
+	void			setErrorCode(std::string code);
 };
 
 #endif

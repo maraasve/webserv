@@ -35,6 +35,14 @@ std::string& RequestParser::getBody() {
 	return (_body);
 }
 
+std::string	RequestParser::getHost() {
+	auto it = _headers.find("Host");
+	if (it != _headers.end()) {
+		return (it->second);
+	}
+	return (nullptr);
+}
+
 std::unordered_map<std::string, std::string>& RequestParser::getHeaders() {
 	return (_headers);
 }
@@ -43,7 +51,11 @@ std::string& RequestParser::getErrorCode() {
 	return (_error_code);
 }
 
-void RequestParser::parseHeader(std::string& request) {
+void	RequestParser::setErrorCode(std::string code) {
+	_error_code = code;
+}
+
+void	RequestParser::parseHeader(std::string& request) {
 
 	std::string			header, body;
 	size_t				pos = request.find("\r\n\r\n");
@@ -107,10 +119,31 @@ void	RequestParser::parseHeaders(std::istringstream& stream) {
 		}
 		_headers.emplace(key, value);
 	}
-	//checkHeaders()
+	if (!checkHeaders()) {
+		_error_code = "400";
+	}
 }
 
-bool	RequestParser::checkHeaders() const {
+bool	RequestParser::checkHeaders() {
+	if (_headers.find("Host") == _headers.end()) {
+		return (false);
+	}
+	if (_method == "POST" && _headers.find("Content-Lenght") == _headers.end() && _headers.find("Transfer-Encoding") == _headers.end()) {
+		return (false);
+	}
+	auto it = _headers.find("Content-Lenght");
+	if (it != _headers.end()) {
+		try {
+			_content_length = static_cast<ssize_t>(std::stoi(it->second));
+		}
+		catch (const std::out_of_range& e) {
+			return (false);
+		}
+		catch (const std::invalid_argument& e) {
+			return (false);
+		}
+		return (false);
+	}
 	return (true);
 }
 

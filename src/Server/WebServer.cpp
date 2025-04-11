@@ -36,7 +36,7 @@ void WebServer::setupServerSockets(Epoll& epoll) {
 			serverSocket->listenSocket();
 			epoll.addFd(socketFd, EPOLLIN);
 			addressToFd[key] = socketFd;
-			_sockets.push_back(serverSocket);
+			_fdToSocket[socketFd] = serverSocket;
 			_socketFdToServer[socketFd].push_back(&server);
 		}
 		else {
@@ -49,56 +49,56 @@ void WebServer::setupServerSockets(Epoll& epoll) {
 void WebServer::run() {
 	Epoll epoll;
 	setupServerSockets(epoll);
-	// while(true) {
-	// 	int	ready_fds = epoll.getReadyFd();
-	// 	struct epoll_event *ready_events = epoll.getEvents(); 
-	// 	for (int i = 0; i < ready_fds; ++i) {
-	// 		struct epoll_event event = ready_events[i];
-	// 		int event_fd = event.data.fd;
-	// 		auto it_server = _socketFdToServer.find(event_fd); //finding which socket belongs to which server, what happens if I have to servers listening to the same port and IP, what should I do?
-	// 		if (it_server != _socketFdToServer.end()) {
-	// 			Server* server = it_server->second;
-	// 			int client_fd = server->getServerSocket().acceptConnection();
-	// 			_clients.emplace(client_fd, Client(client_fd, epoll));
-	// 			epoll.addFd(client_fd, EPOLLIN);
-	// 		}
-	// 		auto it_client = _clients.find(event_fd);
-	// 		if (it_client != _clients.end()) {
-	// 				Client &client = it_client->second;
-	// 		}
-	// 		if (event_fd & EPOLLIN) {
-	// 			if (!client.readRequest()) {
-	// 				client.closeConnection();
-	// 				_clients.erase(it_client);
-	// 			}
-	// 		}
-	// 		if (event_fd & EPOLLOUT) {
-	// 			//make the response so that then it can be sent
-	// 			if (client.getResponseStr().empty()) {
-	// 				client.setServer(_servers);
-	// 				client.setResponseStr(client.getRequest());
-	// 			}
-	// 			if (!client.sendResponse()) {
-	// 				client.closeConnection();
-	// 				_clients.erase(it_client);
-	// 			}
-	// 		}
-	// 	}
-	// }
-	// cleanServersResources(epoll);
+	while(true) {
+		int	ready_fds = epoll.getReadyFd();
+		struct epoll_event *ready_events = epoll.getEvents(); 
+		for (int i = 0; i < ready_fds; ++i) {
+			struct epoll_event event = ready_events[i];
+			int event_fd = event.data.fd;
+			auto it_socket = _fdToSocket.find(event_fd);
+			if (it_socket != _fdToSocket.end()) {
+				Socket* socket = it_socket->second;
+				int client_fd = socket->acceptConnection();
+				_clients.emplace(client_fd, Client(client_fd, epoll));
+				epoll.addFd(client_fd, EPOLLIN);
+			}
+			auto it_client = _clients.find(event_fd);
+			if (it_client != _clients.end()) {
+					Client &client = it_client->second;
+				if (event_fd & EPOLLIN) { // i put this inside of the if statement
+					if (!client.readRequest()) {
+						client.closeConnection();
+						_clients.erase(it_client);
+					}
+				}
+				if (event_fd & EPOLLOUT) {
+					//make the response so that then it can be sent
+					if (client.getResponseStr().empty()) {
+						client.setServer(_socketFdToServer);
+						client.setResponseStr(client.getRequest());
+					}
+					if (!client.sendResponse()) {
+						client.closeConnection();
+						_clients.erase(it_client);
+					}
+				}
+			}
+		}
+	}
+	cleanServersResources(epoll);
 }
 
 
 void WebServer::cleanServersResources(Epoll& epoll) {
-	for (auto& it : _sockets) {
-		epoll.deleteFd(it->getSocketFd());
+	for (auto& it : _fdToSocket) {
+		epoll.deleteFd(it.first);
 	}
 	exit(1);
 }
 
 WebServer::~WebServer() {
-	for (Socket *socket : _sockets) {
-		delete socket;
+	for (auto it : _fdToSocket) {
+		delete it.second;
 	}
-	_sockets.clear();
+	_fdToSocket.clear();
 }

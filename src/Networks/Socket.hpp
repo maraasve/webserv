@@ -24,10 +24,10 @@ public:
     Socket();
     ~Socket();
     
-    void bindSocket(int port, u_long host);
-    void listenSocket(int backlog = BACKLOG);
-    int acceptConnection();
-    int getSocketFd() const;
+    void    bindSocket(int port, u_long host);
+    void    listenSocket(int backlog = BACKLOG);
+    int     acceptConnection();
+    int     getSocketFd() const;
 };
 
 #endif
