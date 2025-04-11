@@ -65,14 +65,15 @@ void WebServer::run() {
 			auto it_client = _clients.find(event_fd);
 			if (it_client != _clients.end()) {
 					Client &client = it_client->second;
-				if (event_fd & EPOLLIN) { // i put this inside of the if statement
+				if (event_fd & EPOLLIN) {
 					if (!client.readRequest()) {
 						client.closeConnection();
 						_clients.erase(it_client);
 					}
 				}
 				if (event_fd & EPOLLOUT) {
-					//make the response so that then it can be sent
+					std::cout << "This is outside in the epoll instace: " << std::endl;
+					std::cout << client.getRequest().getMethod() << std::endl;
 					if (client.getResponseStr().empty()) {
 						client.setServer(_socketFdToServer);
 						client.setResponseStr(client.getRequest());

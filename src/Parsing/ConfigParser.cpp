@@ -1,6 +1,6 @@
 #include "ConfigParser.hpp"
 
-// std::string printEnum(int i) {
+// std::string ConfigParser::printEnum(int i) {
 // 	switch (i) {
 // 		case 0:
 // 			return ("KEYWORD");
@@ -16,7 +16,7 @@
 // 	return ("");
 // }
 
-// void printServerDetails(Server& server) {
+// void ConfigParser::printServerDetails(Server& server) {
 // 	std::cout << "Server Details:\n";
 // 	std::cout << "----------------------------------\n";
 // 	std::cout << "Host: " << server.getHost_string() << "\n";
@@ -80,6 +80,7 @@ ConfigParser::ConfigParser(const std::string &filename, std::vector<Server> &web
 	parseServer(Tokenizer.getTokens());
 	// for(auto& server : servers) {
 	// 	printServerDetails(server);
+	// }		
 }
 
 void ConfigParser::parseServer(std::vector<Token> tokens)
@@ -468,7 +469,7 @@ unsigned long long ConfigParser::isValidClientBodySize(std::string &client_body_
 
 bool ConfigParser::isValidIndex(std::string &index)
 {
-	const std::regex index_regex(R"(^[a-zA-Z][a-zA-Z0-9_\-]*\.(?:html?|php?|py)$)");
+	const std::regex index_regex(R"(^[a-zA-Z][a-zA-Z0-9_\-]*\.(?:html?|php?|py?|jpg)$)");
 	return std::regex_match(index, index_regex);
 }
 

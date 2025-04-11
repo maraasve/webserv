@@ -1,6 +1,7 @@
-obj/Networks/Socket.o: src/Networks/Socket.cpp /usr/include/stdc-predef.h \
- src/Networks/Socket.hpp /usr/include/x86_64-linux-gnu/sys/types.h \
- /usr/include/features.h /usr/include/features-time64.h \
+obj/Networks/Epoll.o: src/Networks/Epoll.cpp /usr/include/stdc-predef.h \
+ src/Networks/Epoll.hpp src/Networks/Socket.hpp \
+ /usr/include/x86_64-linux-gnu/sys/types.h /usr/include/features.h \
+ /usr/include/features-time64.h \
  /usr/include/x86_64-linux-gnu/bits/wordsize.h \
  /usr/include/x86_64-linux-gnu/bits/timesize.h \
  /usr/include/x86_64-linux-gnu/sys/cdefs.h \
@@ -168,4 +169,6 @@ obj/Networks/Socket.o: src/Networks/Socket.cpp /usr/include/stdc-predef.h \
  /usr/include/x86_64-linux-gnu/bits/getopt_core.h \
  /usr/include/x86_64-linux-gnu/bits/unistd_ext.h \
  /usr/include/linux/close_range.h /usr/include/c++/11/cstring \
- /usr/include/string.h /usr/include/strings.h
+ /usr/include/string.h /usr/include/strings.h \
+ /usr/include/x86_64-linux-gnu/sys/epoll.h \
+ /usr/include/x86_64-linux-gnu/bits/epoll.h

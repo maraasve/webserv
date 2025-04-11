@@ -1,17 +1,58 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="../css/main.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Welcome to My Server</title>
+  <style>
+    body {
+      background: #fdf6f0;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      color: #444;
+      text-align: center;
+      padding: 2em;
+    }
+    h1 {
+      font-size: 3em;
+      color: #ff99cc;
+    }
+    .container {
+      margin: 2em auto;
+      padding: 2em;
+      background: #fff0f6;
+      border: 2px dashed #ffccdd;
+      border-radius: 20px;
+      max-width: 500px;
+    }
+    a.button {
+      display: inline-block;
+      padding: 0.75em 1.5em;
+      margin: 1em 0;
+      background-color: #ffb3d9;
+      color: white;
+      text-decoration: none;
+      border-radius: 10px;
+      font-weight: bold;
+      transition: background-color 0.3s ease;
+    }
+    a.button:hover {
+      background-color: #ff80bf;
+    }
+    footer {
+      margin-top: 3em;
+      font-size: 0.9em;
+      color: #999;
+    }
+  </style>
 </head>
 <body>
-    <header>
-        Hello World
-    </header>
-    <section>
-        <img src="" alt="">
-    </section>
+  <div class="container">
+    <h1>🌸 Welcome to My Cute Server! 🌸</h1>
+    <p>Click the button below to upload a file!</p>
+    <a href="/upload" class="button">📁 Upload Something</a>
+  </div>
+  <footer>
+    <p>Powered with ❤️ and C++</p>
+  </footer>
 </body>
 </html>

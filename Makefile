@@ -22,7 +22,7 @@ $(NAME):$(OBJS)
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp | $(OBJ_DIR)
 	$(CPP) $(CPPFLAGS) -c $< -o $@
 
--include $(DEPS)
+# -include $(DEPS)
 
 clean:
 	$(RM) $(OBJ_DIR)

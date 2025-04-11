@@ -43,6 +43,9 @@ public:
 	u_long convertHost(const std::string &host);
 	void error_check(const std::string &msg) const;
 
+	std::string printEnum(int i);
+	void printServerDetails(Server& server);
+
 	const std::vector<Server> &getServers() const;
 };
 
