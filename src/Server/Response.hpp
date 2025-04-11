@@ -14,7 +14,7 @@ private:
 public:
     Response() = default;
     ~Response();
-	//std::string createResponseStr(Request& request);
+	std::string createResponseStr(Request& request);
     std::string	loadErrorPage(int status_code);
 };
 

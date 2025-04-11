@@ -73,9 +73,10 @@ void Client::closeConnection() {
 void	Client::setRequestStr(std::string request) {
 	_requestString = request;
 }
-// void	Client::setResponseStr(Request& request) {
-// 	_responseString = _response.createResponseStr(request);
-// }
+
+void	Client::setResponseStr(Request& request) {
+	_responseString = _response.createResponseStr(request);
+}
 
 void	Client::setServer(std::unordered_map<int, std::vector<Server*>>	_socketFdToServer) {
 	// _server_ptr
@@ -124,4 +125,8 @@ std::string&	Client::getResponseStr(){
 
 Server*	Client::getServer(){
 	return _serverPtr;
+}
+
+Request&		Client::getRequest() {
+	return _request;
 }

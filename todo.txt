@@ -7,11 +7,11 @@
 [X]	Make a separate requestParser class
 [X]	readRequest in Client class
 []	sendRequest in Server class instead of Client???
-[]	we should set default client_max_body if its not specified
+[X]	we should set default client_max_body if its not specified
 	and probably limit the max size in config aswell
 []	Check if GET has a body, if so then send 400 BAD REQUEST
 []	CheckHeaders
-[]	Assign a configuration server to the clients through the Server*
+[X]	Assign a configuration server to the clients through the Server*
 	One socket per unique IP/port and only use different configuration.
 	Maybe the server map should become this: std::map<int, std::vector<Server*>> socketToServers;
 	So we have a vector of servers for each socket.
