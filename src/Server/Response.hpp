@@ -18,8 +18,8 @@ private:
     const std::unordered_map<std::string, std::string> _errorsTexts;
 
     std::string _rooted_uri;
-    std::string _error_code;
-    std::string _error_text;
+    std::string _error_code = "200";
+    std::string _error_text = "OK";
     std::string _body;
     std::unordered_map<std::string, std::string> _headers;
     Location _location;

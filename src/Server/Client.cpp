@@ -12,7 +12,7 @@
 
 #include "./Client.hpp"
 
-Client::Client(int fd, Epoll& epoll): _fd(fd), _serverPtr(nullptr), _epoll(epoll) {
+Client::Client(int fd, Epoll& epoll, int socket_fd): _fd(fd), _serverPtr(nullptr), _epoll(epoll), _socketFd(socket_fd) {
 	std::cout << "Client socket(" << _fd << ") is created" << std::endl;
 }
 
@@ -63,7 +63,7 @@ void	Client::setResponseStr(Request& request) {
 }
 
 void	Client::setServer(std::unordered_map<int, std::vector<Server*>>	_socketFdToServer) {
-	auto it = _socketFdToServer.find(_fd);
+	auto it = _socketFdToServer.find(_socketFd);
 	if (it != _socketFdToServer.end()) {
 		std::vector<Server*>& serverVector = it->second;
 		if (serverVector.size() == 1) {

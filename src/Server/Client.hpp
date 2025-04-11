@@ -26,13 +26,14 @@ class Client {
 		int				_fd;
 		Server*			_serverPtr;
 		Epoll&			_epoll;
+		id_t			_socketFd;
 		std::string		_requestString; //better in request class?
 		std::string		_responseString; //better in response clasee??
 		Request			_request; //inhertis from _requestParser
 		Response		_response;
 
 	public:
-		Client(int fd, Epoll& epoll);
+		Client(int fd, Epoll& epoll, int socket_fd);
 
 		bool					readRequest();
 		bool					sendResponse();

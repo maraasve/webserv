@@ -14,7 +14,6 @@
 class Request : public RequestParser{
 public:
 	Request() = default;
-	Request(std::string& request);
 	~Request();
 };
 

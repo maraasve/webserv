@@ -38,7 +38,7 @@ private:
 	//Socket _server_socket;
 
 public:
-	Server() = default;
+	Server() = default; //maybe this will not work with the default values
 	~Server() = default;
 
 	void setPort(int port);

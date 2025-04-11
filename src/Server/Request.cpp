@@ -12,12 +12,5 @@
 
 #include "./Request.hpp"
 
-Request::Request(std::string& request) {
-	if (request.empty()) {
-		_error_code = "400";
-		return ;
-	}
-}
-
 Request::~Request(){
 }

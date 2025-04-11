@@ -144,14 +144,16 @@ bool Response::checkAllowedMethods(const std::string& method) {
 bool Response::checkMatchURI(const std::string& uri) {
     for (const auto& location : _server->getLocations()) {
         if (uri.compare(0, _location._path.size(), _location._path) == 0) {
-            std::string rest_uri = uri.substr(location._path.size());
-            if (!rest_uri.empty() && rest_uri[0] != '/') {
-                rest_uri = "/" + rest_uri;
+            std::string rest_uri = "/";
+            if (uri != "/") {
+                rest_uri += uri.substr(location._path.size());
+                if (!rest_uri.empty() && rest_uri[0] != '/') {
+                }
             }
             if (!location._root.empty()) {
-                _rooted_uri = location._root + rest_uri;
+                _rooted_uri = "." + location._root + rest_uri;
             } else {
-                _rooted_uri = _server->getRoot() + rest_uri;
+                _rooted_uri = "." + _server->getRoot() + rest_uri;
             }
             _location = location;
             return true;
@@ -224,10 +226,8 @@ std::string Response::createDirectoryListing(const std::string& dir_path, const 
 
 void Response::serverDirectoryListing(const std::string& dir_path, const std::string& uri_path) {
 _body = createDirectoryListing(dir_path, uri_path);
-        if (!_error_code.empty()) {
+        if (_error_code == "200") {
             createHeaders("text/html", std::to_string(_body.size()));
-            _error_code = "200";
-            _error_text = "OK";
         }
 }
 
@@ -263,10 +263,8 @@ void Response::serveFile(const std::string& file_path) {
     std::stringstream buffer;
     buffer << file.rdbuf();
     _body = buffer.str();
-    if (!_error_code.empty()) {
+    if (_error_code == "200") {
         createHeaders(setContentType(file_path), std::to_string(_body.size()));
-        _error_code = "200";
-        _error_text = "OK";
     }
     file.close();
 }
@@ -277,11 +275,11 @@ void Response::handleGET(Request& request) {
         setErrorResponse(_error_code);
     } else if (file_type == "ISDIR") {
         if (!_location._index.empty()) {
-            serveFile(_rooted_uri + "/" + _location._index);
+            serveFile(_rooted_uri + _location._index);
         } else if (_location._auto_index ) {
             serverDirectoryListing(_rooted_uri, request.getURI());
         } else if (!_server->getIndex().empty()) {
-            serveFile(_rooted_uri + "/" + _server->getIndex());
+            serveFile(_rooted_uri + _server->getIndex());
         } else if (_server->getAutoIndex()) {
             serverDirectoryListing(_rooted_uri, request.getURI());
         } else {
@@ -341,12 +339,14 @@ void Response::uploadFile(std::string& request_body) {
 void Response::handleRequest(Request& request) {
     std::string& method = request.getMethod();
     std::string& error_code = request.getErrorCode();
-
-    if (!error_code.empty()) {
+    std::cout << "This is the error_code" << std::endl;
+    std::cout << error_code << std::endl;
+    if (error_code != "200") {
         setErrorResponse(error_code);
     } else if (!checkMatchURI(request.getURI())) {
         setErrorResponse("404");
     } else if (!checkAllowedMethods(method)) {
+
         setErrorResponse("405");
     }
     else if (method == "GET") {
@@ -363,6 +363,7 @@ void Response::handleRequest(Request& request) {
 }
 
 std::string Response::createResponseStr(Request& request, Server* server) {
+    
     setServer(server);
     handleRequest(request);
     
@@ -371,5 +372,6 @@ std::string Response::createResponseStr(Request& request, Server* server) {
     response << formatHeaders();
     response << "\r\n";
     response << _body;
+    std::cout << response.str() << std::endl;
     return response.str();
 }
