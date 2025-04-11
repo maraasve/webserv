@@ -41,6 +41,9 @@ private:
     void setErrorText(const std::string& error_code);
     void setErrorResponse(const std::string& error_code);
     void setServer(Server* server);
+    std::string setContentType(const std::string& path);
+
+    void uploadFile(std::string& request_body);
 
     std::string checkRequestURI(const std::string& rooted_uri, int mode);
     bool checkEnabledAutoIndex();

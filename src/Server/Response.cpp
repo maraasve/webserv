@@ -92,7 +92,7 @@ std::string Response::createErrorPage(const std::string& error_code) {
     std::ifstream file(filename);
     if (!file) {
         if (error_code != "500") {
-            return loadErrorPage("500");
+            return createErrorPage("500");
         }
     }
     std::stringstream buffer;
@@ -112,7 +112,7 @@ void Response::setErrorText(const std::string& error_code) {
 
 void Response::setErrorResponse(const std::string& error_code) {
     setErrorText(error_code);
-    _body = loadErrorPage(error_code);
+    _body = createErrorPage(error_code);
     createHeaders("text/html", std::to_string(_body.size()));
 }
 
@@ -143,14 +143,15 @@ bool Response::checkAllowedMethods(const std::string& method) {
 
 bool Response::checkMatchURI(const std::string& uri) {
     for (const auto& location : _server->getLocations()) {
-        if (location._path == uri) {
+        if (uri.compare(0, _location._path.size(), _location._path) == 0) {
+            std::string rest_uri = uri.substr(location._path.size());
+            if (!rest_uri.empty() && rest_uri[0] != '/') {
+                rest_uri = "/" + rest_uri;
+            }
             if (!location._root.empty()) {
-                std::string rest_uri = uri.substr()/////////////
-                _rooted_uri = location._root + uri; //I NEED TO CHECK THIS AGGGGGGGGGGGGGGGGGGGG SEND HELP
-                //REMEMBER THAT IF IMG/CAT.JPG THEN i HAVE TO HAVE JUST THE ROOT/CAT.JPG
+                _rooted_uri = location._root + rest_uri;
             } else {
-                _rooted_uri = _server->getRoot() + uri;
-                 //REMEMBER THAT IF IMG/CAT.JPG THEN i HAVE TO HAVE JUST THE ROOT/CAT.JPG
+                _rooted_uri = _server->getRoot() + rest_uri;
             }
             _location = location;
             return true;
@@ -228,11 +229,6 @@ _body = createDirectoryListing(dir_path, uri_path);
         }
 }
 
-//html
-//png
-//jpg
-//
-
 std::string Response::setContentType(const std::string& path) {
     size_t pos = path.find_last_of(".");
     if (pos == std::string::npos) {
@@ -295,17 +291,39 @@ void Response::handleGET(Request& request) {
     }
 }
 
+void Response::uploadFile(std::string& request_body) {
+    //I do not know yet how would this work help
+    //If someone ask for /uploads, then rooted_uri would be
+    // --> /var/www/uploads even if we did not attached uploads as this would have been then (/var/www/uploads/uploads)
+    
+    std::ofstream outfile(_rooted_uri.c_str(), std::ios::out | std::ios::trunc);
+    if (!outfile.is_open()) {
+        setErrorResponse("500");
+        return ;
+    }
+    outfile << request_body;
+    if (outfile.fail()) {
+        setErrorResponse("500");
+        outfile.close();
+        return ;
+    }
+    outfile.close();
+    _error_code = "201";
+    _error_text = "Created";
+    _body = "<html><body>Upload Successful</body></html>";
+}
+
 void Response::handlePOST(Request& request) {
     if (checkPostTooBig(request.getHeaders())) {
         if (!_error_code.empty()) { //in the case we set it already inside the checkPostTooBig
             setErrorResponse("413");
         }
     }
-
+    uploadFile(request.getBody());
 }
 
 void Response::handleDELETE(Request& request) {
-
+    //how should you handle DELETE
 }
 
 
