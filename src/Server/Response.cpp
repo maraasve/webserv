@@ -295,7 +295,7 @@ void Response::uploadFile(std::string& request_body) {
     //I do not know yet how would this work help
     //If someone ask for /uploads, then rooted_uri would be
     // --> /var/www/uploads even if we did not attached uploads as this would have been then (/var/www/uploads/uploads)
-    
+
     std::ofstream outfile(_rooted_uri.c_str(), std::ios::out | std::ios::trunc);
     if (!outfile.is_open()) {
         setErrorResponse("500");
