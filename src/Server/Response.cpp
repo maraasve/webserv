@@ -151,6 +151,7 @@ bool Response::checkMatchURI(const std::string& uri) {
                 }
             }
             if (!location._root.empty()) {
+                // std::cout << location._root << std::endl;
                 _rooted_uri = "." + location._root + rest_uri;
             } else {
                 _rooted_uri = "." + _server->getRoot() + rest_uri;
@@ -185,8 +186,10 @@ bool Response::checkPostTooBig(const std::unordered_map<std::string, std::string
 
 std::string Response::checkRequestURI(const std::string& rooted_uri, int mode) {
     struct stat sb;
+    std::cout << rooted_uri << std::endl;
     if (stat(rooted_uri.c_str(), &sb) == -1) {
         _error_code = "404";
+        std::cout << "I am returning here, why?" << std::endl;
         return "ERROR";
     }
     if (access(_rooted_uri.c_str(), mode) != 0) {
@@ -271,6 +274,7 @@ void Response::serveFile(const std::string& file_path) {
 
 void Response::handleGET(Request& request) {
     std::string file_type = checkRequestURI(_rooted_uri, R_OK);
+    std::cout << "File type: " << file_type << std::endl; 
     if (file_type == "ERROR") {
         setErrorResponse(_error_code);
     } else if (file_type == "ISDIR") {
@@ -339,8 +343,8 @@ void Response::uploadFile(std::string& request_body) {
 void Response::handleRequest(Request& request) {
     std::string& method = request.getMethod();
     std::string& error_code = request.getErrorCode();
-    std::cout << "This is the error_code" << std::endl;
-    std::cout << error_code << std::endl;
+    // std::cout << "This is the error_code" << std::endl;
+    // std::cout << error_code << std::endl;
     if (error_code != "200") {
         setErrorResponse(error_code);
     } else if (!checkMatchURI(request.getURI())) {
