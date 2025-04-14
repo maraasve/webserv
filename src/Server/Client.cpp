@@ -6,7 +6,7 @@
 /*   By: maraasve <maraasve@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:06:22 by maraasve          #+#    #+#             */
-/*   Updated: 2025/04/07 18:19:57 by maraasve         ###   ########.fr       */
+/*   Updated: 2025/04/14 17:49:32 by maraasve         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,12 +20,13 @@ bool	Client::readRequest() {
 	char buffer[BUFSIZ];
 
 	ssize_t bytes = recv(_fd, buffer, BUFSIZ, MSG_DONTWAIT);
+	std::cout << _request.getMethod() << std::endl;
+	// std::cout << buffer << std::endl;
 	if (bytes < 0) {
 		return false;
 	}
 	_requestString.append(buffer, bytes);
 	if (!_request._header_ready) {
-
 		_request.parseHeader(_requestString);
 	}
 	else if (!_request._request_ready) {
@@ -41,11 +42,11 @@ bool Client::sendResponse() {
 	std::string& response = _responseString; //_responseString is initialized in a Response object that checks the request 
 	ssize_t bytes = send(_fd, response.c_str(), response.size(), MSG_DONTWAIT);
 	if (bytes < 0) {
-		std::cerr << "Error: sending data to client " + _fd << std::endl;		
-		return false;
+		std::cerr << "Error: sending data to client " << _fd << std::endl;		
+		return true;
 	}
 	response.erase(0, bytes);
-	return !response.empty();
+	return response.empty();
 }
 
 void Client::closeConnection() {

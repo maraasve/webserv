@@ -6,7 +6,7 @@
 /*   By: maraasve <maraasve@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:06:13 by maraasve          #+#    #+#             */
-/*   Updated: 2025/04/07 17:41:22 by maraasve         ###   ########.fr       */
+/*   Updated: 2025/04/14 18:01:39 by maraasve         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,7 +43,7 @@ std::string	RequestParser::getHost() {
 	if (it != _headers.end()) {
 		return (it->second);
 	}
-	return (nullptr);
+	return ("");
 }
 
 std::unordered_map<std::string, std::string>& RequestParser::getHeaders() {
@@ -59,31 +59,37 @@ void	RequestParser::setErrorCode(std::string code) {
 }
 
 void	RequestParser::parseHeader(std::string& request) {
-
-	std::string			header, body;
-	size_t				pos = request.find("\r\n\r\n");
-	if (pos != std::string::npos) {
-		header = request.substr(0, pos);
-		if (request.find("POST")) {
-			_bytes_read = request.size() - pos - 4;
-		}
+	size_t header_end = request.find("\r\n\r\n");
+	if (header_end == std::string::npos) {
+		return ;
 	}
-	std::istringstream	stream(header);
+	std::string	header = request.substr(0, header_end);
+	std::istringstream stream(header);
 	parseRequestLine(stream);
 	parseHeaders(stream);
 	_header_ready = true;
-	if (_method == "GET") { //does delete have a body?
+	if (_method == "GET") {
 		_request_ready = true;
+		return ;
+	}
+	if (_method == "POST") {
+		_bytes_read = request.size() - (header_end + 4);
 	}
 }
 
 void	RequestParser::parseBody(std::string& request, ssize_t bytes) {
 	_bytes_read += bytes;
-	//define content length
+	std::cout << "bytes: " << std::endl;
+	std::cout << "bytes read: " << _bytes_read << std::endl;
+	std::cout << "content length: " << _content_length << std::endl;
 	if (_bytes_read == _content_length) {
 		_request_ready = true;
 		size_t pos = request.find("\r\n\r\n");
-		_body = request.substr(pos, _bytes_read);
+		if (pos == std::string::npos) {
+			_body = "";
+		} else {
+			_body = request.substr(pos + 4, _bytes_read);
+		}
 	}
 }
 
@@ -99,7 +105,6 @@ void	RequestParser::parseRequestLine(std::istringstream& stream) {
 	}
 	splitUri();
 	if (!checkPath() || !checkQuery()){
-		// std::cout << "ERROR 4" << std::endl;
 		_error_code = "400";
 		return ;
 	}
@@ -112,21 +117,18 @@ void	RequestParser::parseHeaders(std::istringstream& stream) {
 	{
 		size_t pos = line.find(':');
 		if (pos == std::string::npos) {
-			// std::cout << "ERROR 1" << std::endl;
 			_error_code = "400";
 			return;
 		}
 		key = trim(line.substr(0, pos));
 		value = trim(line.substr(pos + 1));
 		if (key.empty() || value.empty()) {
-			// std::cout << "ERROR 2" << std::endl;
 			_error_code = "400";
 			return ;
 		}
 		_headers.emplace(key, value);
 	}
 	if (!checkHeaders()) {
-		// std::cout << "ERROR 3" << std::endl;
 		_error_code = "400";
 	}
 }
@@ -135,21 +137,21 @@ bool	RequestParser::checkHeaders() {
 	if (_headers.find("Host") == _headers.end()) {
 		return (false);
 	}
-	if (_method == "POST" && _headers.find("Content-Lenght") == _headers.end() && _headers.find("Transfer-Encoding") == _headers.end()) {
-		return (false);
-	}
-	auto it = _headers.find("Content-Lenght");
-	if (it != _headers.end()) {
-		try {
-			_content_length = static_cast<ssize_t>(std::stoi(it->second));
-		}
-		catch (const std::out_of_range& e) {
+	if (_method == "POST") {
+		if (_headers.find("Content-Length") == _headers.end()) {
 			return (false);
 		}
-		catch (const std::invalid_argument& e) {
-			return (false);
+		auto it = _headers.find("Content-Length");
+		if (it != _headers.end()) {
+			try {
+				std::cout << "converting content length: " << it->second << std::endl;
+				std::cout << std::stol(it->second) << std::endl;
+				_content_length = static_cast<ssize_t>(std::stol(it->second));
+			}
+			catch (...) {
+				return (false);
+			}
 		}
-		return (false);
 	}
 	return (true);
 }
@@ -199,4 +201,8 @@ std::string	RequestParser::trim(std::string str) {
 		return ("");
 	}
 	return (str.substr(first, (last - first + 1)));
+}
+
+bool			RequestParser::getRequestReady() {
+	return _request_ready;
 }

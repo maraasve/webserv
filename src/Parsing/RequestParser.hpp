@@ -6,7 +6,7 @@
 /*   By: maraasve <maraasve@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:05:58 by maraasve          #+#    #+#             */
-/*   Updated: 2025/04/07 17:41:32 by maraasve         ###   ########.fr       */
+/*   Updated: 2025/04/14 17:58:54 by maraasve         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,6 +27,7 @@ protected:
 	std::string 									_query;
 	std::string 									_http_version;
 	std::string 									_body;
+	std::string										_header;
 	std::unordered_map<std::string, std::string>	_headers;
 	std::string 									_error_code;
 	ssize_t											_content_length;
@@ -62,6 +63,7 @@ public:
 	std::unordered_map<std::string, std::string>& getHeaders();
 	std::string&	getErrorCode();
 	std::string		getHost();
+	bool			getRequestReady();
 
 	void			setErrorCode(std::string code);
 };

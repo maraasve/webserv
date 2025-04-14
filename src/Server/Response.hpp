@@ -44,7 +44,9 @@ private:
     void setServer(Server* server);
     std::string setContentType(const std::string& path);
 
-    void uploadFile(std::string& request_body);
+    void uploadFile(Request& request);
+	std::string findFileName(Request& request);
+
 
     std::string checkRequestURI(const std::string& rooted_uri, int mode);
     bool checkEnabledAutoIndex();

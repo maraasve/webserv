@@ -1,6 +1,6 @@
 NAME = webserv
 CPP = c++
-CPPFLAGS = -Wall -Werror -Wextra -std=c++11 -MD -g3
+CPPFLAGS = -Wall -Werror -Wextra -std=c++11 -MMD -g3
 RM = rm -rf
 SRC_DIR = src
 OBJ_DIR = obj
@@ -22,7 +22,7 @@ $(NAME):$(OBJS)
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp | $(OBJ_DIR)
 	$(CPP) $(CPPFLAGS) -c $< -o $@
 
-# -include $(DEPS)
+-include $(DEPS)
 
 clean:
 	$(RM) $(OBJ_DIR)
