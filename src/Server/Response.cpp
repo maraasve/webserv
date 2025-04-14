@@ -87,17 +87,61 @@ void Response::createHeaders(const std::string& content_type, const std::string&
     _headers["Connection"] = "close";
 }
 
-std::string Response::createErrorPage(const std::string& error_code) {
-    std::string filename = "/var/errors/" + error_code + ".html";
-    std::ifstream file(filename);
-    if (!file) {
-        if (error_code != "500") {
-            return createErrorPage("500");
+std::string base64_encode(const std::string& in) {
+    static const char* const base64_table = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    std::string out;
+    size_t len = in.length();
+    size_t pad = len % 3;
+    unsigned char char_array_3[3], char_array_4[4];
+
+    for (size_t i = 0; i < len;) {
+        char_array_3[0] = in[i++];
+        char_array_3[1] = (i < len) ? in[i++] : 0;
+        char_array_3[2] = (i < len) ? in[i++] : 0;
+
+        char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
+        char_array_4[1] = ((char_array_3[0] & 0x03) << 4) | ((char_array_3[1] & 0xf0) >> 4);
+        char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) | ((char_array_3[2] & 0xc0) >> 6);
+        char_array_4[3] = char_array_3[2] & 0x3f;
+
+        for (int j = 0; (j < 4); j++) {
+            out += base64_table[char_array_4[j]];
         }
     }
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    return buffer.str();
+
+    if (pad) {
+        for (size_t i = 0; i < pad; i++) {
+            out[out.size() - 1 - i] = '=';
+        }
+    }
+    return out;
+}
+
+void Response::ErrorImageHTML(std::string& html_content) {
+    std::string image_path = "./variables/img/error_img/" + _error_code + ".jpg";
+    std::ifstream image_file(image_path, std::ios::binary);
+    if (image_file) {
+        std::ostringstream image_buffer;
+        image_buffer << image_file.rdbuf();
+        std::string image_data = image_buffer.str();
+        std::string base64_image = base64_encode(image_data);
+        std::string img_tag = "<img src=\"data:image/jpeg;base64," + base64_image + "\">";
+        html_content += "<div>" + img_tag + "<div>";
+
+    }
+}
+
+void Response::createErrorPage() {
+    std::string filename = "./variables/errors/" + _error_code + ".html";
+    std::ifstream file(filename);
+    if (!file) {
+        _body = "<h1>" + _error_code + "-" + _error_text + "</h1>";
+    } else {
+        std::stringstream buffer;
+        buffer << file.rdbuf();
+        _body = buffer.str();
+    }
+    createHeaders("text/html", std::to_string(_body.size()));
 }
 
 void Response::setErrorText(const std::string& error_code) {
@@ -112,7 +156,7 @@ void Response::setErrorText(const std::string& error_code) {
 
 void Response::setErrorResponse(const std::string& error_code) {
     setErrorText(error_code);
-    _body = createErrorPage(error_code);
+    createErrorPage();
     createHeaders("text/html", std::to_string(_body.size()));
 }
 
@@ -141,27 +185,6 @@ bool Response::checkAllowedMethods(const std::string& method) {
     return false;
 }
 
-bool Response::checkMatchURI(const std::string& uri) {
-    for (const auto& location : _server->getLocations()) {
-        if (uri.compare(0, _location._path.size(), _location._path) == 0) {
-            std::string rest_uri = "/";
-            if (uri != "/") {
-                rest_uri += uri.substr(location._path.size());
-                if (!rest_uri.empty() && rest_uri[0] != '/') {
-                }
-            }
-            if (!location._root.empty()) {
-                // std::cout << location._root << std::endl;
-                _rooted_uri = "." + location._root + rest_uri;
-            } else {
-                _rooted_uri = "." + _server->getRoot() + rest_uri;
-            }
-            _location = location;
-            return true;
-        }
-    }
-    return false;
-}
 
 bool Response::checkPostTooBig(const std::unordered_map<std::string, std::string> request_headers) {
     auto it = request_headers.find("Content-Length");
@@ -184,12 +207,33 @@ bool Response::checkPostTooBig(const std::unordered_map<std::string, std::string
     return true;
 }
 
+bool Response::checkMatchURI(const std::string& uri) {
+    size_t bestMatchLength = 0;
+    for (const auto& location : _server->getLocations()) {
+        if (uri.compare(0, location._path.size(), location._path) == 0) {
+            if (location._path.size() < bestMatchLength) {
+                continue;
+            }
+            bestMatchLength = location._path.size();
+            _location = location;
+            std::string rest_uri = uri.substr(location._path.size());
+            if (rest_uri.empty() || rest_uri[0] != '/') {
+                rest_uri = '/' + rest_uri;
+            }
+            const std::string& base_root = location._root.empty() ? _server->getRoot() : location._root;
+            _rooted_uri = "." + base_root + rest_uri;
+        }
+    }
+    if (bestMatchLength == 0) {
+        return false;
+    }
+    return true;
+}
+
 std::string Response::checkRequestURI(const std::string& rooted_uri, int mode) {
     struct stat sb;
-    std::cout << rooted_uri << std::endl;
     if (stat(rooted_uri.c_str(), &sb) == -1) {
         _error_code = "404";
-        std::cout << "I am returning here, why?" << std::endl;
         return "ERROR";
     }
     if (access(_rooted_uri.c_str(), mode) != 0) {
@@ -274,7 +318,7 @@ void Response::serveFile(const std::string& file_path) {
 
 void Response::handleGET(Request& request) {
     std::string file_type = checkRequestURI(_rooted_uri, R_OK);
-    std::cout << "File type: " << file_type << std::endl; 
+    // std::cout << "File type: " << file_type << std::endl; 
     if (file_type == "ERROR") {
         setErrorResponse(_error_code);
     } else if (file_type == "ISDIR") {
@@ -330,21 +374,20 @@ void Response::uploadFile(std::string& request_body) {
 //     //how should you handle DELETE
 // }
 
-// void printRequestObject(Request& request) {
-//     std::cout << "---REQUES FROM CLIENT---" << std::endl;
-//     std::cout << request.getMethod() << std::endl;
-//     std::cout << request.getURI() << std::endl;
-//     std::cout << request.getHTTPVersion() << std::endl;
-//     std::cout << request.getHost() << std::endl;
-//     std::cout << request.getBody() << std::endl;
+void printRequestObject(Request& request) {
+    std::cout << "---REQUES FROM CLIENT---" << std::endl;
+    std::cout << request.getMethod() << std::endl;
+    std::cout << request.getURI() << std::endl;
+    std::cout << request.getHTTPVersion() << std::endl;
+    std::cout << request.getHost() << std::endl;
+    std::cout << request.getBody() << std::endl;
     
-// }
+}
 
 void Response::handleRequest(Request& request) {
     std::string& method = request.getMethod();
     std::string& error_code = request.getErrorCode();
-    // std::cout << "This is the error_code" << std::endl;
-    // std::cout << error_code << std::endl;
+    printRequestObject(request);
     if (error_code != "200") {
         setErrorResponse(error_code);
     } else if (!checkMatchURI(request.getURI())) {
@@ -355,9 +398,9 @@ void Response::handleRequest(Request& request) {
     }
     else if (method == "GET") {
         handleGET(request);
-    }
-    //  else if (method == "POST") {
-    //     handlePOST(request);
+    } else if (method == "POST") {
+        exit (1);
+        handlePOST(request); }
     // } else if (method == "DELETE") {
     //     handleDELETE(request);
     // } 
@@ -376,6 +419,6 @@ std::string Response::createResponseStr(Request& request, Server* server) {
     response << formatHeaders();
     response << "\r\n";
     response << _body;
-    std::cout << response.str() << std::endl;
+    // std::cout << response.str() << std::endl;
     return response.str();
 }

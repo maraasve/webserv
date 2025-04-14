@@ -2,57 +2,84 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Welcome to My Server</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Welcome to DoggoVerse</title>
   <style>
     body {
-      background: #fdf6f0;
-      font-family: 'Comic Sans MS', cursive, sans-serif;
-      color: #444;
+      margin: 0;
+      padding: 0;
+      background: #fdfdfd;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       text-align: center;
-      padding: 2em;
+      min-height: 100vh;
+      padding: 40px 20px;
     }
+
+    img {
+      max-width: 300px;
+      width: 90%;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+    }
+
     h1 {
-      font-size: 3em;
-      color: #ff99cc;
+      font-size: 2.5rem;
+      margin-bottom: 10px;
     }
-    .container {
-      margin: 2em auto;
-      padding: 2em;
-      background: #fff0f6;
-      border: 2px dashed #ffccdd;
-      border-radius: 20px;
-      max-width: 500px;
+
+    p {
+      font-size: 1.2rem;
+      color: #666;
+      margin-bottom: 40px;
     }
+
+    .button-group {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      width: 100%;
+      max-width: 300px;
+    }
+
     a.button {
-      display: inline-block;
-      padding: 0.75em 1.5em;
-      margin: 1em 0;
-      background-color: #ffb3d9;
-      color: white;
       text-decoration: none;
-      border-radius: 10px;
-      font-weight: bold;
+      color: white;
+      background-color: #222;
+      padding: 12px 20px;
+      border-radius: 30px;
       transition: background-color 0.3s ease;
     }
+
     a.button:hover {
-      background-color: #ff80bf;
+      background-color: #444;
     }
+
     footer {
-      margin-top: 3em;
-      font-size: 0.9em;
-      color: #999;
+      margin-top: auto;
+      font-size: 0.9rem;
+      color: #aaa;
+      margin-top: 50px;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>🌸 Welcome to My Cute Server! 🌸</h1>
-    <p>Click the button below to upload a file!</p>
-    <a href="/upload" class="button">📁 Upload Something</a>
+  <h1>Welcome to DoggoVerse 🐾</h1>
+  <p>Choose where you want to go:</p>
+
+  <div class="button-group">
+    <a href="/blog" class="button">Blog</a>
+    <a href="/gallery" class="button">Dog Gallery</a>
+    <a href="/about" class="button">About</a>
+    <a href="/contact" class="button">Contact</a>
   </div>
+
   <footer>
-    <p>Powered with ❤️ and C++</p>
+    Made with ❤️ and popcorn by stylish dogs
   </footer>
 </body>
 </html>
