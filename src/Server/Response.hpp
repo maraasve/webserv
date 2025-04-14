@@ -32,7 +32,8 @@ private:
 
     void createHeaders(const std::string& content_type, const std::string& content_length);
     std::string createDirectoryListing(const std::string& dir_path, const std::string& uri_path);
-    std::string createErrorPage(const std::string& error_code);
+    void createErrorPage();
+    void ErrorImageHTML(std::string& html_content);
     
     void handleGET(Request& request);
     void handlePOST(Request& request);
