@@ -255,9 +255,9 @@ void ConfigParser::parseServer(std::vector<Token> tokens)
 void ConfigParser::parseLocation(Location &location, std::vector<Token>::iterator &it, std::vector<Token>::iterator end)
 {
 	std::unordered_set<std::string> valid_directives = {
-			"error_page", "client_max_body", "auto_index", "limit_except", "root", "index", "allowed_methods"};
+			"error_page", "client_max_body", "auto_index", "root", "index", "allowed_methods"};
 	std::unordered_map<std::string, bool> check_duplicates = {
-			{"error_page", false}, {"client_max_body", false}, {"auto_index", false}, {"limit_except", false}, {"root", false}, {"index", false}, {"allowed_methods", false}};
+			{"error_page", false}, {"client_max_body", false}, {"auto_index", false}, {"root", false}, {"index", false}, {"allowed_methods", false}};
 	while (it != end)
 	{
 		if (it->token_type == BRACE_CLOSE)
