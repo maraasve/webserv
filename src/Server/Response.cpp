@@ -178,6 +178,7 @@ bool Response::checkAllowedMethods(const std::string& method) {
         return true;
     }
     for (const std::string& allowed_method : _location._allowed_methods) {
+        std::cout << "This is the allowed: " << allowed_method << std::endl;
         if (allowed_method == method) {
             return true;
         }
