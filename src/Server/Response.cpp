@@ -210,7 +210,10 @@ bool Response::checkPostTooBig(const std::unordered_map<std::string, std::string
 
 bool Response::checkMatchURI(const std::string& uri) {
     size_t bestMatchLength = 0;
+	_rooted_uri = "";
     for (const auto& location : _server->getLocations()) {
+		// -> /  -> /img
+		// -> /img -> /img
         if (uri.compare(0, location._path.size(), location._path) == 0) {
             if (location._path.size() < bestMatchLength) {
                 continue;
@@ -319,7 +322,6 @@ void Response::serveFile(const std::string& file_path) {
 
 void Response::handleGET(Request& request) {
     std::string file_type = checkRequestURI(_rooted_uri, R_OK);
-    // std::cout << "File type: " << file_type << std::endl; 
     if (file_type == "ERROR") {
         setErrorResponse(_error_code);
     } else if (file_type == "ISDIR") {
@@ -340,17 +342,30 @@ void Response::handleGET(Request& request) {
     }
 }
 
-void Response::uploadFile(std::string& request_body) {
-    //I do not know yet how would this work help
-    //If someone ask for /uploads, then rooted_uri would be
-    // --> /var/www/uploads even if we did not attached uploads as this would have been then (/var/www/uploads/uploads)
+std::string Response::findFileName(Request& request) {
+	auto it = request.getHeaders().find("Content-Disposition");
+	if (it == request.getHeaders().end()) {
+		std::cout << "HERE 111111111111" << std::endl;
+		return "unknown-file";
+	}
+	auto it_second = it->second.find("filename=");
+	if (it_second == std::string::npos) {
+		std::cout << "HERE 222222222222222" << std::endl;
+		return "unknown-file";
+	}
+	std::string file_name = it->second.substr(it_second + 1, it->second.find_last_not_of('\"'));
+	return file_name;
+}
 
-    std::ofstream outfile(_rooted_uri.c_str(), std::ios::out | std::ios::trunc);
+void Response::uploadFile(Request& request) {
+	std::string file_name = _rooted_uri + findFileName(request);
+	std::cout << file_name << std::endl;
+    std::ofstream outfile(file_name.c_str(), std::ios::out | std::ios::trunc);
     if (!outfile.is_open()) {
         setErrorResponse("500");
         return ;
     }
-    outfile << request_body;
+    outfile << request.getBody();
     if (outfile.fail()) {
         setErrorResponse("500");
         outfile.close();
@@ -362,14 +377,14 @@ void Response::uploadFile(std::string& request_body) {
     _body = "<html><body>Upload Successful</body></html>";
 }
 
-// void Response::handlePOST(Request& request) {
-//     if (checkPostTooBig(request.getHeaders())) {
-//         if (!_error_code.empty()) { //in the case we set it already inside the checkPostTooBig
-//             setErrorResponse("413");
-//         }
-//     }
-//     uploadFile(request.getBody());
-// }
+void Response::handlePOST(Request& request) {
+    if (checkPostTooBig(request.getHeaders())) {
+        if (!_error_code.empty()) { //in the case we set it already inside the checkPostTooBig
+            setErrorResponse("413");
+        }
+    }
+    uploadFile(request);
+}
 
 // void Response::handleDELETE(Request& request) {
 //     //how should you handle DELETE
@@ -377,11 +392,15 @@ void Response::uploadFile(std::string& request_body) {
 
 void printRequestObject(Request& request) {
     std::cout << "---REQUES FROM CLIENT---" << std::endl;
-    std::cout << request.getMethod() << std::endl;
-    std::cout << request.getURI() << std::endl;
-    std::cout << request.getHTTPVersion() << std::endl;
-    std::cout << request.getHost() << std::endl;
-    std::cout << request.getBody() << std::endl;
+    // std::cout << request.getMethod() << std::endl;
+    // std::cout << request.getURI() << std::endl;
+    // std::cout << request.getHTTPVersion() << std::endl;
+    // std::cout << request.getHost() << std::endl;
+	//print the headers;
+	// for (auto it = request.getHeaders().begin() ; it != request.getHeaders().end() ; ++it) {
+	// 	std::cout << it->first << ": " << it->second << std::endl;
+	// }
+    std::cout << request.getBody().substr(0, 700) << std::endl;
     
 }
 
@@ -390,6 +409,7 @@ void Response::handleRequest(Request& request) {
     std::string& error_code = request.getErrorCode();
     printRequestObject(request);
     if (error_code != "200") {
+		std::cout << "It comes from the request" << std::endl;
         setErrorResponse(error_code);
     } else if (!checkMatchURI(request.getURI())) {
         setErrorResponse("404");
@@ -400,8 +420,9 @@ void Response::handleRequest(Request& request) {
     else if (method == "GET") {
         handleGET(request);
     } else if (method == "POST") {
-        exit (1);
-        handlePOST(request); }
+		std::cout << " We are going to handle POST " << std::endl;
+        handlePOST(request); 
+	}
     // } else if (method == "DELETE") {
     //     handleDELETE(request);
     // } 

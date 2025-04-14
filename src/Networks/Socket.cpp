@@ -3,6 +3,8 @@
 Socket::Socket() 
 : socketfd(socket(AF_INET, SOCK_STREAM, 0)) {
     error_check(socketfd, "Socket Creation");
+	// int opt = 1;
+	// setsockopt(socketfd, SOL_SOCKET, SO_REUSEPORT, &opt, sizeof(opt));
     std::cout << "Socket " << socketfd << " is created" << std::endl;
 }
 

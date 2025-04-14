@@ -71,12 +71,13 @@ void WebServer::run() {
 						_clients.erase(it_client);
 					}
 				}
-				if (event_fd & EPOLLOUT) {
+				if (event_fd & EPOLLOUT && client.getRequest().getRequestReady()) {
 					if (client.getResponseStr().empty()) {
 						client.setServer(_socketFdToServer);
 						client.setResponseStr(client.getRequest());
 					}
-					if (!client.sendResponse()) {
+					if (client.sendResponse()) {
+						//only when response is empty
 						client.closeConnection();
 						_clients.erase(it_client);
 					}
