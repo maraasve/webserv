@@ -20,7 +20,7 @@ bool	Client::readRequest() {
 	char buffer[BUFSIZ];
 
 	ssize_t bytes = recv(_fd, buffer, BUFSIZ, MSG_DONTWAIT);
-	if (bytes > 0) {
+	if (bytes < 0) {
 		return false;
 	}
 	_requestString.append(buffer, bytes);

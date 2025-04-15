@@ -122,8 +122,8 @@ std::string Response::formatStatusLine() {
 
 std::string Response::formatHeaders() {
     std::stringstream ss;
-    for (const auto& [key, value] : _headers) {
-        ss << key << ": " << value << "\r\n";
+    for (auto it = _headers.begin(); it != _headers.end(); ++it) {
+        ss << it->first << ":" << it->second << "\r\n";
     }
     return ss.str();
 }
@@ -196,6 +196,8 @@ std::string Response::checkRequestURI(const std::string& rooted_uri, int mode) {
     } else if (S_ISREG(sb.st_mode)) {
         return "ISFILE";
     }
+    _error_code = "403";
+    return "ERROR";
 }
 
 std::string Response::createDirectoryListing(const std::string& dir_path, const std::string& uri_path) {
@@ -235,9 +237,9 @@ std::string Response::setContentType(const std::string& path) {
         return "application/octet-stream";
     }
     std::string extension = path.substr(pos + 1);
-    if (extension == "html" | extension == "htm") {
+    if ((extension == "html") | (extension == "htm")) {
         return "text/html";
-    } else if (extension == "jpg" | extension == "jpeg") {
+    } else if ((extension == "jpg") | (extension == "jpeg")) {
         return "image/jpeg";
     } else if (extension == "txt") {
         return "text/plain";
@@ -313,19 +315,28 @@ void Response::uploadFile(std::string& request_body) {
     _body = "<html><body>Upload Successful</body></html>";
 }
 
-void Response::handlePOST(Request& request) {
-    if (checkPostTooBig(request.getHeaders())) {
-        if (!_error_code.empty()) { //in the case we set it already inside the checkPostTooBig
-            setErrorResponse("413");
-        }
-    }
-    uploadFile(request.getBody());
-}
+// void Response::handlePOST(Request& request) {
+//     if (checkPostTooBig(request.getHeaders())) {
+//         if (!_error_code.empty()) { //in the case we set it already inside the checkPostTooBig
+//             setErrorResponse("413");
+//         }
+//     }
+//     uploadFile(request.getBody());
+// }
 
-void Response::handleDELETE(Request& request) {
-    //how should you handle DELETE
-}
+// void Response::handleDELETE(Request& request) {
+//     //how should you handle DELETE
+// }
 
+// void printRequestObject(Request& request) {
+//     std::cout << "---REQUES FROM CLIENT---" << std::endl;
+//     std::cout << request.getMethod() << std::endl;
+//     std::cout << request.getURI() << std::endl;
+//     std::cout << request.getHTTPVersion() << std::endl;
+//     std::cout << request.getHost() << std::endl;
+//     std::cout << request.getBody() << std::endl;
+    
+// }
 
 void Response::handleRequest(Request& request) {
     std::string& method = request.getMethod();
@@ -340,11 +351,13 @@ void Response::handleRequest(Request& request) {
     }
     else if (method == "GET") {
         handleGET(request);
-    } else if (method == "POST") {
-        handlePOST(request);
-    } else if (method == "DELETE") {
-        handleDELETE(request);
-    } else {
+    }
+    //  else if (method == "POST") {
+    //     handlePOST(request);
+    // } else if (method == "DELETE") {
+    //     handleDELETE(request);
+    // } 
+    else {
         setErrorResponse("400");
     }
 }
