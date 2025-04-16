@@ -62,35 +62,76 @@ void WebServer::run() {
 				_clients.emplace(client_fd, Client(client_fd, epoll, socket->getSocketFd()));
 				epoll.addFd(client_fd, EPOLLIN);
 			}
+
+
+			ssize_t bytes = client.readIncomingData();
 			auto it_client = _clients.find(event_fd);
 			if (it_client != _clients.end()) {
-					Client &client = it_client->second;
+				Client &client = it_client->second;
+			if (event_fd & EPOLLIN) {
+				if (_clients.count(event_fd)) {
+					handleClient();
+					//when we identify we need to handle cgi through client, client sets itself to the cgi instance
+					//if not cgi then -->epollout
+					//only if POST we set CGI to epollout
+				}
+				else {
+
+					readCGI();
+					//cgi reade --> epollout and then send response html to client
+				}
+			}
+			if (event_fd & EPOLLOUT) {
+				if (_clients.count(event_fd)) {
+					handleClient(); // --> send response
+				}
+				else
+					writeCGI(); // --> start CGI & add fds to epoll
+			}
+
+
+
+
+			auto it_client = _clients.find(event_fd);
+			if (it_client != _clients.end()) {
+				Client &client = it_client->second;
 				if (event_fd & EPOLLIN) {
-					if (!client.readRequest()) {
+					ssize_t bytes = client.readIncomingData();
+					if (bytes == -1) {
+						client.closeConnection();
+						_clients.erase(it_client);
+					}
+					client.parseRequest(bytes);
+				}
+				if (event_fd & EPOLLOUT && client.getRequest().getRequestReady()) {
+					if (client.getResponseStr().empty()) {
+						client.setServer(_socketFdToServer);
+						client.setResponseStr(client.getRequest());
+						if (cgi?) {
+							continue;
+						}
+					}
+					//have boolean
+					if (client.sendResponse()) {
 						client.closeConnection();
 						_clients.erase(it_client);
 					}
 				}
-				if (event_fd & EPOLLOUT && client.getRequest().getRequestReady()) {
-					if (client.getRequest().isCGI()) {
-						//we handle the CGI
-					}
-					else { 
-						if (client.getResponseStr().empty()) {
-							client.setServer(_socketFdToServer);
-							client.setResponseStr(client.getRequest());
-						}
-						if (client.sendResponse()) {
-							client.closeConnection();
-							_clients.erase(it_client);
-						}
-					}
-
 				}
 			}
 		}
 	}
 	cleanServersResources(epoll);
+}
+
+ssize_t	WebServer::readIncomingData(std::string& appendToStr, int fd) {
+	char buffer[BUFSIZ];
+
+	ssize_t bytes = recv(fd, buffer, BUFSIZ, MSG_DONTWAIT);
+	if (bytes > 0) {
+		appendToStr.append(buffer, bytes);
+	}
+	return bytes;
 }
 
 

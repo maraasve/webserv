@@ -6,7 +6,7 @@
 /*   By: maraasve <maraasve@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:05:58 by maraasve          #+#    #+#             */
-/*   Updated: 2025/04/14 17:58:54 by maraasve         ###   ########.fr       */
+/*   Updated: 2025/04/16 18:25:23 by maraasve         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,11 +18,23 @@
 # include <unordered_map>
 # include <regex>
 
+enum clientState {
+	PARSE_HEADER = 0,
+	HEADER_READY,
+	PARSE_BODY,
+	READ_CGI,
+	WRITE_CGI,
+	ERROR,
+	SEND,
+	READY
+};
+
 class RequestParser
 {
 protected:
 	std::string 									_method;
 	std::string 									_uri;
+	std::string										_rooted_uri;
 	std::string										_path;
 	std::string 									_query;
 	std::string 									_http_version;
@@ -51,7 +63,8 @@ public:
 	bool	checkQuery() const;
 	bool	checkMethod() const;
 	bool	checkHTTP() const;
-	bool	checkHeaders();
+	int		checkHeader();
+	bool 	checkMatchURI();
 
 	std::string	trim(std::string str);
 

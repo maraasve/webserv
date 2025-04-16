@@ -173,13 +173,13 @@ std::string Response::formatHeaders() {
 }
 
 
-bool Response::checkAllowedMethods(const std::string& method) {
+bool Response::checkAllowedMethods() {
     if (_location._allowed_methods.empty()) {
         return true;
     }
     for (const std::string& allowed_method : _location._allowed_methods) {
         std::cout << "This is the allowed: " << allowed_method << std::endl;
-        if (allowed_method == method) {
+        if (allowed_method == _method) {
             return true;
         }
     }
@@ -187,9 +187,9 @@ bool Response::checkAllowedMethods(const std::string& method) {
 }
 
 
-bool Response::checkPostTooBig(const std::unordered_map<std::string, std::string> request_headers) {
-    auto it = request_headers.find("Content-Length");
-    if (it != request_headers.end()) {
+bool Response::checkPostTooBig() {
+    auto it = _headers.find("Content-Length");
+    if (it != _headers.end()) {
         try {
             unsigned long long content_length = std::stoull(it->second);
             if (_location._client_max_body > 0 && content_length <= _location._client_max_body) {
@@ -204,32 +204,6 @@ bool Response::checkPostTooBig(const std::unordered_map<std::string, std::string
     } else  {
         setErrorResponse("411"); //Content-Length is not provided (Length Required)
         return true;
-    }
-    return true;
-}
-
-bool Response::checkMatchURI(const std::string& uri) {
-    size_t bestMatchLength = 0;
-	_rooted_uri = "";
-    for (const auto& location : _server->getLocations()) {
-		// -> /  -> /img
-		// -> /img -> /img
-        if (uri.compare(0, location._path.size(), location._path) == 0) {
-            if (location._path.size() < bestMatchLength) {
-                continue;
-            }
-            bestMatchLength = location._path.size();
-            _location = location;
-            std::string rest_uri = uri.substr(location._path.size());
-            if (rest_uri.empty() || rest_uri[0] != '/') {
-                rest_uri = '/' + rest_uri;
-            }
-            const std::string& base_root = location._root.empty() ? _server->getRoot() : location._root;
-            _rooted_uri = "." + base_root + rest_uri;
-        }
-    }
-    if (bestMatchLength == 0) {
-        return false;
     }
     return true;
 }
@@ -306,6 +280,14 @@ void Response::serveFile(const std::string& file_path) {
         setErrorResponse("403");
         return ;
     }
+	//Here we would need to handle the CGI for GET
+	if (isCGIScript(file_path)) {
+		//CGI cgi(...)
+		//epoll.add(cgi.getReadPipe(), ..)
+		// add the cgi_pair of fd's to an unordered map
+		//return;
+
+	}
     std::ifstream file(file_path);
     if (!file) {
         setErrorResponse("500");
@@ -345,7 +327,6 @@ void Response::handleGET(Request& request) {
         } else {
             setErrorResponse("404");
         }
-
     } else if (file_type == "ISFILE") {
         if (isCGIScript(_rooted_uri)) {
             
@@ -413,7 +394,7 @@ void printRequestObject(Request& request) {
 	// for (auto it = request.getHeaders().begin() ; it != request.getHeaders().end() ; ++it) {
 	// 	std::cout << it->first << ": " << it->second << std::endl;
 	// }
-    std::cout << request.getBody().substr(0, 700) << std::endl;
+    //std::cout << request.getBody().substr(0, 700) << std::endl;
     
 }
 
@@ -424,17 +405,14 @@ void Response::handleRequest(Request& request) {
     if (error_code != "200") {
 		std::cout << "It comes from the request" << std::endl;
         setErrorResponse(error_code);
-    } else if (!checkMatchURI(request.getURI())) {
-        setErrorResponse("404");
-    } else if (!checkAllowedMethods(method)) {
-
-        setErrorResponse("405");
     }
     else if (method == "GET") {
         handleGET(request);
     } else if (method == "POST") {
 		std::cout << " We are going to handle POST " << std::endl;
         handlePOST(request); 
+	} else if (method == "DELETE") {
+		//handleDELETE()
 	}
     else {
         setErrorResponse("400");
@@ -445,6 +423,8 @@ std::string Response::createResponseStr(Request& request, Server* server) {
     
     setServer(server);
     handleRequest(request);
+	//check if we have cgi if so response.str would remain empty and 
+	// return "";
     
     std::stringstream response;
     response << formatStatusLine();
