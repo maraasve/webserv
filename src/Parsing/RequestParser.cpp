@@ -6,7 +6,7 @@
 /*   By: maraasve <maraasve@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:06:13 by maraasve          #+#    #+#             */
-/*   Updated: 2025/04/14 18:01:39 by maraasve         ###   ########.fr       */
+/*   Updated: 2025/04/16 18:24:50 by maraasve         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -58,10 +58,10 @@ void	RequestParser::setErrorCode(std::string code) {
 	_error_code = code;
 }
 
-void	RequestParser::parseHeader(std::string& request) {
+int	RequestParser::parseHeader(std::string& request) {
 	size_t header_end = request.find("\r\n\r\n");
 	if (header_end == std::string::npos) {
-		return ;
+		return PARSE_HEADER; // what if it never finds "\r\n\r\n" 
 	}
 	std::string	header = request.substr(0, header_end);
 	std::istringstream stream(header);
@@ -69,12 +69,13 @@ void	RequestParser::parseHeader(std::string& request) {
 	parseHeaders(stream);
 	_header_ready = true;
 	if (_method == "GET") {
-		_request_ready = true;
-		return ;
+		return PARSE_HEADER;
 	}
 	if (_method == "POST") {
 		_bytes_read = request.size() - (header_end + 4);
+		return PARSE_BODY;
 	}
+	return PARSE_HEADER; //what do we return here
 }
 
 void	RequestParser::parseBody(std::string& request, ssize_t bytes) {
@@ -89,6 +90,9 @@ void	RequestParser::parseBody(std::string& request, ssize_t bytes) {
 			_body = "";
 		} else {
 			_body = request.substr(pos + 4, _bytes_read);
+		}
+		if (!checkPostTooBig()) {
+			_error_code = "413";
 		}
 	}
 }
@@ -128,18 +132,15 @@ void	RequestParser::parseHeaders(std::istringstream& stream) {
 		}
 		_headers.emplace(key, value);
 	}
-	if (!checkHeaders()) {
-		_error_code = "400";
-	}
 }
 
-bool	RequestParser::checkHeaders() {
+int	RequestParser::checkHeader(){
 	if (_headers.find("Host") == _headers.end()) {
-		return (false);
+		return (ERROR);
 	}
 	if (_method == "POST") {
 		if (_headers.find("Content-Length") == _headers.end()) {
-			return (false);
+			return (ERROR);
 		}
 		auto it = _headers.find("Content-Length");
 		if (it != _headers.end()) {
@@ -149,11 +150,18 @@ bool	RequestParser::checkHeaders() {
 				_content_length = static_cast<ssize_t>(std::stol(it->second));
 			}
 			catch (...) {
-				return (false);
+				return (ERROR);
 			}
 		}
 	}
-	return (true);
+	if (!checkMatchURI()) {
+		_error_code = "404";
+		return (ERROR);
+    } if (!checkAllowedMethods()) {
+		_error_code = "405";
+		return (ERROR);
+    }
+	return (HEADER_READY); //what to return here
 }
 
 bool	RequestParser::checkMethod() const {
@@ -182,6 +190,30 @@ bool	RequestParser::checkHTTP() const {
 	return (_http_version == "HTTP/1.1");
 }
 
+bool RequestParser::checkMatchURI() {
+    size_t bestMatchLength = 0;
+    for (const auto& location : _server->getLocations()) {
+        if (_uri.compare(0, location._path.size(), location._path) == 0) {
+            if (location._path.size() < bestMatchLength) {
+                continue;
+            }
+			//this is problematic because we need location
+            bestMatchLength = location._path.size();
+            _location = location;
+            std::string rest_uri = _uri.substr(location._path.size());
+            if (rest_uri.empty() || rest_uri[0] != '/') {
+                rest_uri = '/' + rest_uri;
+            }
+            const std::string& base_root = location._root.empty() ? _server->getRoot() : location._root;
+            _rooted_uri = "." + base_root + rest_uri;
+        }
+    }
+    if (bestMatchLength == 0) {
+        return false;
+    }
+    return true;
+}
+
 void	RequestParser::splitUri() {
 	size_t pos = _uri.find("?");
 	if (pos != std::string::npos){
@@ -191,7 +223,8 @@ void	RequestParser::splitUri() {
 	else {
 		_path = _uri;
 	}
-}	
+}
+
 
 std::string	RequestParser::trim(std::string str) {
 	size_t first, last;

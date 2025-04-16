@@ -6,7 +6,7 @@
 /*   By: maraasve <maraasve@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:06:59 by maraasve          #+#    #+#             */
-/*   Updated: 2025/04/14 14:40:18 by maraasve         ###   ########.fr       */
+/*   Updated: 2025/04/16 17:54:08 by maraasve         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,8 +21,19 @@
 # include <string>
 # include <unordered_map>
 
+enum clientState {
+	PARSE_HEADER = 0,
+	PARSE_BODY,
+	READ_CGI,
+	WRITE_CGI,
+	ERROR,
+	SEND,
+	READY
+};
+
 class Client {
 	private:
+		int				_state;
 		int				_fd;
 		Server*			_serverPtr;
 		Epoll&			_epoll;
@@ -35,7 +46,7 @@ class Client {
 	public:
 		Client(int fd, Epoll& epoll, int socket_fd);
 
-		bool					readRequest();
+		void					parseRequest();
 		bool					sendResponse();
 
 		void					setRequestStr(std::string request);

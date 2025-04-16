@@ -20,8 +20,9 @@ private:
 
 	void	setupServerSockets(Epoll& epoll);
 	void	cleanServersResources(Epoll& epoll);
-
+	
 public:
+	ssize_t	readIncomingData(std::string& appendToStr, int fd);
 	WebServer(const std::string& config_file);
 	~WebServer();
 
