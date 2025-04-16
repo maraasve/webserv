@@ -15,6 +15,8 @@ class Request : public RequestParser{
 public:
 	Request() = default;
 	~Request();
+
+	bool isCGI() const;
 };
 
 #endif

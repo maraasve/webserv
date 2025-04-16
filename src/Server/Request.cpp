@@ -14,3 +14,7 @@
 
 Request::~Request(){
 }
+
+bool Request::isCGI() const {
+    std::string uri = _uri;
+}

@@ -320,6 +320,15 @@ void Response::serveFile(const std::string& file_path) {
     file.close();
 }
 
+bool isCGIScript(std::string& file_path) {
+    size_t pos = file_path.find_last_of('.');
+    if (pos == std::string::npos) {
+        return false;
+    }
+    std::string ext = file_path.substr(pos + 1);
+    return (ext == "py" || ext == "php");
+}
+
 void Response::handleGET(Request& request) {
     std::string file_type = checkRequestURI(_rooted_uri, R_OK);
     if (file_type == "ERROR") {
@@ -338,7 +347,11 @@ void Response::handleGET(Request& request) {
         }
 
     } else if (file_type == "ISFILE") {
-        serveFile(_rooted_uri);
+        if (isCGIScript(_rooted_uri)) {
+            
+        } else {
+            serveFile(_rooted_uri);
+        }
     }
 }
 
@@ -407,7 +420,7 @@ void printRequestObject(Request& request) {
 void Response::handleRequest(Request& request) {
     std::string& method = request.getMethod();
     std::string& error_code = request.getErrorCode();
-    printRequestObject(request);
+    // printRequestObject(request);
     if (error_code != "200") {
 		std::cout << "It comes from the request" << std::endl;
         setErrorResponse(error_code);
@@ -423,9 +436,6 @@ void Response::handleRequest(Request& request) {
 		std::cout << " We are going to handle POST " << std::endl;
         handlePOST(request); 
 	}
-    // } else if (method == "DELETE") {
-    //     handleDELETE(request);
-    // } 
     else {
         setErrorResponse("400");
     }
