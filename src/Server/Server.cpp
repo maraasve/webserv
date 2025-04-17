@@ -1,5 +1,12 @@
 #include "./Server.hpp"
 
+void	Server::handleRead() {
+	int client_fd = _serverSocket->acceptConnection();
+	if (client_fd > 0 && onClientAccepted) {
+		onClientAccepted(client_fd);
+	}
+}
+
 void Server::setErrorPage(std::string error_code, std::string path) {
 	_error_page.first = error_code;
 	_error_page.second = path;
@@ -35,6 +42,11 @@ void Server::setRoot(std::string root) {
 
 void Server::setServerNames(std::vector<std::string> server_names) {
 	_server_names.insert(_server_names.end(), server_names.begin(), server_names.end());
+}
+
+void	Server::setSocket(const std::shared_ptr<Socket>& socket)
+{
+	_serverSocket = socket;
 }
 
 bool Server::getAutoIndex() const {
@@ -79,4 +91,8 @@ std::vector<std::string> Server::getServerNames() const {
 
 std::vector<Location>& Server::getLocations() {
 	return _locations;
+}
+
+int	Server::getSocketFd() {
+	return _serverSocket->getSocketFd();
 }

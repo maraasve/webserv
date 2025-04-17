@@ -124,16 +124,6 @@ void WebServer::run() {
 	cleanServersResources(epoll);
 }
 
-ssize_t	WebServer::readIncomingData(std::string& appendToStr, int fd) {
-	char buffer[BUFSIZ];
-
-	ssize_t bytes = recv(fd, buffer, BUFSIZ, MSG_DONTWAIT);
-	if (bytes > 0) {
-		appendToStr.append(buffer, bytes);
-	}
-	return bytes;
-}
-
 
 void WebServer::cleanServersResources(Epoll& epoll) {
 	for (auto& it : _fdToSocket) {
