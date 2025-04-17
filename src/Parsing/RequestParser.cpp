@@ -12,182 +12,179 @@
 
 #include "RequestParser.hpp"
 
-RequestParser::RequestParser() : _error_code("200") {
+RequestParser::RequestParser() {
 }
 
 RequestParser::~RequestParser() {
 }
 
-std::string&	RequestParser::getMethod() {
-	return (_method);
-}
-
-std::string& RequestParser::getURI() {
-	return (_uri);
-}
-
-std::string& RequestParser::getQueryString() {
-	return (_query);
-}
-
-std::string& RequestParser::getHTTPVersion() {
-	return (_http_version);
-}
-
-std::string& RequestParser::getBody() {
-	return (_body);
-}
-
-std::string	RequestParser::getHost() {
-	auto it = _headers.find("Host");
-	if (it != _headers.end()) {
-		return (it->second);
-	}
-	return ("");
-}
-
-std::unordered_map<std::string, std::string>& RequestParser::getHeaders() {
-	return (_headers);
-}
-
-std::string& RequestParser::getErrorCode() {
-	return (_error_code);
-}
-
-void	RequestParser::setErrorCode(std::string code) {
-	_error_code = code;
-}
-
-int	RequestParser::parseHeader(std::string& request) {
+bool	RequestParser::parseHeader(std::string& request) {
 	size_t header_end = request.find("\r\n\r\n");
 	if (header_end == std::string::npos) {
-		return PARSE_HEADER; // what if it never finds "\r\n\r\n" 
+		return false; // what if it never finds "\r\n\r\n" 
 	}
 	std::string	header = request.substr(0, header_end);
 	std::istringstream stream(header);
 	parseRequestLine(stream);
 	parseHeaders(stream);
-	_header_ready = true;
-	if (_method == "GET") {
-		return PARSE_HEADER;
-	}
-	if (_method == "POST") {
+	checkBasicHeaders();
+	if (_request.getMethod() == "POST") {
 		_bytes_read = request.size() - (header_end + 4);
-		return PARSE_BODY;
+		return true;
 	}
-	return PARSE_HEADER; //what do we return here
+	return true;
 }
 
-void	RequestParser::parseBody(std::string& request, ssize_t bytes) {
+bool	RequestParser::parseBody(std::string& request, ssize_t bytes) {
 	_bytes_read += bytes;
-	std::cout << "bytes: " << std::endl;
-	std::cout << "bytes read: " << _bytes_read << std::endl;
-	std::cout << "content length: " << _content_length << std::endl;
-	if (_bytes_read == _content_length) {
-		_request_ready = true;
+	if (_bytes_read == _request.getContentLength()) {
 		size_t pos = request.find("\r\n\r\n");
 		if (pos == std::string::npos) {
-			_body = "";
+			_request.setBody("");
 		} else {
-			_body = request.substr(pos + 4, _bytes_read);
+			_request.setBody(request.substr(pos + 4, _bytes_read));
 		}
-		if (!checkPostTooBig()) {
-			_error_code = "413";
+		if (!checkBodyLength()) {
+			_request.setErrorCode("431");
 		}
+		return true;
 	}
+	return false;
 }
 
 void	RequestParser::parseRequestLine(std::istringstream& stream) {
-	stream >> _method >> _uri >> _http_version;
+	std::string	method, uri, httpVersion;
+	stream >> method >> uri >> httpVersion;
+	_request.setRequestLine(method, uri, httpVersion);
 	if (!checkMethod()){
-		_error_code = "501"; 
+		_request.setErrorCode("501"); 
 		return ;
 	}
 	if (!checkHTTP()){
-		_error_code = "505";
+		_request.setErrorCode("505"); 
 		return ;
 	}
-	splitUri();
+	splitUri(uri);
 	if (!checkPath() || !checkQuery()){
-		_error_code = "400";
+		_request.setErrorCode("400"); 
 		return ;
 	}
 }
 
 void	RequestParser::parseHeaders(std::istringstream& stream) {
-	std::string	line, key, value;
+	std::unordered_map <std::string, std::string>	headers;
+	std::string										line, key, value;
+
 	stream >> std::ws;
 	while (std::getline(stream, line))
 	{
 		size_t pos = line.find(':');
 		if (pos == std::string::npos) {
-			_error_code = "400";
-			return;
+			_request.setErrorCode("400"); 
+			return ;
 		}
 		key = trim(line.substr(0, pos));
 		value = trim(line.substr(pos + 1));
 		if (key.empty() || value.empty()) {
-			_error_code = "400";
+			_request.setErrorCode("400"); 
 			return ;
 		}
-		_headers.emplace(key, value);
+		_request.addHeader(key, value);
 	}
 }
 
-int	RequestParser::checkHeader(){
-	if (_headers.find("Host") == _headers.end()) {
-		return (ERROR);
+void	RequestParser::splitUri(std::string uri) {
+	size_t	pos = uri.find("?");
+	if (pos != std::string::npos){
+		_request.setQueryString(uri.substr(pos + 1));
+		_request.setPath(uri.substr(0, pos));
 	}
-	if (_method == "POST") {
-		if (_headers.find("Content-Length") == _headers.end()) {
-			return (ERROR);
+	else {
+		_request.setPath(uri);
+	}
+}
+
+std::string	RequestParser::trim(std::string str) {
+	size_t first, last;
+	first = str.find_first_not_of(" \n\t\r\f\v");
+	last = str.find_last_not_of(" \n\t\r\f\v");
+	if (first == std::string::npos || last == std::string::npos) {
+		return ("");
+	}
+	return (str.substr(first, (last - first + 1)));
+}
+
+
+void	RequestParser::checkBasicHeaders() {
+	const std::unordered_map<std::string, std::string>& headers = _request.getHeaders();
+	const std::string& method = _request.getMethod();
+	int contentLength;
+
+	if (headers.find("Host") == headers.end()) {
+		return _request.setErrorCode("400"); ;
+	}
+	if (method == "POST") {
+		if (headers.find("Content-Length") == headers.end()) {
+			_request.setErrorCode("411"); 
+			return ;
 		}
-		auto it = _headers.find("Content-Length");
-		if (it != _headers.end()) {
+		auto it = headers.find("Content-Length");
+		if (it != headers.end()) {
 			try {
 				std::cout << "converting content length: " << it->second << std::endl;
 				std::cout << std::stol(it->second) << std::endl;
-				_content_length = static_cast<ssize_t>(std::stol(it->second));
+				contentLength = static_cast<ssize_t>(std::stol(it->second));
 			}
 			catch (...) {
-				return (ERROR);
+				_request.setErrorCode("500"); 
+				return ;
 			}
+			_request.setContentLength(contentLength);
 		}
 	}
+	return ;
+}
+
+bool	RequestParser::checkServerDependentHeaders(Server &server) {
 	if (!checkMatchURI()) {
-		_error_code = "404";
-		return (ERROR);
-    } if (!checkAllowedMethods()) {
-		_error_code = "405";
-		return (ERROR);
+		_request.setErrorCode("404"); 
+		return false;
     }
-	return (HEADER_READY); //what to return here
+	if (!checkAllowedMethods()) {
+		_request.setErrorCode("405"); 
+		return false;
+    }
 }
 
 bool	RequestParser::checkMethod() const {
-	return (_method == "GET" || _method == "POST" || _method == "DELETE");
+	std::string	method = _request.getMethod();
+	return (method == "GET" || method == "POST" || method == "DELETE");
 }
 
 bool	RequestParser::checkPath() const {
-	std::regex path_regex(R"(^\/([a-zA-Z0-9\-_~.]+(?:\/[a-zA-Z0-9\-_~.]+)*$))");
+	std::string path, uri;
+	std::regex	path_regex(R"(^\/([a-zA-Z0-9\-_~.]+(?:\/[a-zA-Z0-9\-_~.]+)*$))");
 	std::smatch match;
-	if (std::regex_match(_path, match, path_regex) && _uri.find('\n') == std::string::npos &&_uri.find('\r') == std::string::npos) {
-		return (true);
+	path = _request.getPath();
+	uri = _request.getURI();
+	if (std::regex_match(path, match, path_regex) && uri.find('\n') == std::string::npos && uri.find('\r') == std::string::npos) {
+		return true;
 	}
-	return (true);
+	return true;
 }
 
 bool	RequestParser::checkQuery() const {
-	std::regex query_regex(R"(^([a-zA-Z0-9\-_.~]+)=([a-zA-Z0-9\-_.~%]+))");
+	std::string	query = _request.getQueryString();
+	std::regex	query_regex(R"(^([a-zA-Z0-9\-_.~]+)=([a-zA-Z0-9\-_.~%]+))");
 	std::smatch match;
-	if (_query.empty() || std::regex_match(_query, match, query_regex)) {
-		return (true);
+	if (query.empty() || std::regex_match(query, match, query_regex)) {
+		return true;
 	}
-	return (false);
+	return false;
 }
 
 bool	RequestParser::checkHTTP() const {
-	return (_http_version == "HTTP/1.1");
+	return (_request.getHTTPVersion() == "HTTP/1.1");
 }
 
 bool RequestParser::checkMatchURI() {
@@ -214,28 +211,17 @@ bool RequestParser::checkMatchURI() {
     return true;
 }
 
-void	RequestParser::splitUri() {
-	size_t pos = _uri.find("?");
-	if (pos != std::string::npos){
-		_query = _uri.substr(pos + 1);
-		_path = _uri.substr(0, pos);
-	}
-	else {
-		_path = _uri;
-	}
+bool RequestParser::checkBodyLength() {
+	ssize_t	contentLength = _request.getContentLength();
+	if (_location._client_max_body > 0 && contentLength <= _location._client_max_body) {
+		return false;
+	} 
+	else if (contentLength <= _server->getClientMaxBody()) {
+		return false;
+    }
+    return true;
 }
 
-
-std::string	RequestParser::trim(std::string str) {
-	size_t first, last;
-	first = str.find_first_not_of(" \n\t\r\f\v");
-	last = str.find_last_not_of(" \n\t\r\f\v");
-	if (first == std::string::npos || last == std::string::npos) {
-		return ("");
-	}
-	return (str.substr(first, (last - first + 1)));
-}
-
-bool			RequestParser::getRequestReady() {
-	return _request_ready;
+std::string	RequestParser::getErrorCode() {
+	return (_request.getErrorCode());
 }

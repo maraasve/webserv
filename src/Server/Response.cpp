@@ -173,7 +173,7 @@ std::string Response::formatHeaders() {
 }
 
 
-bool Response::checkAllowedMethods() {
+bool    Response::checkAllowedMethods() {
     if (_location._allowed_methods.empty()) {
         return true;
     }
@@ -184,28 +184,6 @@ bool Response::checkAllowedMethods() {
         }
     }
     return false;
-}
-
-
-bool Response::checkPostTooBig() {
-    auto it = _headers.find("Content-Length");
-    if (it != _headers.end()) {
-        try {
-            unsigned long long content_length = std::stoull(it->second);
-            if (_location._client_max_body > 0 && content_length <= _location._client_max_body) {
-                return false;
-            } else if (content_length <= _server->getClientMaxBody()) {
-                return false;
-            }
-        } catch (const std::exception& e) {
-            setErrorResponse("500"); //Internal Error with Server due 
-            return true;
-        }
-    } else  {
-        setErrorResponse("411"); //Content-Length is not provided (Length Required)
-        return true;
-    }
-    return true;
 }
 
 std::string Response::checkRequestURI(const std::string& rooted_uri, int mode) {
@@ -249,7 +227,7 @@ std::string Response::createDirectoryListing(const std::string& dir_path, const 
     return html.str();
 }
 
-void Response::serverDirectoryListing(const std::string& dir_path, const std::string& uri_path) {
+void    Response::serverDirectoryListing(const std::string& dir_path, const std::string& uri_path) {
 _body = createDirectoryListing(dir_path, uri_path);
         if (_error_code == "200") {
             createHeaders("text/html", std::to_string(_body.size()));
@@ -275,7 +253,7 @@ std::string Response::setContentType(const std::string& path) {
     }
 }
 
-void Response::serveFile(const std::string& file_path) {
+void    Response::serveFile(const std::string& file_path) {
     if (access(file_path.c_str(), R_OK) != 0) {
         setErrorResponse("403");
         return ;
@@ -395,12 +373,11 @@ void printRequestObject(Request& request) {
 	// 	std::cout << it->first << ": " << it->second << std::endl;
 	// }
     //std::cout << request.getBody().substr(0, 700) << std::endl;
-    
 }
 
 void Response::handleRequest(Request& request) {
-    std::string& method = request.getMethod();
-    std::string& error_code = request.getErrorCode();
+    std::string method = request.getMethod();
+    std::string error_code = request.getErrorCode();
     // printRequestObject(request);
     if (error_code != "200") {
 		std::cout << "It comes from the request" << std::endl;

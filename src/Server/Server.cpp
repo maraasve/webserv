@@ -1,6 +1,6 @@
 #include "./Server.hpp"
 
-void	Server::handleRead() {
+void	Server::handleIncoming() {
 	int client_fd = _serverSocket->acceptConnection();
 	if (client_fd > 0 && onClientAccepted) {
 		onClientAccepted(client_fd);

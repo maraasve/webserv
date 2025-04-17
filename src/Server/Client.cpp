@@ -12,29 +12,76 @@
 
 #include "./Client.hpp"
 
-Client::Client(int fd, Epoll& epoll, int socket_fd): _state(PARSE_HEADER), _fd(fd), _serverPtr(nullptr), _epoll(epoll), _socketFd(socket_fd) {
+Client::Client(int fd, Epoll& epoll, int socket_fd): _fd(fd), _serverPtr(nullptr), _epoll(epoll), _socketFd(socket_fd) {
 	std::cout << "Client socket(" << _fd << ") is created" << std::endl;
 }
 
+void	Client::handleIncoming() {
+	ssize_t	bytes;
 
-void	Client::parseRequest(std::unordered_map<int, std::vector<Server*>>	socketFdToServer) {
-	ssize_t bytes = readIncomingData(_requestString, _fd); //think about where to put this
-	if (bytes == -1) {
-		closeConnection();
-		//should we send client error?
-	}
-	if (_state == PARSE_HEADER) {
-		_state = _request.parseHeader(_requestString);
-		setServer(socketFdToServer);
-		_state = _request.checkHeader();
-	}
-	else if (_state == PARSE_BODY) {
-		_state = _request.parseBody(_requestString, bytes);
-	}
-	if (_state == READY) {
-		_epoll.modifyFd(_fd, EPOLLOUT);
+	switch (_state) {
+		case READING_HEADERS:
+			handleHeaderState();
+			break;
+		case READING_BODY:
+			handleBodyState();
+			break;
+		case CGI:
+			handleCGIState();
+		case RESPONDING:
+			handleResponseState();
+		case ERROR:
+			handleErrorState();
+		case COMPLETE:
+			handleCompleteState();
 	}
 }
+
+void	Client::handleHeaderState() {
+	ssize_t	bytes = readIncomingData(_requestString, _fd);
+	if (bytes != -1) {
+		if (_requestParser.parseHeader(_requestString)) {
+			assignServer();
+			_state = READING_BODY;
+		}
+		if (_requestParser.getErrorCode() != "200" ) {
+			_state = ERROR ;
+		}
+	}
+	_state = ERROR;
+}
+
+void	Client::handleBodyState() {
+	ssize_t	bytes = readIncomingData(_requestString, _fd);
+	if (bytes != -1) {
+		if (_requestParser.parseBody(_requestString, bytes)) {
+			_state = CGI;
+		}
+		if (_requestParser.getErrorCode() != "200") {
+			_state = ERROR;
+		}
+	}
+	_state = ERROR;
+}
+
+// void	Client::parseRequest(std::unordered_map<int, std::vector<Server*>>	socketFdToServer) {
+// 	ssize_t bytes = readIncomingData(_requestString, _fd); //think about where to put this
+// 	if (bytes == -1) {
+// 		closeConnection();
+// 		//should we send client error?
+// 	}
+// 	if (_state == PARSE_HEADER) {
+// 		_state = _request.parseHeader(_requestString);
+// 		setServer(socketFdToServer);
+// 		_state = _request.checkHeader();
+// 	}
+// 	else if (_state == PARSE_BODY) {
+// 		_state = _request.parseBody(_requestString, bytes);
+// 	}
+// 	if (_state == READY) {
+// 		_epoll.modifyFd(_fd, EPOLLOUT);
+// 	}
+// }
 
 bool Client::sendResponse() {
 	std::string& response = _responseString; //_responseString is initialized in a Response object that checks the request 
@@ -61,27 +108,31 @@ void	Client::setResponseStr(Request& request) {
 	_responseString = _response.createResponseStr(request, _serverPtr);
 }
 
-void	Client::setServer(std::unordered_map<int, std::vector<Server*>> socketFdToServer) {
-	auto it = socketFdToServer.find(_socketFd);
-	if (it != socketFdToServer.end()) {
-		std::vector<Server*>& serverVector = it->second;
-		if (serverVector.size() == 1) {
-			_serverPtr = serverVector.at(0);
-		}
-		else {
-			for (Server *server : serverVector) {
-				for (std::string serverName : server->getServerNames()) {
-					if (_request.getHost() == serverName) {
-						_serverPtr = server;
-					}
-				} 
-			}
-		}
-	}
-	else {
-		_request.setErrorCode("400");
-	}
+void	Client::setServer(Server& server) {
+	_serverPtr = &server;
 }
+
+// void	Client::setServer(std::unordered_map<int, std::vector<Server*>> socketFdToServer) {
+// 	auto it = socketFdToServer.find(_socketFd);
+// 	if (it != socketFdToServer.end()) {
+// 		std::vector<Server*>& serverVector = it->second;
+// 		if (serverVector.size() == 1) {
+// 			_serverPtr = serverVector.at(0);
+// 		}
+// 		else {
+// 			for (Server *server : serverVector) {
+// 				for (std::string serverName : server->getServerNames()) {
+// 					if (_request.getHost() == serverName) {
+// 						_serverPtr = server;
+// 					}
+// 				} 
+// 			}
+// 		}
+// 	}
+// 	else {
+// 		_request.setErrorCode("400");
+// 	}
+// }
 
 
 
@@ -102,5 +153,5 @@ Server*	Client::getServer(){
 }
 
 Request&		Client::getRequest() {
-	return _request;
+	return _request; //need to find another way
 }
