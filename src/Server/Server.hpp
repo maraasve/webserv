@@ -4,6 +4,7 @@
 #include "./Request.hpp"
 #include "../Networks/Socket.hpp"
 #include "../Networks/Epoll.hpp"
+#include "EventHandler.hpp"
 
 #include <iostream>
 #include <string>
@@ -41,7 +42,7 @@ private:
 	~Server() = default;
 	
 	std::function<void(int)>			onClientAccepted;
-	void								handleRead() override;
+	void								handleIncoming() override;
 
 	void setPort(int port);
 	void setAutoIndex(bool auto_index);
@@ -57,15 +58,15 @@ private:
 
 	// Socket& getServerSocket(); << using smart pointer now
 	std::pair<std::string, std::string>	getErrorPage() const;
-	std::string 						getRoot() const;
-	std::string 						getIndex() const;
-	bool 								getAutoIndex() const;
-	int 								getPort() const;
-	u_long 								getHost_u_long() const;
-	std::string 						getHost_string() const;
-	unsigned long long					getClientMaxBody() const;
 	std::vector<std::string>			getServerNames() const;
 	std::vector<Location>&				getLocations();
+	unsigned long long					getClientMaxBody() const;
+	std::string 						getRoot() const;
+	std::string 						getIndex() const;
+	std::string 						getHost_string() const;
+	u_long 								getHost_u_long() const;
+	bool 								getAutoIndex() const;
+	int 								getPort() const;
 	int									getSocketFd();
 
 };

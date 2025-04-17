@@ -16,14 +16,15 @@ class WebServer {
 	private:
 		std::vector<Server>										_servers;
 		std::unordered_map<int, std::shared_ptr<EventHandler>>	_eventHandlers;
-		Epoll									_epoll;
-		// std::unordered_map<int, Socket*>				_fdToSocket;
+		Epoll													_epoll;
+		// std::unordered_map<int, Socket*>					_fdToSocket;
 		// std::unordered_map<int, Client>					_clients;
 		// std::unordered_map<int, std::vector<Server*>>	_socketFdToServer;
 
 		void	setupServerSockets(Epoll& epoll);
 		void	cleanServersResources(Epoll& epoll);
 		void	handleNewClient(int client_fd, Server &server);
+		void	assignServer(Client &client);
 		
 	public:
 		WebServer(const std::string& config_file);

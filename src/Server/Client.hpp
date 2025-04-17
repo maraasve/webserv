@@ -14,6 +14,7 @@
 # define CLIENT_HPP
 
 # include "./Request.hpp"
+# include "../Parsing/RequestParser.hpp"
 # include "./Server.hpp"
 # include "./Response.hpp"
 # include "../Networks/Epoll.hpp"
@@ -21,46 +22,57 @@
 
 # include <string>
 # include <unordered_map>
+# include <optional>
 
 enum clientState {
-	PARSE_HEADER = 0,
-	PARSE_BODY,
-	READ_CGI,
-	WRITE_CGI,
-	ERROR,
-	SEND,
-	READY
+	READING_HEADERS = 0,
+	READING_BODY,
+	READY,
+	CGI,
+	RESPONDING,
+	COMPLETE,
+	ERROR
 };
 
 class Client : public EventHandler {
 	private:
-		int				_state;
-		int				_fd;
-		Server*			_serverPtr;
-		Epoll&			_epoll;
-		id_t			_socketFd;
-		std::string		_requestString;
-		std::string		_responseString; 
-		Request			_request; //inhertis from _requestParser
-		Response		_response;
+		int						_state = READING_HEADERS;
+		int						_fd;
+		Server*					_serverPtr;
+		Epoll&					_epoll;
+		id_t					_socketFd;
+		std::string				_requestString;
+		std::string				_responseString; 
+		std::optional<Request>	_request;
+		RequestParser			_requestParser;
+		Response				_response;
 
 	public:
 		Client(int fd, Epoll& epoll, int socket_fd);
 
-		void					parseRequest();
-		bool					sendResponse();
+		void			parseRequest();
+		void			handleIncoming() override;
+		void			handleHeaderState();
+		void			handleBodyState();
+		void			handleCGIState();
+		void			handleResponseState();
+		void			handleErrorState();
+		void			handleCompleteState();
+		bool			sendResponse();
 
-		void					setRequestStr(std::string request);
-		void					setResponseStr(Request& request);
-		void					setServer(std::unordered_map<int, std::vector<Server*>>	_socketFdToServer);
-
+		void			setRequestStr(std::string request);
+		void			setResponseStr(Request& request);
+		void			setServer(Server& server);
+		
 		int				getFd();
 		std::string&	getRequestStr();
 		std::string&	getResponseStr();
 		Server*			getServer();
 		Request&		getRequest();
+		
+		void			closeConnection();
 
-		void closeConnection();
+		std::function<void()>	assignServer;
 };
 
 #endif
