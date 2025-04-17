@@ -41,11 +41,17 @@ void	Client::handleHeaderState() {
 	ssize_t	bytes = readIncomingData(_requestString, _fd);
 	if (bytes != -1) {
 		if (_requestParser.parseHeader(_requestString)) {
+			if (_requestParser.getErrorCode() != "200" ) {
+				_state = ERROR ;
+				return ;
+			}
 			assignServer();
-			_state = READING_BODY;
-		}
-		if (_requestParser.getErrorCode() != "200" ) {
-			_state = ERROR ;
+			if (_requestParser.getState() == PARSING_BODY) {
+				_state = READING_BODY;
+			}
+			else if (_requestParser.getState() == COMPLETE) {
+				_state = CGI; //????
+			}
 		}
 	}
 	_state = ERROR;

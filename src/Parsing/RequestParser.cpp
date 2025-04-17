@@ -30,8 +30,10 @@ bool	RequestParser::parseHeader(std::string& request) {
 	checkBasicHeaders();
 	if (_request.getMethod() == "POST") {
 		_bytes_read = request.size() - (header_end + 4);
+		_state = PARSING_BODY;
 		return true;
 	}
+	_state = COMPLETE;
 	return true;
 }
 
@@ -47,6 +49,7 @@ bool	RequestParser::parseBody(std::string& request, ssize_t bytes) {
 		if (!checkBodyLength()) {
 			_request.setErrorCode("431");
 		}
+		_state = COMPLETE;
 		return true;
 	}
 	return false;
@@ -121,7 +124,8 @@ void	RequestParser::checkBasicHeaders() {
 	int contentLength;
 
 	if (headers.find("Host") == headers.end()) {
-		return _request.setErrorCode("400"); ;
+		_request.setErrorCode("400"); 
+		return ;
 	}
 	if (method == "POST") {
 		if (headers.find("Content-Length") == headers.end()) {
@@ -224,4 +228,8 @@ bool RequestParser::checkBodyLength() {
 
 std::string	RequestParser::getErrorCode() {
 	return (_request.getErrorCode());
+}
+
+int	RequestParser::getState() {
+	return (_state);
 }
