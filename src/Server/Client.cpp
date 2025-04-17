@@ -47,7 +47,7 @@ bool Client::sendResponse() {
 	return response.empty();
 }
 
-void Client::closeConnection() {
+void Client::closeConnection() { //should we do this in Client?
 	std::cout << "Closing connection for client socket(" << _fd << ")" << std::endl;
 	_epoll.deleteFd(_fd);
 	close(_fd);

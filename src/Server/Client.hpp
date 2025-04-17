@@ -17,6 +17,7 @@
 # include "./Server.hpp"
 # include "./Response.hpp"
 # include "../Networks/Epoll.hpp"
+# include "EventHandler.hpp"
 
 # include <string>
 # include <unordered_map>
@@ -31,15 +32,15 @@ enum clientState {
 	READY
 };
 
-class Client {
+class Client : public EventHandler {
 	private:
 		int				_state;
 		int				_fd;
 		Server*			_serverPtr;
 		Epoll&			_epoll;
 		id_t			_socketFd;
-		std::string		_requestString; //better in request class?
-		std::string		_responseString; //better in response clasee??
+		std::string		_requestString;
+		std::string		_responseString; 
 		Request			_request; //inhertis from _requestParser
 		Response		_response;
 

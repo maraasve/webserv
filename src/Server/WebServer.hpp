@@ -5,6 +5,7 @@
 #include "./Client.hpp"
 #include "../Networks/Epoll.hpp"
 #include "../Parsing/ConfigParser.hpp"
+#include "EventHandler.hpp"
 
 #include <vector>
 #include <iostream>
@@ -12,21 +13,23 @@
 #include <functional>
 
 class WebServer {
-private:
-	std::vector<Server>								_servers;
-	std::unordered_map<int, Socket*>				_fdToSocket;
-	std::unordered_map<int, Client>					_clients;
-	std::unordered_map<int, std::vector<Server*>>	_socketFdToServer;
+	private:
+		std::vector<Server>										_servers;
+		std::unordered_map<int, std::shared_ptr<EventHandler>>	_eventHandlers;
+		Epoll									_epoll;
+		// std::unordered_map<int, Socket*>				_fdToSocket;
+		// std::unordered_map<int, Client>					_clients;
+		// std::unordered_map<int, std::vector<Server*>>	_socketFdToServer;
 
-	void	setupServerSockets(Epoll& epoll);
-	void	cleanServersResources(Epoll& epoll);
-	
-public:
-	ssize_t	readIncomingData(std::string& appendToStr, int fd);
-	WebServer(const std::string& config_file);
-	~WebServer();
+		void	setupServerSockets(Epoll& epoll);
+		void	cleanServersResources(Epoll& epoll);
+		void	handleNewClient(int client_fd, Server &server);
+		
+	public:
+		WebServer(const std::string& config_file);
+		~WebServer();
 
-	void	run();
+		void	run();
 };
 
 struct hashPair {

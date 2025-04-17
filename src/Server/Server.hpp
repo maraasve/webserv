@@ -22,24 +22,26 @@ struct Location {
 	// std::pair<std::string, std::string> HTTP_redirection; //301 (code: int) http://new_webstie (redirection: string)
 };
 
-class Server {
+class Server : public EventHandler {
 private:
-	unsigned int _port = 8080;
-	u_long _host_u_long = INADDR_ANY;
-	std::string _host_string = "0.0.0.0";
-	unsigned long long _client_max_body = 1048576;
-	std::vector<std::string> _server_names {""};
-	std::string _root;
-	std::string _index;
-	bool _auto_index = false;
-	std::pair<std::string, std::string> _error_page;
-	std::vector<Location> _locations;
-
-	//Socket _server_socket;
-
-public:
+	unsigned int						_port = 8080;
+	u_long								_host_u_long = INADDR_ANY;
+	std::string							_host_string = "0.0.0.0";
+	unsigned long long					_client_max_body = 1048576;
+	std::vector<std::string>			_server_names {""};
+	std::string							_root;
+	std::string							_index;
+	bool								_auto_index = false;
+	std::pair<std::string, std::string>	_error_page;
+	std::vector<Location>				_locations;
+	std::shared_ptr<Socket>				_serverSocket;
+	
+	public:
 	Server() = default; //maybe this will not work with the default values
 	~Server() = default;
+	
+	std::function<void(int)>			onClientAccepted;
+	void								handleRead() override;
 
 	void setPort(int port);
 	void setAutoIndex(bool auto_index);
@@ -51,8 +53,9 @@ public:
 	void setIndex(std::string index);
 	void setRoot(std::string root);
 	void setLocations();
+	void setSocket(const std::shared_ptr<Socket>& socket);
 
-	// Socket& getServerSocket();
+	// Socket& getServerSocket(); << using smart pointer now
 	std::pair<std::string, std::string>	getErrorPage() const;
 	std::string 						getRoot() const;
 	std::string 						getIndex() const;
@@ -63,6 +66,7 @@ public:
 	unsigned long long					getClientMaxBody() const;
 	std::vector<std::string>			getServerNames() const;
 	std::vector<Location>&				getLocations();
+	int									getSocketFd();
 
 };
 
