@@ -24,7 +24,8 @@
 enum requestState {
 	PARSING_HEADER = 0,
 	PARSING_BODY,
-	COMPLETE
+	COMPLETE,
+	ERROR
 };
 
 class RequestParser
@@ -55,6 +56,7 @@ class RequestParser
 		bool	checkBodyLength();
 
 		std::string	getErrorCode();
+		int			getState();
 
 		std::string		trim(std::string str);
 };

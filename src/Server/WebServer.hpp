@@ -24,7 +24,7 @@ class WebServer {
 		void	setupServerSockets(Epoll& epoll);
 		void	cleanServersResources(Epoll& epoll);
 		void	handleNewClient(int client_fd, Server &server);
-		void	assignServer(Client &client);
+		void	assignServer(Client &client); //make this an int in case no server is found OR fallback to default server so server is always assigned
 		
 	public:
 		WebServer(const std::string& config_file);
