@@ -25,6 +25,7 @@ void WebServer::run() {
 			}
 		}
 	}
+	//clean up resources
 }
 
 void	WebServer::handleNewClient(int client_fd, Server &server) {

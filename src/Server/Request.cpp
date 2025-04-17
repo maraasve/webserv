@@ -113,6 +113,6 @@ void	Request::addHeader(std::string key, std::string value) {
 	_headers.emplace(key, value);
 }
 
-bool Request::isCGI() const {
-    std::string uri = _uri;
-}
+// bool Request::isCGI() const {
+//     std::string uri = _uri;
+// }

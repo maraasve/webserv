@@ -42,7 +42,7 @@ void	Client::handleHeaderState() {
 	if (bytes != -1) {
 		if (_requestParser.parseHeader(_requestString)) {
 			if (_requestParser.getErrorCode() != "200" ) {
-				_state = ERROR ;
+				_state = RESPONDING ;
 				return ;
 			}
 			assignServer();
@@ -64,11 +64,25 @@ void	Client::handleBodyState() {
 			_state = CGI;
 		}
 		if (_requestParser.getErrorCode() != "200") {
-			_state = ERROR;
+			_state = RESPONDING;
 		}
 	}
 	_state = ERROR;
 }
+
+void	Client::handleCGIState() {
+	//not sure how to check if it's CGI?
+	//if CGI
+		/*RUN CGI													need two pipes for CGI btw
+			add write end from first pipe to epoll					probably don't do all of this in client
+			add read end from second pipe to epoll
+			close other ends in parent
+			*/
+	//else
+		//_state = RESPONDING
+}
+
+
 
 // void	Client::parseRequest(std::unordered_map<int, std::vector<Server*>>	socketFdToServer) {
 // 	ssize_t bytes = readIncomingData(_requestString, _fd); //think about where to put this
@@ -100,10 +114,11 @@ bool Client::sendResponse() {
 	return response.empty();
 }
 
-void Client::closeConnection() { //should we do this in Client?
+void Client::closeConnection() {
 	std::cout << "Closing connection for client socket(" << _fd << ")" << std::endl;
 	_epoll.deleteFd(_fd);
 	close(_fd);
+	//make callback function so WebServer can remove client from eventHandlers
 }
 
 void	Client::setRequestStr(std::string request) {
