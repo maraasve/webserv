@@ -116,10 +116,12 @@ std::string	Cgi::executeCGI()
 
 	if (_cgiPid == 0)
 	{
-		dup2( pipeFD[1], STDOUT_FILENO);
-		dup2( pipeFD[0], STDIN_FILENO);
-		close(pipeFD[0]);
-		close(pipeFD[1]);
+		dup2(_readFromChild[1], STDOUT_FILENO);
+		dup2(_writeToChild[0], STDIN_FILENO); // check if we need this, only if there is a body
+		close(_writeToChild[0]);
+		close(_writeToChild[1]);
+		close(_readFromChild[0]);
+		close(_readFromChild[1]);
 		execve(_execPath, _args, _env);
 		perror("execve failure");
 		//didnt allocate anything here but in case i should free childs memory first
@@ -215,8 +217,19 @@ bool		Cgi::shouldRunCgi(std::string file_path) {
 	return (ext == "py" || ext == "php");
 }
 
-void	Cgi::startCgi() {
-	
+void	Cgi::startCgi(Epoll epoll) {
+	if (!_body.empty()) {
+		//pipe() both pipes
+		//add FDS to EPOLL
+			//writetoChild[1] EPOLLOUT
+			//readFromChild[0] EPOLLIN
+	}
+	else {
+		//Do we only pipe readFromChild??
+			//readFromChild[0] EPOLLIN
+		_state = RUNNING;
+	}
+	//
 }
 
 void	Cgi::setBody(std::string	body) {

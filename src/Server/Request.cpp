@@ -59,6 +59,10 @@ std::string Request::getErrorCode() const{
 	return (_error_code);
 }
 
+int	Request::getFileType() {
+	return _file_type;
+}
+
 ssize_t	Request::getContentLength() const{
 	return (_content_length);
 }
@@ -116,6 +120,10 @@ void	Request::setRequestLine(std::string method, std::string uri, std::string ve
 	_method = method;
 	_uri = uri;
 	_http_version = version;
+}
+
+void	Request::setFileType(int file_type) {
+	_file_type = file_type;
 }
 
 void	Request::setContentLength(ssize_t contentLength) {

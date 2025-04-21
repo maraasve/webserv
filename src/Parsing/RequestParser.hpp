@@ -20,6 +20,9 @@
 # include <string>
 # include <unordered_map>
 # include <regex>
+# include <sys/types.h>
+# include <sys/stat.h>
+# include <unistd.h>
 
 enum requestState {
 	PARSING_HEADER = 0,
@@ -55,8 +58,8 @@ class RequestParser
 		bool	checkContentLength(const std::unordered_map<std::string, std::string>& headers);
 		void	checkServerDependentHeaders(const Server& server, const Location& location);
 		bool	checkMatchURI(const Server& server, const Location& location);
-		void	checkFile();
-		std::string	checkRequestURI(int mode);
+		bool	checkFile(const Server& server, const Location& location);
+		bool	checkRequestURI(int mode);
 		bool    checkAllowedMethods(const Location& location);
 		bool	checkBodyLength(const Server& server, const Location& location);
 
