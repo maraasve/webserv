@@ -39,7 +39,7 @@ class Cgi {
 		Cgi();
 		~Cgi();
 
-		bool		shouldRunCgi();
+		bool		shouldRunCgi(std::string file_path);
 		void		setArgs();
 		char		*getExecPath();
 		std::string	executeCGI();

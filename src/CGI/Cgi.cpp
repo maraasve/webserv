@@ -41,8 +41,6 @@ Cgi::~Cgi()
 }
 
 bool		Cgi::shouldRunCgi() {
-	
-}
 
 // Cgi::Cgi(const Cgi &other)
 // {
@@ -209,6 +207,12 @@ std::vector<std::string>	Cgi::vecSplit(char *str, char delim)
 	return (vec);
 }
 
-bool		shouldRunCgi(const Location &location) {
-	//Check matched location
+bool		shouldRunCgi(std::string file_path) {
+	//maybe we can use location to check, but for now i'm doing like the isCGIscript() in response
+	size_t pos = file_path.find_last_of('.');
+	if (pos == std::string::npos) {
+		return false;
+	}
+	std::string ext = file_path.substr(pos + 1);
+	return (ext == "py" || ext == "php");
 }
