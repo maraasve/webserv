@@ -32,6 +32,7 @@ enum cgiState {
 class Cgi {
 	private:
 		pid_t		_cgiPid;
+		int			_state;
 		int			_exitStatus;
 		char		*_filePath;
 		char		*_execPath;

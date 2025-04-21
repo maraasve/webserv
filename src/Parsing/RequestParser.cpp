@@ -204,7 +204,7 @@ bool	RequestParser::checkHTTP() const {
 }
 
 void	RequestParser::checkServerDependentHeaders(const Server& server, const Location& location) {
-	if (!checkMatchURI(server, location)) {
+	if (!checkMatchURI(server, location) || !checkFile(server, location)) {
 		_request.setErrorCode("404");
 		return ;
     }
@@ -242,48 +242,47 @@ bool	RequestParser::checkAllowedMethods(const Location& location) {
 	return false;
 }
 
-std::string RequestParser::checkRequestURI(int mode) {
+bool	RequestParser::checkRequestURI(int mode) {
     struct stat sb;
-    if (stat(rooted_uri.c_str(), &sb) == -1) {
-        _error_code = "404";
-        return "ERROR";
+    if (stat(_request.getRootedURI().c_str(), &sb) == -1) {
+        return false;
     }
-    if (access(_rooted_uri.c_str(), mode) != 0) {
-        _error_code = "403";
-        return "ERROR";
+    if (access(_request.getRootedURI().c_str(), mode) != 0) {
+        return false;
     }
     if (S_ISDIR(sb.st_mode)) {
-        return "ISDIR";
+		_request.setFileType(DIR);
+        return true;
     } else if (S_ISREG(sb.st_mode)) {
-        return "ISFILE";
+        _request.setFileType(FILE);
+        return true;
     }
-    _error_code = "403";
-    return "ERROR";
+    return false;
 }
 
-void RequestParser::checkFile() {
-    std::string file_type = checkRequestURI(_rooted_uri, R_OK);
-    if (file_type == "ERROR") {
-        setErrorResponse(_error_code);
-    } else if (file_type == "ISDIR") {
-        if (!_location._index.empty()) {
-            serveFile(_rooted_uri + _location._index);
-        } else if (_location._auto_index ) {
-            serverDirectoryListing(_rooted_uri, request.getURI());
-        } else if (!_server->getIndex().empty()) {
-            serveFile(_rooted_uri + _server->getIndex());
-        } else if (_server->getAutoIndex()) {
-            serverDirectoryListing(_rooted_uri, request.getURI());
-        } else {
-            setErrorResponse("404");
-        }
-    } else if (file_type == "ISFILE") {
-        if (isCGIScript(_rooted_uri)) {
-            
-        } else {
-            serveFile(_rooted_uri);
+bool	RequestParser::checkFile(const Server& server, const Location& location) {
+	if (!checkRequestURI(R_OK)) { //Do we need to check W_OK for POST??? or something for delete???
+		return false;
+	} 
+    else if (_request.getFileType() == DIR) {
+        if (!location._index.empty()) {
+            _request.setRootedUri(_request.getRootedURI() + location._index);
+        } 
+		//else if (location._auto_index ) {
+		// 	_request.setRootedUri(_request.getRootedURI() + _request.getURI()); //check this
+        //     serverDirectoryListing(_rooted_uri, request.getURI());
+		//}
+		else if (!server.getIndex().empty()) {
+			_request.setRootedUri(_request.getRootedURI() + server.getIndex());
+        } 
+		// else if (_server->getAutoIndex()) { CHECK THIS
+        //     serverDirectoryListing(_rooted_uri, request.getURI());
+        // } 
+		else {
+            return false;
         }
     }
+	return true ;
 }
 
 
