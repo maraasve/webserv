@@ -32,7 +32,7 @@ void	WebServer::handleNewClient(int client_fd, Server &server) {
 	auto newClient = std::make_shared<Client>(client_fd, _epoll, server.getSocketFd());
 	_eventHandlers[client_fd] = newClient;
 	_epoll.addFd(client_fd, EPOLLIN);
-	newClient->assignServer = [this, newClient]() mutable {
+	newClient->assignServer = [this, &newClient]() mutable {
 		this->assignServer(*newClient);
 	};
 }
@@ -40,18 +40,27 @@ void	WebServer::handleNewClient(int client_fd, Server &server) {
 void	WebServer::assignServer(Client &client) {
 	int			fd = client.getFd();
 	std::string	host = client.getRequest().getHost();
+	Server		*fallback = nullptr;
 
 	for (Server& server : _servers) {
 		if (fd == server.getSocketFd()) {
 			for (std::string serverName : server.getServerNames()) {
-				if (host == serverName) { //if host includes port (Host: example.com:8080) we need to trim that off first, and host might be case insensitive
-					client.setServer(server); //if socket matches, but not hostname, we can implement fallback server that matched. NGINX works likes this, but we'll see
+				if (strcasecmp(host.c_str(), serverName.c_str()) == 0) {
+					client.setServer(server); //if socket matches, but not hostname NGINX sets a fallback server
 					return ;
 				}
 			}
+			if (!fallback) {
+				fallback = &server;
+			}
 		}
 	}
-	client.getRequest().setErrorCode("400");
+	if (fallback) {
+		client.setServer(*fallback);
+	}
+	else {
+		client.setServerError("400");
+	}
 }
 
 void WebServer::setupServerSockets(Epoll& epoll) {

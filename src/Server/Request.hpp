@@ -15,6 +15,7 @@ class	Request {
 		std::string 									_method;
 		std::string 									_uri;
 		std::string										_host;
+		std::string										_port;
 		std::string										_rooted_uri;
 		std::string										_path;
 		std::string 									_query;
@@ -50,9 +51,11 @@ class	Request {
 		void	setHeaders(std::unordered_map<std::string, std::string> headers); //don't know if i need this anymore
 		void	setErrorCode(std::string errorCode);
 		void	setHost(std::string host);
+		void	setPort(std::string port);
 		void	setMethod(std::string method);
 		void	setRequestLine(std::string method, std::string uri, std::string version);
 		void	setContentLength(ssize_t contentLength);
+		void	setRootedUri(std::string rootedUri);
 		void	addHeader(std::string key, std::string value);
 
 		bool	isCGI() const; //don't know if i need this
