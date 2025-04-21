@@ -6,7 +6,7 @@
 
 class EventHandler {
 	protected:
-		virtual			~EventHandler ();
+		virtual			~EventHandler();
 	
 	public:
 		virtual	void	handleIncoming();
