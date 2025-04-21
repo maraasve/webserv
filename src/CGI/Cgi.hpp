@@ -23,6 +23,12 @@
 
 # define TIMEOUT 5000
 
+enum cgiState {
+	SENDING_BODY = 0,
+	RUNNING,
+	READING_OUTPUT
+};
+
 class Cgi {
 	private:
 		pid_t		_cgiPid;
@@ -30,9 +36,10 @@ class Cgi {
 		char		*_filePath;
 		char		*_execPath;
 		std::string	_filePathString;
+		std::string	_body;
 		char		**_args;
 		char		**_env;
-        int         _writeToChild[2];
+		int			_writeToChild[2];
 		int			_readFromChild[2];
 	
 	public:
@@ -40,6 +47,7 @@ class Cgi {
 		~Cgi();
 
 		bool		shouldRunCgi(std::string file_path);
+		void		startCgi();
 		void		setArgs();
 		char		*getExecPath();
 		std::string	executeCGI();
@@ -49,6 +57,9 @@ class Cgi {
         char						**vecToArray(std::vector<std::string> vec);
         std::vector<std::string>	vecSplit(char *str, char delim);
         void						freeArray(char **array);
+
+		void		setBody(std::string body);
+		std::string	getBody();
 
 };
 

@@ -9,3 +9,5 @@ ssize_t	EventHandler::readIncomingData(std::string& appendToStr, int fd) {
 	}
 	return bytes;
 }
+
+//sendOutgoingData(std::string& )
