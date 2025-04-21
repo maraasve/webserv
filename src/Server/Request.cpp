@@ -67,6 +67,15 @@ void	Request::setURI(std::string uri) {
     _uri = uri;
 }
 
+void	Request::setRootedUri(std::string rootedUri) {
+    _rooted_uri = rootedUri;
+}
+
+
+void	Request::setPort(std::string port) {
+    _port = port;
+}
+
 void	Request::setQueryString(std::string queryString) {
     _query = queryString;
 }

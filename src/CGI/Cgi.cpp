@@ -14,7 +14,7 @@
 
 Cgi::Cgi()
 {
-	//wouldn't it be better to have an initilizers list somewhere here
+	//wouldn't it be better to have an initilizers list somewhere here - this whole thing needs to change, was mostly for testing purposes
     _filePath = (char *)"test.py";
 	_filePathString = "test.py";
 	_exitStatus = 0;
@@ -38,6 +38,10 @@ Cgi::~Cgi()
 {
 	freeArray(_args);
 	free(_execPath);
+}
+
+bool		Cgi::shouldRunCgi() {
+	
 }
 
 // Cgi::Cgi(const Cgi &other)
@@ -153,17 +157,13 @@ std::string	Cgi::executeCGI()
 	return (cgiOutput);
 }
 
-
-
 int         Cgi::getWriteFd() {
-	return _pipefd[1];
+	return _writeToChild[1];
 }
 
 int         Cgi::getReadFd() {
-	return _pipe[0];
+	return _readFromChild[0];
 }
-
-
 
 void	Cgi::freeArray(char **array)
 {
@@ -207,4 +207,8 @@ std::vector<std::string>	Cgi::vecSplit(char *str, char delim)
 	while (getline(stream, segment, delim))
 		vec.push_back(segment);
 	return (vec);
+}
+
+bool		shouldRunCgi(const Location &location) {
+	//Check matched location
 }

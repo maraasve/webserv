@@ -32,14 +32,14 @@ class Cgi {
 		std::string	_filePathString;
 		char		**_args;
 		char		**_env;
-        int         _pipefd[2];
+        int         _writeToChild[2];
+		int			_readFromChild[2];
 	
 	public:
 		Cgi();
-		// Cgi(const Cgi &other);
-		// Cgi& operator=(const Cgi &other);
 		~Cgi();
 
+		bool		shouldRunCgi();
 		void		setArgs();
 		char		*getExecPath();
 		std::string	executeCGI();

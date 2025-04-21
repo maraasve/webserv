@@ -172,20 +172,6 @@ std::string Response::formatHeaders() {
     return ss.str();
 }
 
-
-bool    Response::checkAllowedMethods() {
-    if (_location._allowed_methods.empty()) {
-        return true;
-    }
-    for (const std::string& allowed_method : _location._allowed_methods) {
-        std::cout << "This is the allowed: " << allowed_method << std::endl;
-        if (allowed_method == _method) {
-            return true;
-        }
-    }
-    return false;
-}
-
 std::string Response::checkRequestURI(const std::string& rooted_uri, int mode) {
     struct stat sb;
     if (stat(rooted_uri.c_str(), &sb) == -1) {

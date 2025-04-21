@@ -25,7 +25,9 @@ void	Client::handleIncoming() {
 			break;
 		case READING_BODY:
 			handleBodyState();
-			break;
+			break; // do we need to break everywhere?
+		case PARSING_CHECKS:
+			handleParsingCheckState();
 		case CGI:
 			handleCGIState();
 		case RESPONDING:
@@ -34,6 +36,7 @@ void	Client::handleIncoming() {
 			handleErrorState();
 		case COMPLETE:
 			handleCompleteState();
+			break ;
 	}
 }
 
@@ -48,9 +51,11 @@ void	Client::handleHeaderState() {
 			assignServer();
 			if (_requestParser.getState() == PARSING_BODY) {
 				_state = READING_BODY;
+				return ;
 			}
 			else if (_requestParser.getState() == COMPLETE) {
-				_state = CGI; //????
+				_state = PARSING_CHECKS;
+				return ;
 			}
 		}
 	}
@@ -61,28 +66,66 @@ void	Client::handleBodyState() {
 	ssize_t	bytes = readIncomingData(_requestString, _fd);
 	if (bytes != -1) {
 		if (_requestParser.parseBody(_requestString, bytes)) {
-			_state = CGI;
+			_state = PARSING_CHECKS;
+			return ;
 		}
 		if (_requestParser.getErrorCode() != "200") {
 			_state = RESPONDING;
+			return ;
 		}
 	}
 	_state = ERROR;
 }
 
-void	Client::handleCGIState() {
-	//not sure how to check if it's CGI?
-	//if CGI
-		/*RUN CGI													need two pipes for CGI btw
-			add write end from first pipe to epoll					probably don't do all of this in client
-			add read end from second pipe to epoll
-			close other ends in parent
-			*/
-	//else
-		//_state = RESPONDING
+void	Client::handleParsingCheckState() {
+	assignServer(); //I don't think i need to pass the client instance, but not sure
+	if (_requestParser.getErrorCode() != "200") {
+		_state = RESPONDING;
+		return ;
+	}
+	if (!resolveLocation(_requestParser.getRequest().getURI())) {
+		_state = RESPONDING;
+		return ;
+	}
+	_requestParser.checkServerDependentHeaders(*_serverPtr, _location);
+	_request = _requestParser.getRequest();
+	if (_request->getErrorCode() != "200") {
+		_state = RESPONDING;
+		return ;
+	}
+	_state = _CGI.shouldRunCgi() ? CGI : RESPONDING;
 }
 
+bool	Client::resolveLocation(std::string uri) {
+	size_t bestMatchLength = 0;
+    for (const auto& location : _serverPtr->getLocations()) {
+        if (uri.compare(0, location._path.size(), location._path) == 0) {
+            if (location._path.size() < bestMatchLength) {
+                continue;
+            }
+            bestMatchLength = location._path.size();
+            _location = location;
+		}
+	}
+	if (bestMatchLength == 0) {
+		return false;
+	}
+	return true;
+}
 
+void	Client::handleCGIState() {
+	if (!_CGI.shouldRunCgi()) {
+		_state = RESPONDING;
+		return ;
+	}
+	// run CGI, pass EPOLL?
+}
+
+void	Client::handleResponseState() {
+	if (!_request) { //in case of parse error and _request wasn't assigned yet
+		_request = _requestParser.getRequest();
+	}
+}
 
 // void	Client::parseRequest(std::unordered_map<int, std::vector<Server*>>	socketFdToServer) {
 // 	ssize_t bytes = readIncomingData(_requestString, _fd); //think about where to put this
@@ -133,6 +176,10 @@ void	Client::setServer(Server& server) {
 	_serverPtr = &server;
 }
 
+void	Client::setServerError(std::string error) {
+	_requestParser.getRequest().setErrorCode(error);
+}
+
 // void	Client::setServer(std::unordered_map<int, std::vector<Server*>> socketFdToServer) {
 // 	auto it = socketFdToServer.find(_socketFd);
 // 	if (it != socketFdToServer.end()) {
@@ -173,6 +220,6 @@ Server*	Client::getServer(){
 	return _serverPtr;
 }
 
-Request&		Client::getRequest() {
-	return _request; //need to find another way
-}
+// Request&		Client::getRequest() {
+// 	return _request; //need to find another way because of the optional _request
+// }

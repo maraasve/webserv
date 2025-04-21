@@ -41,8 +41,8 @@ class RequestParser
 
 		void	parseRequestLine(std::istringstream& stream);
 		void	parseHeaders(std::istringstream& stream);
-		bool	parseHeader(std::string& request);
-		bool	parseBody(std::string& request, ssize_t bytes);
+		bool	parseHeader(std::string& requestStr);
+		bool	parseBody(std::string& requestStr, ssize_t bytes);
 
 		void	splitUri(std::string uri);
 
@@ -51,12 +51,16 @@ class RequestParser
 		bool	checkMethod() const;
 		bool	checkHTTP() const;
 		void	checkBasicHeaders();
-		bool	checkServerDependentHeaders(Server &server);
-		bool	checkMatchURI();
-		bool	checkBodyLength();
+		bool	checkHost(const std::unordered_map<std::string, std::string>& headers);
+		bool	checkContentLength(const std::unordered_map<std::string, std::string>& headers);
+		void	checkServerDependentHeaders(const Server& server, const Location& location);
+		bool	checkMatchURI(const Server& server, const Location& location);
+		bool    checkAllowedMethods(const Location& location);
+		bool	checkBodyLength(const Server& server, const Location& location);
 
 		std::string	getErrorCode();
 		int			getState();
+		Request&	getRequest();
 
 		std::string		trim(std::string str);
 };
