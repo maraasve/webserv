@@ -24,7 +24,7 @@
 # include <sys/stat.h>
 # include <unistd.h>
 
-enum requestState {
+enum class requestState {
 	PARSING_HEADER = 0,
 	PARSING_BODY,
 	COMPLETE,
@@ -34,9 +34,9 @@ enum requestState {
 class RequestParser
 {
 	private:
-		int			_state = PARSING_HEADER;
-		ssize_t		_bytes_read;
-		Request		_request;
+		requestState	_state = requestState::PARSING_HEADER;
+		ssize_t			_bytes_read;
+		Request			_request;
 		
 	public:
 		RequestParser();
@@ -54,6 +54,7 @@ class RequestParser
 		bool	checkMethod() const;
 		bool	checkHTTP() const;
 		void	checkBasicHeaders();
+		bool	checkReadingAccess();
 		bool	checkHost(const std::unordered_map<std::string, std::string>& headers);
 		bool	checkContentLength(const std::unordered_map<std::string, std::string>& headers);
 		void	checkServerDependentHeaders(const Server& server, const Location& location);
@@ -63,9 +64,10 @@ class RequestParser
 		bool    checkAllowedMethods(const Location& location);
 		bool	checkBodyLength(const Server& server, const Location& location);
 
-		std::string	getErrorCode();
-		int			getState();
-		Request&	getRequest();
+		std::string		getErrorCode();
+		requestState	getState();
+		Request			getRequest() &&;
+		const Request&	getRequest() const &;
 
 		std::string		trim(std::string str);
 };

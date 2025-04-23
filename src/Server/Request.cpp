@@ -59,7 +59,7 @@ std::string Request::getErrorCode() const{
 	return (_error_code);
 }
 
-int	Request::getFileType() {
+int	Request::getFileType() const{
 	return _file_type;
 }
 
@@ -100,10 +100,6 @@ void	Request::setHeaders(std::unordered_map<std::string, std::string> headers) {
     _headers = headers;
 }
 
-void	Request::setErrorCode(std::string errorCode) {
-    _error_code = errorCode;
-}
-
 void	Request::setHost(std::string host) {
     _host = host;
 }
@@ -112,7 +108,7 @@ void	Request::setMethod(std::string method) {
     _method = method;
 }
 
-void	Request::setMethod(std::string path) {
+void	Request::setPath(std::string path) {
     _path = path;
 }
 

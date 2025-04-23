@@ -30,10 +30,10 @@ bool	RequestParser::parseHeader(std::string& requestStr) {
 	checkBasicHeaders();
 	if (_request.getMethod() == "POST") {
 		_bytes_read = requestStr.size() - (header_end + 4);
-		_state = PARSING_BODY;
+		_state = requestState::PARSING_BODY;
 		return true;
 	}
-	_state = COMPLETE;
+	_state = requestState::COMPLETE;
 	return true;
 }
 
@@ -46,7 +46,7 @@ bool	RequestParser::parseBody(std::string& requestStr, ssize_t bytes) {
 		} else {
 			_request.setBody(requestStr.substr(pos + 4, _bytes_read));
 		}
-		_state = COMPLETE;
+		_state = requestState::COMPLETE;
 		return true;
 	}
 	return false;
@@ -220,13 +220,23 @@ void	RequestParser::checkServerDependentHeaders(const Server& server, const Loca
 	}
 }
 
+//This does not check if it matches the URI or not
 bool	RequestParser::checkMatchURI(const Server& server, const Location& location) {
-	std::string rest_uri = _request.getURI().substr(location._path.size());
-	if (rest_uri.empty() || rest_uri[0] != '/') {
+	const std::string& uri = _request.getURI();
+	const std::string& loc_path = location._path;
+	if (uri.compare(0, loc_path.size(), loc_path) != 0) {
+		return false;
+	}
+	std::string rest_uri = uri.substr(loc_path.size());
+	if (!rest_uri.empty() && rest_uri[0] != '/') {
+		return false;
+	}
+	if (rest_uri.empty()) {
 		rest_uri = "/";
 	}
 	const std::string& base_root = location._root.empty() ? server.getRoot() : location._root;
 	_request.setRootedUri("." + base_root + rest_uri);
+	return true;
 }
 
 bool	RequestParser::checkAllowedMethods(const Location& location) {
@@ -234,7 +244,6 @@ bool	RequestParser::checkAllowedMethods(const Location& location) {
 		return true;
 	}
 	for (const std::string& allowed_method : location._allowed_methods) {
-		std::cout << "This is the allowed: " << allowed_method << std::endl;
 		if (allowed_method == _request.getMethod()) {
 			return true;
 		}
@@ -251,61 +260,68 @@ bool	RequestParser::checkRequestURI(int mode) {
         return false;
     }
     if (S_ISDIR(sb.st_mode)) {
-		_request.setFileType(DIR);
+		_request.setFileType(DIRECTORY);
         return true;
     } else if (S_ISREG(sb.st_mode)) {
-        _request.setFileType(FILE);
+        _request.setFileType(REGULAR_FILE);
         return true;
     }
     return false;
+}
+
+bool	RequestParser::checkReadingAccess() {
+	if (access(_request.getRootedURI().c_str(), R_OK) != 0) {
+		return false;
+	}
+	return true;
 }
 
 bool	RequestParser::checkFile(const Server& server, const Location& location) {
 	if (!checkRequestURI(R_OK)) { //Do we need to check W_OK for POST??? or something for delete???
 		return false;
 	} 
-    else if (_request.getFileType() == DIR) {
+    else if (_request.getFileType() == DIRECTORY) {
         if (!location._index.empty()) {
             _request.setRootedUri(_request.getRootedURI() + location._index);
-        } 
-		//else if (location._auto_index ) {
-		// 	_request.setRootedUri(_request.getRootedURI() + _request.getURI()); //check this
-        //     serverDirectoryListing(_rooted_uri, request.getURI());
-		//}
-		else if (!server.getIndex().empty()) {
+        } else if (location._auto_index) {
+			_request.setFileType(AUTOINDEX);
+		} else if (!server.getIndex().empty()) {
 			_request.setRootedUri(_request.getRootedURI() + server.getIndex());
-        } 
-		// else if (_server->getAutoIndex()) { CHECK THIS
-        //     serverDirectoryListing(_rooted_uri, request.getURI());
-        // } 
-		else {
+        } else if (server.getAutoIndex()) {
+			_request.setFileType(AUTOINDEX);
+		} else {
             return false;
         }
+		if (_request.getFileType() != AUTOINDEX && !checkReadingAccess()) {
+			return false;
+		}
     }
 	return true ;
 }
 
-
-
 bool RequestParser::checkBodyLength(const Server& server, const Location& location) {
 	ssize_t	contentLength = _request.getContentLength();
-	if (location._client_max_body > 0 && contentLength <= location._client_max_body) {
+	if (location._client_max_body > 0 && contentLength <= static_cast<ssize_t>(location._client_max_body)) {
 		return false;
 	}
-	else if (contentLength <= server.getClientMaxBody()) {
+	else if (contentLength <= static_cast<ssize_t>(server.getClientMaxBody())) {
 		return false;
 	}
     return true;
 }
 
 std::string	RequestParser::getErrorCode() {
-	return (_request.getErrorCode());
+	return _request.getErrorCode();
 }
 
-int	RequestParser::getState() {
-	return (_state);
+requestState	RequestParser::getState() {
+	return _state;
 }
 
-Request&	RequestParser::getRequest() {
-	return (_request);
+Request	RequestParser::getRequest() &&{
+	return std::move(_request);
+}
+
+const Request&	RequestParser::getRequest() const & {
+	return _request;
 }

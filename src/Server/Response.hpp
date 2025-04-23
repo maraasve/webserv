@@ -11,15 +11,15 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <filesystem>
 
 class Response {
 private:
-    Server*     _server = nullptr;
     const std::unordered_map<std::string, std::string> _errorsTexts;
 
     std::string _rooted_uri;
-    std::string _error_code = "200";
-    std::string _error_text = "OK";
+    std::string _error_code;
+    std::string _error_text;
     std::string _body;
     std::unordered_map<std::string, std::string> _headers;
     Location _location;
@@ -27,42 +27,26 @@ private:
     std::string formatStatusLine();
     std::string formatHeaders();
 
-    void serverDirectoryListing(const std::string& dir_path, const std::string& uri_path);
     void serveFile(const std::string& file_path);
+    void serveDirectoryListing(const std::string& dir_path);
 
     void createHeaders(const std::string& content_type, const std::string& content_length);
-    std::string createDirectoryListing(const std::string& dir_path, const std::string& uri_path);
     void createErrorPage();
-    void ErrorImageHTML(std::string& html_content);
-    
-    void handleGET(Request& request);
-    void handlePOST(Request& request);
-    void handleDELETE(Request& request);
 
-    void setErrorText(const std::string& error_code);
-    void setErrorResponse(const std::string& error_code);
-    void setServer(Server* server);
+    void setErrorCodeText(std::string error_code);
     std::string setContentType(const std::string& path);
 
-    void uploadFile(Request& request);
-	std::string findFileName(Request& request);
+    void uploadFile(const Request& request);
+	std::string findFileName(const Request& request);
 
-
-    std::string checkRequestURI(const std::string& rooted_uri, int mode);
-    bool checkEnabledAutoIndex();
-    bool checkMatchURI(const std::string& uri);
-    bool checkAllowedMethods(const std::string& method);
-    bool checkPostTooBig(const std::unordered_map<std::string, std::string> request_headers);
-
-    void handleRequest(Request& request);
+    void handleRequest(const Request& request);
 
 
 public:
     Response();
     ~Response() = default;
 
-	std::string createResponseStr(Request& request, Server* server);
-    
+	std::string    createResponseStr(const Request& request);
 };
 
 #endif
