@@ -10,8 +10,9 @@
 # include <sys/types.h>
 # include <unordered_map>
 
-# define FILE 0
-# define DIR 1 //for now, maybe there's a better option
+# define REGULAR_FILE 0
+# define DIRECTORY 1
+# define AUTOINDEX 2
 
 class	Request {
 	private:
@@ -45,7 +46,7 @@ class	Request {
 		std::string										getErrorCode() const;
 		std::unordered_map<std::string, std::string>	getHeaders() const;
 		ssize_t 										getContentLength() const;
-		int												getFileType();
+		int												getFileType() const;
 
 
 		// better to pass const std::string& in all of these:
@@ -56,7 +57,6 @@ class	Request {
 		void	setHTTPVersion(std::string httpVersion);
 		void	setBody(std::string body); //maybe change this to appendBody
 		void	setHeaders(std::unordered_map<std::string, std::string> headers); //don't know if i need this anymore
-		void	setErrorCode(std::string errorCode);
 		void	setHost(std::string host);
 		void	setPort(std::string port);
 		void	setMethod(std::string method);

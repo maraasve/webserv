@@ -37,13 +37,12 @@ private:
 	std::vector<Location>				_locations;
 	std::shared_ptr<Socket>				_serverSocket;
 	
-	public:
+public:
 	Server() = default; //maybe this will not work with the default values
 	~Server() = default;
 	
-	std::function<void(int)>			onClientAccepted;
 	void								handleIncoming() override;
-
+	
 	void setPort(int port);
 	void setAutoIndex(bool auto_index);
 	void setErrorPage(std::string error_code, std::string path);
@@ -55,7 +54,7 @@ private:
 	void setRoot(std::string root);
 	void setLocations();
 	void setSocket(const std::shared_ptr<Socket>& socket);
-
+	
 	// Socket& getServerSocket(); << using smart pointer now
 	std::pair<std::string, std::string>	getErrorPage() const;
 	std::vector<std::string>			getServerNames() const;
@@ -68,7 +67,8 @@ private:
 	bool 								getAutoIndex() const;
 	int 								getPort() const;
 	int									getSocketFd();
-
+	
+	std::function<void(int)>			onClientAccepted;
 };
 
 #endif

@@ -15,57 +15,68 @@
 # define CGI_HPP
 
 # include <iostream>
+# include <sstream>
 # include <map>
 # include <vector>
 # include <unistd.h>
+# include <stdlib.h>
 # include <sys/wait.h>
 # include <signal.h>
 
+# include "../Server/EventHandler.hpp"
+# include "../Server/WebServer.hpp"
+
 # define TIMEOUT 5000
 
-enum cgiState {
-	SENDING_BODY = 0,
+enum class cgiState {
+	INITIALIZED = 0,
+	SENDING_BODY,
 	RUNNING,
-	READING_OUTPUT
+	READING_OUTPUT,
+	COMPLETE,
+	ERROR
 };
 
-class Cgi {
+class Cgi : public EventHandler {
 	private:
-		pid_t		_cgiPid;
-		int			_state;
-		int			_exitStatus;
-		char		*_filePath;
-		char		*_execPath;
-		std::string	_filePathString;
-		std::string	_body;
-		char		**_args;
-		char		**_env;
-		int			_writeToChild[2];
-		int			_readFromChild[2];
+		const std::string	_filePathString;
+		const std::string	_extension;
+		char				**_args;
+		const std::string	_execPath;
+		const char			*_filePath;
+		int					_exitStatus;
+		cgiState			_state;
+		int					_writeToChild[2];
+		int					_readFromChild[2];
+		pid_t				_cgiPid; //if I fork will the child use the constructor again and reinitialized everything?
+		std::string			_body;
+		char				**_env;
 	
+		char**  		vecTo2DArray(std::vector<std::string>& vec);
+		void			freeArgs();
+		char**			setArgs();
 	public:
-		Cgi();
+		Cgi() = default;
+		Cgi(const std::string& file_path, const std::string& extension);
 		~Cgi();
 
-		bool		shouldRunCgi(std::string file_path);
-		void		startCgi();
-		void		setArgs();
-		char		*getExecPath();
-		std::string	executeCGI();
-        int         getWriteFd();
-        int         getReadFd();
+		void			startCgi();
+		void 			executeChildProcess();
 
-        char						**vecToArray(std::vector<std::string> vec);
-        std::vector<std::string>	vecSplit(char *str, char delim);
-        void						freeArray(char **array);
+		void			setBody(std::string body);
+		void			handleIncoming() override;
+		void			handleOutgoing() override;
+		void 			errorHandler();
+		
+		bool			childFailed();
+		int				getExitStatus() const;
+		cgiState 		getState() const;
+        int         	getWriteFd();
+        int         	getReadFd();
+		std::string		getExecPath();
+		std::string		getBody() const;
 
-		void		setBody(std::string body);
-		std::string	getBody();
-
+		std::function<void(int)> onCgiPipeDone;
 };
-
-//why does _args has to be a char ** can it be a vector of vectors?
-//we need to know where we are calling the CGI and what to do in case of problems so when we return we gotta just handle the exceptions
-
 
 #endif

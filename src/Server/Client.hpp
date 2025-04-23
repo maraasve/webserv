@@ -24,8 +24,9 @@
 # include <string>
 # include <unordered_map>
 # include <optional>
+# include <set>
 
-enum clientState {
+enum class clientState {
 	READING_HEADERS = 0,
 	READING_BODY,
 	PARSING_CHECKS,
@@ -36,48 +37,52 @@ enum clientState {
 };
 
 class Client : public EventHandler {
-	private:
-		int						_state = READING_HEADERS;
-		int						_fd;
-		Server*					_serverPtr;
-		Location				_location;
-		Epoll&					_epoll;
-		id_t					_socketFd; //are we still using this?
-		std::string				_requestString;
-		std::string				_responseString; 
-		std::optional<Request>	_request;
-		RequestParser			_requestParser;
-		Response				_response;
-		Cgi						_CGI;
+private:
+	clientState				_state = clientState::READING_HEADERS;
+	int						_fd;
+	Server*					_serverPtr;
+	Location				_location;
+	Epoll&					_epoll;
+	id_t					_socketFd; //are we still using this?
+	std::string				_requestString;
+	std::string				_responseString; 
+	Request					_request;
+	RequestParser			_requestParser;
+	Response				_response;
+	std::shared_ptr<Cgi>	_Cgi;
 
-	public:
-		Client(int fd, Epoll& epoll, int socket_fd);
+public:
+	Client(int fd, Epoll& epoll, int socket_fd);
 
-		void			handleIncoming() override;
-		void			handleHeaderState();
-		void			handleBodyState();
-		void			handleParsingCheckState();
-		void			handleCGIState();
-		void			handleResponseState();
-		void			handleErrorState();
-		void			handleCompleteState();
-		bool			resolveLocation(std::string uri);
-		bool			sendResponse();
+	
+	void									handleIncoming() override;
+	void									handleOutgoing() override;
+	void									handleHeaderState();
+	void									handleBodyState();
+	void									handleParsingCheckState();
+	void									handleCgiState();
+	void									handleResponseState();
+	// void									handleErrorState();
+	// void									handleCompleteState();
+	bool									resolveLocation(std::string uri);
+	
+	void									setRequestStr(std::string request);
+	void									setResponseStr(Request& request);
+	void									setServer(Server& server);
+	
+	int										getFd();
+	int										getSocketFd();
+	std::string&							getRequestStr();
+	std::string&							getResponseStr();
+	Server*									getServer();
+	Request&								getRequest();
+	std::shared_ptr<Cgi>					getCgi();
+	
+	bool 									shouldRunCgi() const;
 
-		void			setRequestStr(std::string request);
-		void			setResponseStr(Request& request);
-		void			setServer(Server& server);
-		void			setServerError(std::string error);
-		
-		int				getFd();
-		std::string&	getRequestStr();
-		std::string&	getResponseStr();
-		Server*			getServer();
-		Request&		getRequest();
-		
-		void			closeConnection();
-
-		std::function<void()>	assignServer;
+	std::function<void()>					assignServer;
+	std::function<void(int, int)>			onCgiAccepted;
+	std::function<void()>					closeClientConnection;
 };
 
 #endif
