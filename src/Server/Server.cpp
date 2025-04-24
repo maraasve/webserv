@@ -7,6 +7,8 @@ void	Server::handleIncoming() {
 	}
 }
 
+void	Server::handleOutgoing() {}
+
 void Server::setErrorPage(std::string error_code, std::string path) {
 	_error_page.first = error_code;
 	_error_page.second = path;

@@ -89,6 +89,7 @@ void	RequestParser::parseHeaders(std::istringstream& stream) {
 			_request.setErrorCode("400"); 
 			return ;
 		}
+		std::cout << key << ":" << value << std::endl;
 		_request.addHeader(key, value);
 	}
 }

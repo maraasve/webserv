@@ -2,7 +2,6 @@
 #define WEBSERVER_HPP
 
 #include "./Server.hpp"
-#include "./Client.hpp"
 #include "../Networks/Epoll.hpp"
 #include "../Parsing/ConfigParser.hpp"
 #include "EventHandler.hpp"
@@ -11,6 +10,8 @@
 #include <iostream>
 #include <unordered_map>
 #include <functional>
+
+class Client;
 
 class WebServer {
 	private:
@@ -24,11 +25,11 @@ class WebServer {
 		void	setupServerSockets(Epoll& epoll);
 		void	cleanServersResources(Epoll& epoll);
 		void	handleNewClient(int client_fd, Server &server);
-		void	assignServer(Client &client); //make this an int in case no server is found OR fallback to default server so server is always assigned
+		void	assignServer(Client &client);
 		
 	public:
 		WebServer(const std::string& config_file);
-		~WebServer();
+		~WebServer() = default;
 
 		void	run();
 };

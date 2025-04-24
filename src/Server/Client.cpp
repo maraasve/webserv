@@ -34,7 +34,7 @@ void	Client::handleIncoming() {
 			handleResponseState();
 			break;
 		case clientState::ERROR:
-			///I NEED TO HANDLE ERROR BECAUSE OF HANDLEBODYSTATE
+			handleErrorState();
 			break;
 	}
 }
@@ -54,8 +54,10 @@ void	Client::handleHeaderState() {
 		if (_requestParser.parseHeader(_requestString)) {
 			if (_requestParser.getErrorCode() != "200" ) {
 				_state = clientState::RESPONDING ;
+				//how can we return here if we do not assign a server first?? THIS REQUIRES ATTENTION
 				return ;
 			}
+			std::cout << "I am calling the function here\n" << std::endl;
 			assignServer();
 			if (_requestParser.getState() == requestState::PARSING_BODY) {
 				_state = clientState::READING_BODY;
@@ -66,8 +68,7 @@ void	Client::handleHeaderState() {
 				return ;
 			}
 		}
-	}
-	//I need to actually handle ERROR 
+	} 
 	_state = clientState::ERROR;
 
 }
@@ -110,7 +111,7 @@ void	Client::handleParsingCheckState() {
 bool Client::shouldRunCgi() const {
 	static const std::set<std::string> cgiExtensions = {"py", "php"};
 	const std::string& uri = _request.getRootedURI();
-	ssize_t pos = uri.find_last_of('.');
+	size_t pos = uri.find_last_of('.');
 	if (pos == std::string::npos || pos == uri.size() - 1) {
 		return false;
 	}
@@ -135,12 +136,16 @@ bool	Client::resolveLocation(std::string uri) {
 	return true;
 }
 
+void	Client::handleErrorState() {
+	_request.setErrorCode("500");
+	_state = clientState::RESPONDING;
+}
+
 void	Client::handleCgiState() {
 	if (!_Cgi) {
 		std::filesystem::path path(_request.getRootedURI());
 		if (!std::filesystem::exists(path)) {
-			_request.setErrorCode("500");
-			_state = clientState::RESPONDING;
+			_state = clientState::ERROR;
 			return ;
 		}
 		_Cgi = std::make_shared<Cgi>(_request.getRootedURI(), path.extension());
@@ -153,11 +158,9 @@ void	Client::handleCgiState() {
 		}
 		_Cgi->startCgi();
 	} else if (_Cgi->getState() == cgiState::COMPLETE) {
-		//so then we can go to responding and only when we have the response do we set the client to be epoll_out
 		_state = clientState::RESPONDING;
 	} else if (_Cgi->getState() == cgiState::ERROR) {
-			_request.setErrorCode("500");
-			_state = clientState::RESPONDING;
+			_state = clientState::ERROR;
 			return;
 	}
 }
@@ -197,4 +200,12 @@ Server*	Client::getServer(){
 
 std::shared_ptr<Cgi>	Client::getCgi() {
 	return _Cgi;
+}
+
+Request& Client::getRequest() {
+	return _request;
+}
+
+RequestParser& Client::getRequestParser() {
+	return _requestParser;
 }

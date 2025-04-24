@@ -1,4 +1,5 @@
 #include "./WebServer.hpp"
+#include "./Client.hpp"
 
 WebServer::WebServer(const std::string& config_file) {
 	ConfigParser parser(config_file, _servers);
@@ -54,9 +55,13 @@ void	WebServer::handleNewClient(int client_fd, Server &server) {
 
 void	WebServer::assignServer(Client &client) {
 	int			fd = client.getSocketFd();
-	std::string	host = client.getRequest().getHost();
+	if (client.getRequestParser().getRequest().getHeaders().empty()) {
+		std::cout << "\n\tIT IS EMPTY\n\n" << std::endl;
+		//why are headers emptyyyyyyy
+		exit(1);
+	}
+	std::string	host = client.getRequestParser().getRequest().getHost();
 	Server		*fallback = nullptr;
-
 	for (Server& server : _servers) {
 		if (fd == server.getSocketFd()) {
 			for (std::string serverName : server.getServerNames()) {
