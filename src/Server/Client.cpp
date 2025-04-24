@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: maraasve <maraasve@student.42.fr>          +#+  +:+       +#+        */
+/*   By: andmadri <andmadri@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:06:22 by maraasve          #+#    #+#             */
-/*   Updated: 2025/04/16 18:18:29 by maraasve         ###   ########.fr       */
+/*   Updated: 2025/04/24 18:41:25 by andmadri         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,22 +20,17 @@ void	Client::handleIncoming() {
 	switch (_state) {
 		case clientState::READING_HEADERS:
 			handleHeaderState();
-			break;
 		case clientState::READING_BODY:
 			handleBodyState();
 			break;
 		case clientState::PARSING_CHECKS:
 			handleParsingCheckState();
-			break;
 		case clientState::CGI:
 			handleCgiState();
-			break;
+			case clientState::ERROR:
+				handleErrorState();
 		case clientState::RESPONDING:
 			handleResponseState();
-			break;
-		case clientState::ERROR:
-			handleErrorState();
-			break;
 	}
 }
 
@@ -57,8 +52,8 @@ void	Client::handleHeaderState() {
 				//how can we return here if we do not assign a server first?? THIS REQUIRES ATTENTION
 				return ;
 			}
-			std::cout << "I am calling the function here\n" << std::endl;
-			assignServer();
+			//_requestParser._request has the headers
+			assignServer(*this);
 			if (_requestParser.getState() == requestState::PARSING_BODY) {
 				_state = clientState::READING_BODY;
 				return ;
@@ -89,22 +84,28 @@ void	Client::handleBodyState() {
 }
 
 void	Client::handleParsingCheckState() {
+	std::cout << "/tParsing here 1" << std::endl;
 	if (_requestParser.getErrorCode() != "200") {
 		_request = std::move(_requestParser).getRequest();
 		_state = clientState::RESPONDING;
 		return ;
 	}
+	std::cout << "/tParsing here 2" << std::endl;
 	if (!resolveLocation(_requestParser.getRequest().getURI())) {
+		std::cout << "The location wsa not solved" << std::endl;
 		_request = std::move(_requestParser).getRequest();
 		_state = clientState::RESPONDING;
 		return ;
 	}
+	std::cout << "/tParsing here 3" << std::endl;
 	_requestParser.checkServerDependentHeaders(*_serverPtr, _location);
+	std::cout << "/tParsing here 3.5" << std::endl;
 	_request = std::move(_requestParser).getRequest();
 	if (_request.getErrorCode() != "200") {
 		_state = clientState::RESPONDING;
 		return ;
 	}
+	std::cout << "/tParsing here 4" << std::endl;
 	_state = shouldRunCgi() ? clientState::CGI : clientState::RESPONDING;
 }
 
@@ -131,6 +132,7 @@ bool	Client::resolveLocation(std::string uri) {
 		}
 	}
 	if (bestMatchLength == 0) {
+		std::cout << "The best match is not found" << std::endl;
 		return false;
 	}
 	return true;
@@ -166,8 +168,10 @@ void	Client::handleCgiState() {
 }
 
 void	Client::handleResponseState() {
+	std::cout << "We are about to create the response" << std::endl;
 	_responseString =_response.createResponseStr(_request);
 	_epoll.modifyFd(_fd, EPOLLOUT);
+	std::cout << "We set EPOLLOUT" << std::endl;
 }
 
 void	Client::setRequestStr(std::string request) {

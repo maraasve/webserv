@@ -33,8 +33,8 @@ void	WebServer::handleNewClient(int client_fd, Server &server) {
 	auto newClient = std::make_shared<Client>(client_fd, _epoll, server.getSocketFd());
 	_eventHandlers[client_fd] = newClient;
 	_epoll.addFd(client_fd, EPOLLIN);
-	newClient->assignServer = [this, &newClient]() {
-		this->assignServer(*newClient);
+	newClient->assignServer = [this](Client& client) {
+		this->assignServer(client);
 	};
 	newClient->onCgiAccepted = [this, &newClient](int cgiFd, int event_type) {
 		_epoll.addFd(cgiFd, event_type);
@@ -52,14 +52,8 @@ void	WebServer::handleNewClient(int client_fd, Server &server) {
 		_eventHandlers.erase(client_fd);
 	};
 }
-
 void	WebServer::assignServer(Client &client) {
 	int			fd = client.getSocketFd();
-	if (client.getRequestParser().getRequest().getHeaders().empty()) {
-		std::cout << "\n\tIT IS EMPTY\n\n" << std::endl;
-		//why are headers emptyyyyyyy
-		exit(1);
-	}
 	std::string	host = client.getRequestParser().getRequest().getHost();
 	Server		*fallback = nullptr;
 	for (Server& server : _servers) {
