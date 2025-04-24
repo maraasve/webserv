@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   RequestParser.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: maraasve <maraasve@student.42.fr>          +#+  +:+       +#+        */
+/*   By: andmadri <andmadri@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:06:13 by maraasve          #+#    #+#             */
-/*   Updated: 2025/04/16 18:24:50 by maraasve         ###   ########.fr       */
+/*   Updated: 2025/04/24 17:20:55 by andmadri         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -89,7 +89,7 @@ void	RequestParser::parseHeaders(std::istringstream& stream) {
 			_request.setErrorCode("400"); 
 			return ;
 		}
-		std::cout << key << ":" << value << std::endl;
+		// std::cout << key << ":" << value << std::endl;
 		_request.addHeader(key, value);
 	}
 }

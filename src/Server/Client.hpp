@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: maraasve <maraasve@student.42.fr>          +#+  +:+       +#+        */
+/*   By: andmadri <andmadri@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:06:59 by maraasve          #+#    #+#             */
-/*   Updated: 2025/04/16 17:54:08 by maraasve         ###   ########.fr       */
+/*   Updated: 2025/04/24 17:24:26 by andmadri         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,7 +63,6 @@ public:
 	void									handleCgiState();
 	void									handleResponseState();
 	void									handleErrorState();
-	// void									handleCompleteState();
 	bool									resolveLocation(std::string uri);
 	
 	void									setRequestStr(std::string request);
@@ -81,7 +80,7 @@ public:
 	
 	bool 									shouldRunCgi() const;
 
-	std::function<void()>					assignServer;
+	std::function<void(Client& client)>					assignServer;
 	std::function<void(int, int)>			onCgiAccepted;
 	std::function<void()>					closeClientConnection;
 };
