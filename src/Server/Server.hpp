@@ -38,10 +38,11 @@ private:
 	std::shared_ptr<Socket>				_serverSocket;
 	
 public:
-	Server() = default; //maybe this will not work with the default values
+	Server() = default;
 	~Server() = default;
 	
 	void								handleIncoming() override;
+	void								handleOutgoing() override;
 	
 	void setPort(int port);
 	void setAutoIndex(bool auto_index);

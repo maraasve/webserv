@@ -25,6 +25,7 @@
 # include <unordered_map>
 # include <optional>
 # include <set>
+# include <filesystem>
 
 enum class clientState {
 	READING_HEADERS = 0,
@@ -32,7 +33,6 @@ enum class clientState {
 	PARSING_CHECKS,
 	CGI,
 	RESPONDING,
-	COMPLETE,
 	ERROR
 };
 
@@ -62,7 +62,7 @@ public:
 	void									handleParsingCheckState();
 	void									handleCgiState();
 	void									handleResponseState();
-	// void									handleErrorState();
+	void									handleErrorState();
 	// void									handleCompleteState();
 	bool									resolveLocation(std::string uri);
 	
@@ -76,6 +76,7 @@ public:
 	std::string&							getResponseStr();
 	Server*									getServer();
 	Request&								getRequest();
+	RequestParser&							getRequestParser();
 	std::shared_ptr<Cgi>					getCgi();
 	
 	bool 									shouldRunCgi() const;

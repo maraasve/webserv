@@ -14,7 +14,6 @@ obj/Server/Client.o: src/Server/Client.cpp src/Server/./Client.hpp \
  src/Server/./../CGI/../Server/EventHandler.hpp \
  src/Server/./../CGI/../Server/WebServer.hpp \
  src/Server/./../CGI/../Server/./Server.hpp \
- src/Server/./../CGI/../Server/./Client.hpp \
  src/Server/./../CGI/../Server/../Networks/Epoll.hpp \
  src/Server/./../CGI/../Server/../Parsing/ConfigParser.hpp \
  src/Server/./../CGI/../Server/../Parsing/../Server/Server.hpp \

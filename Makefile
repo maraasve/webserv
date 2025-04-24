@@ -15,6 +15,8 @@ $(OBJ_DIR):
 	mkdir -p $(OBJ_DIR)/Networks
 	mkdir -p $(OBJ_DIR)/Parsing
 	mkdir -p $(OBJ_DIR)/Server
+	mkdir -p $(OBJ_DIR)/CGI
+
 
 $(NAME):$(OBJS)
 	$(CPP) $(CPPFLAGS) -o $(NAME) $(OBJS)

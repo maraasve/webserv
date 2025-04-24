@@ -93,12 +93,15 @@ char**  Cgi::vecTo2DArray(std::vector<std::string>& vec) {
 char**	Cgi::setArgs() {
 	std::vector<std::string>	argsv;
 
-	if (_extension == "py")
+	if (_extension == "py") {
 		argsv.emplace_back("python3");
-	else if (_extension == "php")
+	}
+	else if (_extension == "php") {
 		argsv.emplace_back("php-cgi");
+
+	}
 	argsv.emplace_back(_filePath);
-	vecTo2DArray(argsv);
+	return vecTo2DArray(argsv);
 }
 
 std::string Cgi::getExecPath() {

@@ -9,8 +9,8 @@ class EventHandler {
 		virtual			~EventHandler();
 	
 	public:
-		virtual	void	handleIncoming();
-		virtual	void	handleOutgoing();
+		virtual	void	handleIncoming() = 0;
+		virtual	void	handleOutgoing() = 0;
 		ssize_t			readIncomingData(std::string& appendToStr, int fd);
 		//				writeOutgoingData();
 };

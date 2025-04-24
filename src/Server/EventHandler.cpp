@@ -1,5 +1,7 @@
 #include "EventHandler.hpp"
 
+EventHandler::~EventHandler() {}
+
 ssize_t	EventHandler::readIncomingData(std::string& appendToStr, int fd) {
 	char buffer[BUFSIZ];
 
