@@ -20,93 +20,115 @@ void	Client::handleIncoming() {
 	switch (_state) {
 		case clientState::READING_HEADERS:
 			handleHeaderState();
+			break;
 		case clientState::READING_BODY:
 			handleBodyState();
 			break;
 		case clientState::PARSING_CHECKS:
 			handleParsingCheckState();
+			break;
 		case clientState::CGI:
 			handleCgiState();
-			case clientState::ERROR:
-				handleErrorState();
+			break;
+		case clientState::ERROR:
+			handleErrorState();
+			break;
 		case clientState::RESPONDING:
 			handleResponseState();
+			break;
 	}
 }
 
 void Client::handleOutgoing() {
-	ssize_t bytes = send(_fd, _responseString.c_str(), _responseString.size(), MSG_DONTWAIT);
+	std::cout << "\n\tHandle Outgoing " << std::endl;
+	ssize_t bytes = send(_fd, _responseString.c_str(), _responseString.size(), 0);
+	std::cout << "Bytes sent to client: " << bytes << std::endl;
 	if (bytes > 0) {
 		_responseString.erase(0, bytes);
 	} else if (_responseString.empty() && closeClientConnection) {
+		std::cout << "\tClosing client connection after sending" << std::endl;
 		closeClientConnection();
 	}
 }
 
 void	Client::handleHeaderState() {
+	std::cout << "\n\tHandling Header State" << std::endl;
 	ssize_t	bytes = readIncomingData(_requestString, _fd);
-	if (bytes != -1) {
-		if (_requestParser.parseHeader(_requestString)) {
-			if (_requestParser.getErrorCode() != "200" ) {
-				_state = clientState::RESPONDING ;
-				//how can we return here if we do not assign a server first?? THIS REQUIRES ATTENTION
-				return ;
-			}
-			//_requestParser._request has the headers
-			assignServer(*this);
-			if (_requestParser.getState() == requestState::PARSING_BODY) {
-				_state = clientState::READING_BODY;
-				return ;
-			}
-			else if (_requestParser.getState() == requestState::COMPLETE) {
-				_state = clientState::PARSING_CHECKS;
-				return ;
-			}
+	std::cout << "Bytes read from client: " << std::endl;
+	if (bytes == 0) {
+		//Sometimes the webbrowser sends stuff to us that are not client interaction and we read no bytes
+		//therefore we just have to close the connection without processing it
+		closeClientConnection();
+	}
+	if (bytes < 0) {
+		_state = clientState::ERROR;
+		handleIncoming();
+		return ;
+	}
+	if (_requestParser.parseHeader(_requestString)) {
+		if (_requestParser.getErrorCode() != "200" ) {
+			_state = clientState::RESPONDING ;
+			handleIncoming();
+			//how can we return here if we do not assign a server first?? THIS REQUIRES ATTENTION
+			return ;
 		}
-	} 
-	_state = clientState::ERROR;
-
+		assignServer(*this);
+		if (_requestParser.getState() == requestState::PARSING_BODY) {
+			_state = clientState::READING_BODY;
+			handleIncoming();
+			return ;
+		}
+		else if (_requestParser.getState() == requestState::COMPLETE) {
+			_state = clientState::PARSING_CHECKS;
+			handleIncoming();
+			return ;
+		}
+	}
 }
 
 void	Client::handleBodyState() {
+	std::cout << "\n\tHandling Body State" << std::endl;
 	ssize_t	bytes = readIncomingData(_requestString, _fd);
 	if (bytes != -1) {
 		if (_requestParser.parseBody(_requestString, bytes)) {
 			_state = clientState::PARSING_CHECKS;
+			handleIncoming();
 			return ;
 		}
 		if (_requestParser.getErrorCode() != "200") {
 			_state = clientState::RESPONDING;
+			handleIncoming();
 			return ;
 		}
 	}
 	_state = clientState::ERROR;
+	handleIncoming();
 }
 
 void	Client::handleParsingCheckState() {
-	std::cout << "/tParsing here 1" << std::endl;
+	std::cout << "\n\tHandling Parsing Check State" << std::endl;
 	if (_requestParser.getErrorCode() != "200") {
 		_request = std::move(_requestParser).getRequest();
 		_state = clientState::RESPONDING;
+		handleIncoming();
 		return ;
 	}
-	std::cout << "/tParsing here 2" << std::endl;
 	if (!resolveLocation(_requestParser.getRequest().getURI())) {
 		std::cout << "The location wsa not solved" << std::endl;
 		_request = std::move(_requestParser).getRequest();
 		_state = clientState::RESPONDING;
+		handleIncoming();
 		return ;
 	}
-	std::cout << "/tParsing here 3" << std::endl;
 	_requestParser.checkServerDependentHeaders(*_serverPtr, _location);
-	std::cout << "/tParsing here 3.5" << std::endl;
 	_request = std::move(_requestParser).getRequest();
 	if (_request.getErrorCode() != "200") {
 		_state = clientState::RESPONDING;
+		handleIncoming();
 		return ;
 	}
-	std::cout << "/tParsing here 4" << std::endl;
 	_state = shouldRunCgi() ? clientState::CGI : clientState::RESPONDING;
+	handleIncoming();
 }
 
 bool Client::shouldRunCgi() const {
@@ -139,15 +161,19 @@ bool	Client::resolveLocation(std::string uri) {
 }
 
 void	Client::handleErrorState() {
+	std::cout << "\n\tHandle Error State" << std::endl;
 	_request.setErrorCode("500");
 	_state = clientState::RESPONDING;
+	handleIncoming();
 }
 
 void	Client::handleCgiState() {
+	std::cout << "\n\tHandle CgiState" << std::endl;
 	if (!_Cgi) {
 		std::filesystem::path path(_request.getRootedURI());
 		if (!std::filesystem::exists(path)) {
 			_state = clientState::ERROR;
+			handleIncoming();
 			return ;
 		}
 		_Cgi = std::make_shared<Cgi>(_request.getRootedURI(), path.extension());
@@ -161,17 +187,33 @@ void	Client::handleCgiState() {
 		_Cgi->startCgi();
 	} else if (_Cgi->getState() == cgiState::COMPLETE) {
 		_state = clientState::RESPONDING;
+		handleIncoming();
+		return;
 	} else if (_Cgi->getState() == cgiState::ERROR) {
 			_state = clientState::ERROR;
+			handleIncoming();
 			return;
 	}
 }
 
+void printRequestObject(Request& request) {
+	std::cout << "---REQUES FROM CLIENT---" << std::endl;
+	std::cout << request.getMethod() << std::endl;
+	std::cout << request.getURI() << std::endl;
+	std::cout << request.getHTTPVersion() << std::endl;
+	std::cout << request.getHost() << std::endl;
+	// for (auto it = request.getHeaders().begin() ; it != request.getHeaders().end() ; ++it) {
+	// 	std::cout << it->first << ": " << it->second << std::endl;
+	// }
+	std::cout << request.getBody() << std::endl;
+}
+
 void	Client::handleResponseState() {
-	std::cout << "We are about to create the response" << std::endl;
+	printRequestObject(_request);
+	std::cout << "I am in handle Response State" << std::endl;
 	_responseString =_response.createResponseStr(_request);
+	std::cout << "\n---Response String-- \n" << _responseString << std::endl;
 	_epoll.modifyFd(_fd, EPOLLOUT);
-	std::cout << "We set EPOLLOUT" << std::endl;
 }
 
 void	Client::setRequestStr(std::string request) {

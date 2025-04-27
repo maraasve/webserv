@@ -36,7 +36,7 @@ void	WebServer::handleNewClient(int client_fd, Server &server) {
 	newClient->assignServer = [this](Client& client) {
 		this->assignServer(client);
 	};
-	newClient->onCgiAccepted = [this, &newClient](int cgiFd, int event_type) {
+	newClient->onCgiAccepted = [this, newClient](int cgiFd, int event_type) {
 		_epoll.addFd(cgiFd, event_type);
 		auto newCgi = newClient->getCgi();
 		_eventHandlers[cgiFd] = newCgi;
@@ -45,11 +45,16 @@ void	WebServer::handleNewClient(int client_fd, Server &server) {
 			_eventHandlers.erase(cgiFd);
 		};
 	};
-	newClient->closeClientConnection = [this, &newClient]() {
+	newClient->closeClientConnection = [this, newClient]() {
+		std::cout << "Calling Close Connection successful" << std::endl;
 		int client_fd = newClient->getFd();
+		std::cout << "We get the client fd: " << client_fd << std::endl;
 		_epoll.deleteFd(client_fd);
+		std::cout << "We delete the client fd: " << client_fd << std::endl;
 		close(client_fd);
+		std::cout << "We close the client fd: " << client_fd << std::endl;
 		_eventHandlers.erase(client_fd);
+		std::cout << "We erase the client fd from epoll: " << client_fd << std::endl;
 	};
 }
 void	WebServer::assignServer(Client &client) {
