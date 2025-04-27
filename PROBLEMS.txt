@@ -1,0 +1,1 @@
+Error Pages do not work nor the CGI haha

@@ -1,6 +1,7 @@
 NAME = webserv
 CPP = c++
-CPPFLAGS = -Wall -Werror -Wextra -std=c++17 -MMD -g3
+CPPFLAGS = -Wall -Werror -Wextra -std=c++17 -MMD -g3 -fPIE
+LDFLAGS = -pie
 RM = rm -rf
 SRC_DIR = src
 OBJ_DIR = obj
@@ -19,7 +20,7 @@ $(OBJ_DIR):
 
 
 $(NAME):$(OBJS)
-	$(CPP) $(CPPFLAGS) -o $(NAME) $(OBJS)
+	$(CPP) $(OBJS) -o $(NAME) $(LDFLAGS)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp | $(OBJ_DIR)
 	$(CPP) $(CPPFLAGS) -c $< -o $@
