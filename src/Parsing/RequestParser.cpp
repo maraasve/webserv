@@ -6,7 +6,7 @@
 /*   By: andmadri <andmadri@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:06:13 by maraasve          #+#    #+#             */
-/*   Updated: 2025/04/24 17:20:55 by andmadri         ###   ########.fr       */
+/*   Updated: 2025/05/01 16:57:09 by andmadri         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,7 +21,7 @@ RequestParser::~RequestParser() {
 bool	RequestParser::parseHeader(std::string& requestStr) {
 	size_t header_end = requestStr.find("\r\n\r\n");
 	if (header_end == std::string::npos) {
-		return false; // what if it never finds "\r\n\r\n" 
+		return false;
 	}
 	std::string	header = requestStr.substr(0, header_end);
 	std::istringstream stream(header);
@@ -89,7 +89,6 @@ void	RequestParser::parseHeaders(std::istringstream& stream) {
 			_request.setErrorCode("400"); 
 			return ;
 		}
-		// std::cout << key << ":" << value << std::endl;
 		_request.addHeader(key, value);
 	}
 }
@@ -164,6 +163,7 @@ bool	RequestParser::checkContentLength(const std::unordered_map<std::string, std
 				contentLength = static_cast<ssize_t>(std::stol(it->second));
 			}
 			catch (...) {
+				std::cout << "\t\tError while converting content length\n\n" << std::endl;
 				_request.setErrorCode("500"); 
 				return false;
 			}
@@ -205,21 +205,19 @@ bool	RequestParser::checkHTTP() const {
 }
 
 void	RequestParser::checkServerDependentHeaders(const Server& server, const Location& location) {
-	//the problem comes from check match uri or check file
 	if (!checkMatchURI(server, location) || !checkFile(server, location)) {
-		std::cout << "\n\n\tP3.1" << std::endl;
+		std::cout << "\n\n\tFail: Check MAtch Uri or CheckFile (404)" << std::endl;
 		_request.setErrorCode("404");
 		return ;
     }
 	if (!checkAllowedMethods(location)) {
-		std::cout << "\n\n\tP3.2" << std::endl;
+		std::cout << "\n\n\tFail: Check Allowed Methods (405)" << std::endl;
 		_request.setErrorCode("405");
 		return ;
     }
 	if (_request.getMethod() == "POST") {
-		std::cout << "\n\n\tP3.3" << std::endl;
 		if (!checkBodyLength(server, location)) {
-			std::cout << "\n\n\tP3.31" << std::endl;
+			std::cout << "\n\n\tFail: Check Body Length (413)" << std::endl;
 			_request.setErrorCode("413");
 			return ;
 		}
@@ -317,12 +315,12 @@ bool	RequestParser::checkFile(const Server& server, const Location& location) {
 bool RequestParser::checkBodyLength(const Server& server, const Location& location) {
 	ssize_t	contentLength = _request.getContentLength();
 	if (location._client_max_body > 0 && contentLength <= static_cast<ssize_t>(location._client_max_body)) {
-		return false;
+		return true;
 	}
 	else if (contentLength <= static_cast<ssize_t>(server.getClientMaxBody())) {
-		return false;
+		return true;
 	}
-    return true;
+    return false;
 }
 
 std::string	RequestParser::getErrorCode() {

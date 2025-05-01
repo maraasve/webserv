@@ -6,7 +6,7 @@
 /*   By: andmadri <andmadri@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:06:22 by maraasve          #+#    #+#             */
-/*   Updated: 2025/04/24 18:41:25 by andmadri         ###   ########.fr       */
+/*   Updated: 2025/05/01 16:25:33 by andmadri         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -87,7 +87,7 @@ void	Client::handleHeaderState() {
 void	Client::handleBodyState() {
 	std::cout << "\n\t--Handling Body State--" << std::endl;
 	ssize_t	bytes = readIncomingData(_requestString, _fd);
-	if (bytes != -1) {
+	if (bytes > 0) {
 		if (_requestParser.parseBody(_requestString, bytes)) {
 			_state = clientState::PARSING_CHECKS;
 			handleIncoming();
@@ -98,9 +98,10 @@ void	Client::handleBodyState() {
 			handleIncoming();
 			return ;
 		}
+	} else {
+		_state = clientState::ERROR;
+		handleIncoming();
 	}
-	_state = clientState::ERROR;
-	handleIncoming();
 }
 
 void	Client::handleParsingCheckState() {
@@ -117,7 +118,6 @@ void	Client::handleParsingCheckState() {
 		handleIncoming();
 		return ;
 	}
-	//the problem comes from checkServerDependentHeaders?
 	_requestParser.checkServerDependentHeaders(*_serverPtr, _location);
 	_request = std::move(_requestParser).getRequest();
 	if (_request.getErrorCode() != "200") {
@@ -165,14 +165,15 @@ void	Client::handleErrorState() {
 }
 
 void	Client::handleCgiState() {
+	std::cout << "\n\t--Handle Cgi State--" << std::endl;
 	if (!_Cgi) {
 		_Cgi = std::make_shared<Cgi>(_request.getRootedURI(), _cgi_extension, _request.getMethod(), this);
 		if (onCgiAccepted) {
 			if (_request.getMethod() == "POST") {
 				_Cgi->setBody(_request.getBody());
-				onCgiAccepted(_Cgi->getWriteFd(), EPOLLOUT); //is this correct?
+				onCgiAccepted(_Cgi->getWriteFd(), EPOLLOUT);
 			}
-			onCgiAccepted(_Cgi->getReadFd(), EPOLLIN); //is this correct?
+			onCgiAccepted(_Cgi->getReadFd(), EPOLLIN);
 		} else {
 			_state = clientState::ERROR;
 			handleIncoming();
@@ -181,6 +182,8 @@ void	Client::handleCgiState() {
 		_Cgi->startCgi();
 	} 
 	if (_Cgi->getState() == cgiState::COMPLETE) {
+		_request.setBody(_Cgi->getBody());
+		_request.setFileType(CGI_FILE);
 		_state = clientState::RESPONDING;
 		handleIncoming();
 		return;
@@ -192,7 +195,7 @@ void	Client::handleCgiState() {
 }
 
 void printRequestObject(Request& request) {
-	std::cout << "---REQUES FROM CLIENT---" << std::endl;
+	std::cout << "---Printing Request From Client---" << std::endl;
 	std::cout << request.getMethod() << std::endl;
 	std::cout << request.getURI() << std::endl;
 	std::cout << request.getHTTPVersion() << std::endl;
@@ -204,8 +207,8 @@ void printRequestObject(Request& request) {
 }
 
 void	Client::handleResponseState() {
-	printRequestObject(_request);
 	std::cout << "\t\t\nHandle Response State" << std::endl;
+	printRequestObject(_request);
 	_responseString =_response.createResponseStr(_request);
 	std::cout << "\n---Response String-- \n" << _responseString << std::endl;
 	_epoll.modifyFd(_fd, EPOLLOUT);

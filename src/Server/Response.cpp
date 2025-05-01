@@ -176,32 +176,24 @@ void Response::serveDirectoryListing(const std::string& dir_path) {
 
 
 void Response::handleRequest(const Request& request) {
+    //we gotta change this because it will not only be one cgi it can be many rigth?
+    //how can I make sure that it comes from the cgi?
+    if (request.getFileType() == CGI_FILE) {
+        _body = request.getBody();
+        createHeaders("text/html", std::to_string(_body.size()));
+        return;
+    }
     std::string method = request.getMethod();
-
-    if (method == "GET") {
+     if (method == "GET") {
         if (request.getFileType() != AUTOINDEX) {
             serveFile(request.getRootedURI());
         } else if (request.getFileType() == AUTOINDEX) {
             serveDirectoryListing(request.getRootedURI());
         }
-    } else if (method == "POST" || method == "DELETE") {
-        createHeaders("text/html", std::to_string(_body.size()));
-        //I need to create the headers
     }
-    //otherwise CGI will handle the POST and DELETE methods
-
 }
 
-/*
-GET
-/img/error_img/500.jpg
-HTTP/1.1
-localhost:8080
-*/
-
-//this means that the problem comes from the request parser
 std::string Response::createResponseStr(const Request& request) {
-    std::cout << "This is the error code one inside response: " << request.getErrorCode() << std::endl; 
     setErrorCodeText(request.getErrorCode());
     if (_error_code != "200") {
         createErrorPage();

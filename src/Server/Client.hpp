@@ -6,7 +6,7 @@
 /*   By: andmadri <andmadri@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:06:59 by maraasve          #+#    #+#             */
-/*   Updated: 2025/04/24 17:24:26 by andmadri         ###   ########.fr       */
+/*   Updated: 2025/05/01 12:54:27 by andmadri         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,19 +38,19 @@ enum class clientState {
 
 class Client : public EventHandler {
 private:
-	clientState				_state = clientState::READING_HEADERS;
-	int						_fd;
-	Server*					_serverPtr;
-	Location				_location;
-	Epoll&					_epoll;
-	id_t					_socketFd; //are we still using this?
-	std::string				_requestString;
-	std::string				_responseString; 
-	Request					_request;
-	RequestParser			_requestParser;
-	Response				_response;
+	clientState						_state = clientState::READING_HEADERS;
+	int										_fd;
+	Server*								_serverPtr;
+	Location							_location;
+	Epoll&								_epoll;
+	id_t									_socketFd; //are we still using this?
+	std::string						_requestString;
+	std::string						_responseString; 
+	Request								_request;
+	RequestParser					_requestParser;
+	Response							_response;
 	std::shared_ptr<Cgi>	_Cgi;
-	std::string				_cgi_extension;
+	std::string						_cgi_extension;
 
 public:
 	Client(int fd, Epoll& epoll, int socket_fd);
