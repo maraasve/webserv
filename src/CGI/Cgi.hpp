@@ -26,6 +26,7 @@
 # include "../Server/EventHandler.hpp"
 # include "../Server/WebServer.hpp"
 
+
 # define TIMEOUT 5000
 
 enum class cgiState {
@@ -37,27 +38,31 @@ enum class cgiState {
 	ERROR
 };
 
+class Client;
+
 class Cgi : public EventHandler {
 	private:
 		const std::string	_filePathString;
 		const std::string	_extension;
+		const char			*_filePath;
 		char				**_args;
 		const std::string	_execPath;
-		const char			*_filePath;
 		int					_exitStatus;
 		cgiState			_state;
 		int					_writeToChild[2];
 		int					_readFromChild[2];
-		pid_t				_cgiPid; //if I fork will the child use the constructor again and reinitialized everything?
+		pid_t				_cgiPid;
 		std::string			_body;
 		char				**_env;
+		std::string			_method;
+		Client*				_client;
 	
 		char**  		vecTo2DArray(std::vector<std::string>& vec);
-		void			freeArgs();
+		void			freeArgs(char **array);
 		char**			setArgs();
 	public:
 		Cgi() = default;
-		Cgi(const std::string& file_path, const std::string& extension);
+		Cgi(const std::string& file_path, const std::string& extension, const std::string& method, Client* client);
 		~Cgi();
 
 		void			startCgi();
@@ -66,7 +71,7 @@ class Cgi : public EventHandler {
 		void			setBody(std::string body);
 		void			handleIncoming() override;
 		void			handleOutgoing() override;
-		void 			errorHandler();
+		void 			errorHandler(char **array);
 		
 		bool			childFailed();
 		int				getExitStatus() const;

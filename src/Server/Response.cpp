@@ -58,7 +58,7 @@ if _error_code is empty then that means we did not set up an error before that
    */
   
 
-  #include "./Response.hpp"
+#include "./Response.hpp"
 
 Response::Response() : _errorsTexts({
     {"200", "OK"},
@@ -192,8 +192,17 @@ void Response::handleRequest(const Request& request) {
 
 }
 
+/*
+GET
+/img/error_img/500.jpg
+HTTP/1.1
+localhost:8080
+*/
+
+//this means that the problem comes from the request parser
 std::string Response::createResponseStr(const Request& request) {
-   setErrorCodeText(request.getErrorCode());
+    std::cout << "This is the error code one inside response: " << request.getErrorCode() << std::endl; 
+    setErrorCodeText(request.getErrorCode());
     if (_error_code != "200") {
         createErrorPage();
         createHeaders("text/html", std::to_string(_body.size()));

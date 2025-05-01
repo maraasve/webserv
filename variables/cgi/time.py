@@ -1,6 +1,7 @@
+
 from datetime import datetime
 now = datetime.now()
-print(f"""
+body = f"""
 <!DOCTYPE html>
 <html>
 <head><title>Current Time</title></head>
@@ -9,4 +10,6 @@ print(f"""
     <p>{now.strftime('%Y-%m-%d %H:%M:%S')}</p>
 </body>
 </html>
-""")
+"""
+print("Content-Type: text/html\r\n")
+print(body)

@@ -40,9 +40,8 @@ void	Client::handleIncoming() {
 }
 
 void Client::handleOutgoing() {
-	std::cout << "\n\tHandle Outgoing " << std::endl;
+	std::cout << "\n\t----Handle Outgoing-- " << std::endl;
 	ssize_t bytes = send(_fd, _responseString.c_str(), _responseString.size(), 0);
-	std::cout << "Bytes sent to client: " << bytes << std::endl;
 	if (bytes > 0) {
 		_responseString.erase(0, bytes);
 	} else if (_responseString.empty() && closeClientConnection) {
@@ -52,9 +51,8 @@ void Client::handleOutgoing() {
 }
 
 void	Client::handleHeaderState() {
-	std::cout << "\n\tHandling Header State" << std::endl;
+	std::cout << "\n\t--Handling Header State--" << std::endl;
 	ssize_t	bytes = readIncomingData(_requestString, _fd);
-	std::cout << "Bytes read from client: " << std::endl;
 	if (bytes == 0) {
 		//Sometimes the webbrowser sends stuff to us that are not client interaction and we read no bytes
 		//therefore we just have to close the connection without processing it
@@ -87,7 +85,7 @@ void	Client::handleHeaderState() {
 }
 
 void	Client::handleBodyState() {
-	std::cout << "\n\tHandling Body State" << std::endl;
+	std::cout << "\n\t--Handling Body State--" << std::endl;
 	ssize_t	bytes = readIncomingData(_requestString, _fd);
 	if (bytes != -1) {
 		if (_requestParser.parseBody(_requestString, bytes)) {
@@ -106,7 +104,7 @@ void	Client::handleBodyState() {
 }
 
 void	Client::handleParsingCheckState() {
-	std::cout << "\n\tHandling Parsing Check State" << std::endl;
+	std::cout << "\n\t--Handling Parsing Check State--" << std::endl;
 	if (_requestParser.getErrorCode() != "200") {
 		_request = std::move(_requestParser).getRequest();
 		_state = clientState::RESPONDING;
@@ -114,12 +112,12 @@ void	Client::handleParsingCheckState() {
 		return ;
 	}
 	if (!resolveLocation(_requestParser.getRequest().getURI())) {
-		std::cout << "The location wsa not solved" << std::endl;
 		_request = std::move(_requestParser).getRequest();
 		_state = clientState::RESPONDING;
 		handleIncoming();
 		return ;
 	}
+	//the problem comes from checkServerDependentHeaders?
 	_requestParser.checkServerDependentHeaders(*_serverPtr, _location);
 	_request = std::move(_requestParser).getRequest();
 	if (_request.getErrorCode() != "200") {
@@ -131,15 +129,15 @@ void	Client::handleParsingCheckState() {
 	handleIncoming();
 }
 
-bool Client::shouldRunCgi() const {
+bool Client::shouldRunCgi() {
 	static const std::set<std::string> cgiExtensions = {"py", "php"};
 	const std::string& uri = _request.getRootedURI();
 	size_t pos = uri.find_last_of('.');
 	if (pos == std::string::npos || pos == uri.size() - 1) {
 		return false;
 	}
-	std::string ext = uri.substr(pos + 1);
-	return cgiExtensions.count(ext) > 0;
+	_cgi_extension = uri.substr(pos + 1);
+	return cgiExtensions.count(_cgi_extension) > 0;
 }
 
 bool	Client::resolveLocation(std::string uri) {
@@ -154,45 +152,42 @@ bool	Client::resolveLocation(std::string uri) {
 		}
 	}
 	if (bestMatchLength == 0) {
-		std::cout << "The best match is not found" << std::endl;
 		return false;
 	}
 	return true;
 }
 
 void	Client::handleErrorState() {
-	std::cout << "\n\tHandle Error State" << std::endl;
+	std::cout << "\n\t--Handle Error State--" << std::endl;
 	_request.setErrorCode("500");
 	_state = clientState::RESPONDING;
 	handleIncoming();
 }
 
 void	Client::handleCgiState() {
-	std::cout << "\n\tHandle CgiState" << std::endl;
 	if (!_Cgi) {
-		std::filesystem::path path(_request.getRootedURI());
-		if (!std::filesystem::exists(path)) {
+		_Cgi = std::make_shared<Cgi>(_request.getRootedURI(), _cgi_extension, _request.getMethod(), this);
+		if (onCgiAccepted) {
+			if (_request.getMethod() == "POST") {
+				_Cgi->setBody(_request.getBody());
+				onCgiAccepted(_Cgi->getWriteFd(), EPOLLOUT); //is this correct?
+			}
+			onCgiAccepted(_Cgi->getReadFd(), EPOLLIN); //is this correct?
+		} else {
 			_state = clientState::ERROR;
 			handleIncoming();
-			return ;
-		}
-		_Cgi = std::make_shared<Cgi>(_request.getRootedURI(), path.extension());
-		if (onCgiAccepted && _request.getMethod() == "POST") {
-			_Cgi->setBody(_request.getBody());
-			onCgiAccepted(_Cgi->getWriteFd(), EPOLLOUT);
-			onCgiAccepted(_Cgi->getReadFd(), EPOLLIN);
-		} else if (onCgiAccepted && _request.getMethod() == "DELETE") {
-			onCgiAccepted(_Cgi->getReadFd(), EPOLLIN);
+			return;
 		}
 		_Cgi->startCgi();
-	} else if (_Cgi->getState() == cgiState::COMPLETE) {
+	} 
+	if (_Cgi->getState() == cgiState::COMPLETE) {
 		_state = clientState::RESPONDING;
 		handleIncoming();
 		return;
 	} else if (_Cgi->getState() == cgiState::ERROR) {
-			_state = clientState::ERROR;
-			handleIncoming();
-			return;
+		_state = clientState::ERROR;
+		handleIncoming();
+		return;
 	}
 }
 
@@ -210,7 +205,7 @@ void printRequestObject(Request& request) {
 
 void	Client::handleResponseState() {
 	printRequestObject(_request);
-	std::cout << "I am in handle Response State" << std::endl;
+	std::cout << "\t\t\nHandle Response State" << std::endl;
 	_responseString =_response.createResponseStr(_request);
 	std::cout << "\n---Response String-- \n" << _responseString << std::endl;
 	_epoll.modifyFd(_fd, EPOLLOUT);

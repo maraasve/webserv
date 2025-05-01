@@ -50,6 +50,7 @@ private:
 	RequestParser			_requestParser;
 	Response				_response;
 	std::shared_ptr<Cgi>	_Cgi;
+	std::string				_cgi_extension;
 
 public:
 	Client(int fd, Epoll& epoll, int socket_fd);
@@ -78,7 +79,7 @@ public:
 	RequestParser&							getRequestParser();
 	std::shared_ptr<Cgi>					getCgi();
 	
-	bool 									shouldRunCgi() const;
+	bool 									shouldRunCgi();
 
 	std::function<void(Client& client)>					assignServer;
 	std::function<void(int, int)>			onCgiAccepted;
