@@ -13,6 +13,7 @@
 # define REGULAR_FILE 0
 # define DIRECTORY 1
 # define AUTOINDEX 2
+# define CGI_FILE 3
 
 class	Request {
 	private:
@@ -35,18 +36,18 @@ class	Request {
 		~Request();
 
 		//probably better to make all of these const
-		std::string										getHost() const;
-		std::string										getMethod() const;
-		std::string										getPath() const;
-		std::string										getURI() const;
-		std::string										getRootedURI() const;
-		std::string										getQueryString() const;
-		std::string										getHTTPVersion() const;
-		std::string										getBody() const;
-		std::string										getErrorCode() const;
+		std::string																		getHost() const;
+		std::string																		getMethod() const;
+		std::string																		getPath() const;
+		std::string																		getURI() const;
+		std::string																		getRootedURI() const;
+		std::string																		getQueryString() const;
+		std::string																		getHTTPVersion() const;
+		std::string																		getBody() const;
+		std::string																		getErrorCode() const;
 		std::unordered_map<std::string, std::string>	getHeaders() const;
-		ssize_t 										getContentLength() const;
-		int												getFileType() const;
+		ssize_t 																			getContentLength() const;
+		int																						getFileType() const;
 
 
 		// better to pass const std::string& in all of these:
