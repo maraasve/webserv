@@ -12,7 +12,6 @@ class EventHandler {
 		virtual	void	handleIncoming() = 0;
 		virtual	void	handleOutgoing() = 0;
 		ssize_t			readIncomingData(std::string& appendToStr, int fd);
-		//				writeOutgoingData();
 };
 
 #endif

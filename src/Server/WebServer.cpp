@@ -17,6 +17,9 @@ void WebServer::run() {
 			int event_fd = event.data.fd;
 			auto handler = _eventHandlers.find(event_fd);
 			if (handler != _eventHandlers.end()) {
+				//the cgi is not working because we always want to make the client go in if the state is CGI
+				//Even if we we use a flag, the client does not go back in handleIncoming because
+				//the client has already done his action
 				if (event.events & EPOLLIN) {
 					handler->second->handleIncoming();
 				}
@@ -46,15 +49,10 @@ void	WebServer::handleNewClient(int client_fd, Server &server) {
 		};
 	};
 	newClient->closeClientConnection = [this, newClient]() {
-		std::cout << "Calling Close Connection successful" << std::endl;
 		int client_fd = newClient->getFd();
-		std::cout << "We get the client fd: " << client_fd << std::endl;
 		_epoll.deleteFd(client_fd);
-		std::cout << "We delete the client fd: " << client_fd << std::endl;
 		close(client_fd);
-		std::cout << "We close the client fd: " << client_fd << std::endl;
 		_eventHandlers.erase(client_fd);
-		std::cout << "We erase the client fd from epoll: " << client_fd << std::endl;
 	};
 }
 void	WebServer::assignServer(Client &client) {

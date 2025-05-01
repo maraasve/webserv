@@ -205,16 +205,21 @@ bool	RequestParser::checkHTTP() const {
 }
 
 void	RequestParser::checkServerDependentHeaders(const Server& server, const Location& location) {
+	//the problem comes from check match uri or check file
 	if (!checkMatchURI(server, location) || !checkFile(server, location)) {
+		std::cout << "\n\n\tP3.1" << std::endl;
 		_request.setErrorCode("404");
 		return ;
     }
 	if (!checkAllowedMethods(location)) {
+		std::cout << "\n\n\tP3.2" << std::endl;
 		_request.setErrorCode("405");
 		return ;
     }
 	if (_request.getMethod() == "POST") {
+		std::cout << "\n\n\tP3.3" << std::endl;
 		if (!checkBodyLength(server, location)) {
+			std::cout << "\n\n\tP3.31" << std::endl;
 			_request.setErrorCode("413");
 			return ;
 		}
@@ -226,10 +231,12 @@ bool	RequestParser::checkMatchURI(const Server& server, const Location& location
 	const std::string& uri = _request.getURI();
 	const std::string& loc_path = location._path;
 	if (uri.compare(0, loc_path.size(), loc_path) != 0) {
+		std::cout << "HERE IS PROBLEM CHECK MATCH URI 1" << std::endl;
 		return false;
 	}
 	std::string rest_uri = uri.substr(loc_path.size());
 	if (!rest_uri.empty() && rest_uri[0] != '/') {
+		std::cout << "HERE IS PROBLEM CHECK MATCH URI 2" << std::endl;
 		return false;
 	}
 	if (rest_uri.empty()) {
@@ -254,10 +261,13 @@ bool	RequestParser::checkAllowedMethods(const Location& location) {
 
 bool	RequestParser::checkRequestURI(int mode) {
     struct stat sb;
+	std::cout << "Rooted URI: " << _request.getRootedURI() << std::endl;
     if (stat(_request.getRootedURI().c_str(), &sb) == -1) {
+		std::cout << "stat problem\n\n\n\n" << std::endl;
         return false;
     }
     if (access(_request.getRootedURI().c_str(), mode) != 0) {
+		std::cout << "access problem\n\n\n\n" << std::endl;
         return false;
     }
     if (S_ISDIR(sb.st_mode)) {
@@ -267,6 +277,7 @@ bool	RequestParser::checkRequestURI(int mode) {
         _request.setFileType(REGULAR_FILE);
         return true;
     }
+	std::cout << "It was not a regular file nor directory problem" << std::endl;
     return false;
 }
 
@@ -279,6 +290,7 @@ bool	RequestParser::checkReadingAccess() {
 
 bool	RequestParser::checkFile(const Server& server, const Location& location) {
 	if (!checkRequestURI(R_OK)) { //Do we need to check W_OK for POST??? or something for delete???
+		std::cout << "HERE IS PROBLEM CHECK FILE 1" << std::endl;
 		return false;
 	} 
     else if (_request.getFileType() == DIRECTORY) {
@@ -291,9 +303,11 @@ bool	RequestParser::checkFile(const Server& server, const Location& location) {
         } else if (server.getAutoIndex()) {
 			_request.setFileType(AUTOINDEX);
 		} else {
+			std::cout << "HERE IS PROBLEM CHECK FILE 2" << std::endl;
             return false;
         }
 		if (_request.getFileType() != AUTOINDEX && !checkReadingAccess()) {
+			std::cout << "HERE IS PROBLEM CHECK FILE 3" << std::endl;
 			return false;
 		}
     }
