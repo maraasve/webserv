@@ -68,6 +68,7 @@ void	Client::handleHeaderState() {
 			_state = clientState::RESPONDING ;
 			handleIncoming();
 			//how can we return here if we do not assign a server first?? THIS REQUIRES ATTENTION
+			//is there already a default server
 			return ;
 		}
 		assignServer(*this);
@@ -171,6 +172,7 @@ void	Client::handleCgiState() {
 		if (onCgiAccepted) {
 			if (_request.getMethod() == "POST") {
 				_Cgi->setBody(_request.getBody());
+				_Cgi->setUpEnvironment();
 				onCgiAccepted(_Cgi->getWriteFd(), EPOLLOUT);
 			}
 			onCgiAccepted(_Cgi->getReadFd(), EPOLLIN);

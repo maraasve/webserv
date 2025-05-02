@@ -69,6 +69,8 @@ class Cgi : public EventHandler {
 		void 			executeChildProcess();
 
 		void			setBody(std::string body);
+		void			setUpEnvironment();
+	
 		void			handleIncoming() override;
 		void			handleOutgoing() override;
 		void 			errorHandler(char **array);
