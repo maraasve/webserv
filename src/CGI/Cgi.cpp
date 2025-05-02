@@ -78,9 +78,11 @@ void	Cgi::handleIncoming() {
 }
 
 void	Cgi::handleOutgoing() {
+	std::cout << "I am sending body" << std::endl;
 	if (_body.size() > 0) {
 		ssize_t bytes = write(_writeToChild[1], _body.c_str(), _body.size());
 		if (bytes > 0) {
+			std::cout << "Bytes read are above 0" << std::endl;
 			_body.erase(0, bytes);
 			_state = cgiState::SENDING_BODY;
 			std::cout << "CGI: SENDING_BODY" << std::endl;
@@ -249,7 +251,6 @@ Recap
 With those three steps, your CGI will finally see the uploaded file.
 */
 void	Cgi::startCgi() {
-	//the cgi needs this on top ----
 	_cgiPid = fork();
 	if (_cgiPid < 0) {
 		std::cerr << "CGI: Error Forking" << std::endl;
@@ -293,6 +294,30 @@ void	Cgi::freeArgs(char **array) {
 
 void	Cgi::setBody(std::string	body) {
 	_body = body;
+}
+
+void Cgi::setUpEnvironment() {
+	std::string length = std::to_string(_body.size());
+	if (setenv("CONTENT_LENGTH", length.c_str(), 1) != 0) {
+		errorHandler(_args);
+		//we gotta call the client handle incoming or something
+		return;
+	}
+	if(setenv("REQUEST_METHOD", _method.c_str(), 1) != 0) {
+		errorHandler(_args);
+		//we gotta call the client handle incoming or something
+		return;
+	}
+	auto headers = _client->getRequest().getHeaders();
+	auto it = headers.find("Content-Type");
+	if (it != headers.end()) {
+		std::cout << "Does Content-type includes boundaries: " << it->second.c_str() << std::endl;
+		if (setenv("CONTENT_TYPE", it->second.c_str(), 1) != 0) {
+			errorHandler(_args);
+			//we gotta call the client handle incoming or something
+			return;
+		}
+	}
 }
 
 std::string	Cgi::getBody() const{

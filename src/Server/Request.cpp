@@ -43,9 +43,6 @@ std::string	Request::getPath() const{
 	return (_path);
 }
 
-//_headers is not initialized when I call getHost()
-//We are going to have an issue if we return from the requestParser without headerss
-//THIS REQUIRES ATTENTION
 std::string	Request::getHost() const{
 	auto it = _headers.find("Host");
 	if (it != _headers.end()) {
