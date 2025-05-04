@@ -91,7 +91,7 @@ void ConfigParser::parseServer(std::vector<Token> tokens)
 	std::unordered_map<std::string, bool> check_duplicates = {
 			{"listen", false}, {"host", false}, {"server_name", false}, {"root", false}, {"index", false}, {"auto_index", false}, {"client_max_body", false}, {"error_page", false}};
 	auto it = tokens.begin();
-	int i = -1;
+	int i = 0; //changed this
 	int location_count = 0;
 	bool inside_server_block = false;
 
@@ -111,7 +111,7 @@ void ConfigParser::parseServer(std::vector<Token> tokens)
 			++it;
 			continue;
 		}
-		if (it->value != "server" && i == -1)
+		if (it->value != "server" && !inside_server_block) //this is wrong logic because I want to check if 
 		{
 			error_check("Server block should start with directive server: " + it->value);
 		}
@@ -124,7 +124,7 @@ void ConfigParser::parseServer(std::vector<Token> tokens)
 			}
 			inside_server_block = true;
 			++open_braces;
-			++i;
+			i = 0; //changed this
 			++it;
 			for (auto &entry : check_duplicates)
 			{
@@ -231,7 +231,7 @@ void ConfigParser::parseServer(std::vector<Token> tokens)
 				++open_braces;
 				++it;
 				servers[i].getLocations().emplace_back(); //the problem is here :)
-				servers[i].getLocations()[location_count]._path = value;
+				servers[i].getLocations()[location_count]._path = value; //vector of length 121, capacity 121
 				parseLocation(servers[i].getLocations()[location_count++], it, tokens.end());
 			}
 			else

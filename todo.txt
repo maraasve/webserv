@@ -2,22 +2,36 @@
 [X] Change the run function.
 [X]	Make a new client class and store the client_fd, client stuff that where inside the client.
 [X]	Work on handleResponse.
-[]	Create a response based on the client request
-[]	Clean Up the Parsing
+[X]	Create a response based on the client request
 [X]	Make a separate requestParser class
 [X]	readRequest in Client class
-[]	sendRequest in Server class instead of Client???
 [X]	we should set default client_max_body if its not specified
 	and probably limit the max size in config aswell
-[]	Check if GET has a body, if so then send 400 BAD REQUEST
-[]	CheckHeaders
 [X]	Assign a configuration server to the clients through the Server*
 	One socket per unique IP/port and only use different configuration.
 	Maybe the server map should become this: std::map<int, std::vector<Server*>> socketToServers;
 	So we have a vector of servers for each socket.
-[]	CGI 
-[]	Maybe change the request class and requestParser so that request has an instance 
+[X]	CGI 
+
+[?]	Clean Up the Parsing
+[?]	Maybe change the request class and requestParser so that request has an instance 
 	of requestParser after all, i think its cleaner, because request will only contain the variables
 	and client can acces it more easily
+[?]	Check if GET has a body, if so then send 400 BAD REQUEST
+[?]	CheckHeaders
 
+PROBLEMS:
+[] we cannot connect two servers with same host and port but different server name: Bind failed with errno 98: Address already in use
+[] When we have two servers only one works, the otherone returns 500 error for some reason, maybe we are not finding it properly
+[] Post works sometimes??
+
+
+[] Test with changes in the configuration file, whatever happens, it should not crash
+[] Test with two servers and more
+[] HTTP Redirections!!
+[] Have a default server in case there is no configuration specified? Do we need to do this?
+[] Test that the error codes are accurate
+[] How do we close the webserver? SIGNALS?
+[] Do we need actual forms or by uploading an image is good enough?
+[] We need to find a solution to /favicon.ico cause it keeps causing issues, thought I solved it but apparently I did so not :/
 

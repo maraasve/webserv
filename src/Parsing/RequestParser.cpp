@@ -6,7 +6,7 @@
 /*   By: andmadri <andmadri@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:06:13 by maraasve          #+#    #+#             */
-/*   Updated: 2025/05/04 17:22:47 by andmadri         ###   ########.fr       */
+/*   Updated: 2025/05/04 19:10:48 by andmadri         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,7 +65,7 @@ void	RequestParser::parseRequestLine(std::istringstream& stream) {
 		return ;
 	}
 	splitUri(uri);
-	if (!checkPath() || !checkQuery()){
+	if (!checkPath() || !checkQuery()){ //are we using this?
 		_request.setErrorCode("400"); 
 		return ;
 	}
@@ -260,8 +260,7 @@ bool	RequestParser::checkReadingAccess() {
 	}
 	return true;
 }
-
-//How do I fix /favicon.ico
+//
 bool	RequestParser::checkRequestURI() {
 	struct stat sb;
 	std::cout << "Rooted URI: " << _request.getRootedURI() << std::endl;
@@ -300,11 +299,11 @@ bool RequestParser::extractQueryString(std::string& uri) {
 
 //the problem is here send help
 bool RequestParser::checkCgiScript() {
-	std::string uri = _request.getRootedURI();
+	std::string& uri = _request.getRootedURI();
 	if (!hasCgiPrefix(uri)) {
 		return false;
 	}
-	if (_request.getMethod() == "DELETE" && extractQueryString(uri)) {
+	if (extractQueryString(uri)) {
 		return false;
 	}
 	std::cout << "This is the uri: " << uri << std::endl;
@@ -313,10 +312,11 @@ bool RequestParser::checkCgiScript() {
 }
 
 bool	RequestParser::checkFile(const Server& server, const Location& location) {
-	if (checkCgiScript()) {
+	if (_request.getMethod() == "DELETE" && checkCgiScript()) {
 		return true;
 	}
 	if (!checkRequestURI()) {
+		
 		return false;
 	}
 	if (_request.getFileType() == DIRECTORY) {
