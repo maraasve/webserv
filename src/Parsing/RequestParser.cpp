@@ -6,7 +6,7 @@
 /*   By: andmadri <andmadri@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:06:13 by maraasve          #+#    #+#             */
-/*   Updated: 2025/05/01 16:57:09 by andmadri         ###   ########.fr       */
+/*   Updated: 2025/05/04 17:22:47 by andmadri         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -224,17 +224,14 @@ void	RequestParser::checkServerDependentHeaders(const Server& server, const Loca
 	}
 }
 
-//This does not check if it matches the URI or not
 bool	RequestParser::checkMatchURI(const Server& server, const Location& location) {
 	const std::string& uri = _request.getURI();
 	const std::string& loc_path = location._path;
 	if (uri.compare(0, loc_path.size(), loc_path) != 0) {
-		std::cout << "HERE IS PROBLEM CHECK MATCH URI 1" << std::endl;
 		return false;
 	}
 	std::string rest_uri = uri.substr(loc_path.size());
 	if (!rest_uri.empty() && rest_uri[0] != '/') {
-		std::cout << "HERE IS PROBLEM CHECK MATCH URI 2" << std::endl;
 		return false;
 	}
 	if (rest_uri.empty()) {
@@ -257,28 +254,6 @@ bool	RequestParser::checkAllowedMethods(const Location& location) {
 	return false;
 }
 
-bool	RequestParser::checkRequestURI(int mode) {
-    struct stat sb;
-	std::cout << "Rooted URI: " << _request.getRootedURI() << std::endl;
-    if (stat(_request.getRootedURI().c_str(), &sb) == -1) {
-		std::cout << "stat problem\n\n\n\n" << std::endl;
-        return false;
-    }
-    if (access(_request.getRootedURI().c_str(), mode) != 0) {
-		std::cout << "access problem\n\n\n\n" << std::endl;
-        return false;
-    }
-    if (S_ISDIR(sb.st_mode)) {
-		_request.setFileType(DIRECTORY);
-        return true;
-    } else if (S_ISREG(sb.st_mode)) {
-        _request.setFileType(REGULAR_FILE);
-        return true;
-    }
-	std::cout << "It was not a regular file nor directory problem" << std::endl;
-    return false;
-}
-
 bool	RequestParser::checkReadingAccess() {
 	if (access(_request.getRootedURI().c_str(), R_OK) != 0) {
 		return false;
@@ -286,29 +261,80 @@ bool	RequestParser::checkReadingAccess() {
 	return true;
 }
 
-bool	RequestParser::checkFile(const Server& server, const Location& location) {
-	if (!checkRequestURI(R_OK)) { //Do we need to check W_OK for POST??? or something for delete???
-		std::cout << "HERE IS PROBLEM CHECK FILE 1" << std::endl;
+//How do I fix /favicon.ico
+bool	RequestParser::checkRequestURI() {
+	struct stat sb;
+	std::cout << "Rooted URI: " << _request.getRootedURI() << std::endl;
+	if (stat(_request.getRootedURI().c_str(), &sb) == -1) {
+	std::cout << "CheckRequestURI: stat problem\n\n\n\n" << std::endl;
 		return false;
-	} 
-    else if (_request.getFileType() == DIRECTORY) {
-        if (!location._index.empty()) {
-            _request.setRootedUri(_request.getRootedURI() + location._index);
-        } else if (location._auto_index) {
+	}
+	if (!checkReadingAccess()) {
+	std::cout << "CheckRequestURI:access problem\n\n\n\n" << std::endl;
+		return false;
+	}
+	if (S_ISDIR(sb.st_mode)) {
+		_request.setFileType(DIRECTORY);
+		return true;
+	} else if (S_ISREG(sb.st_mode)) {
+		_request.setFileType(REGULAR_FILE);
+		return true;
+	}
+	std::cout << "CheckRequestURI: no regular file nor directory" << std::endl;
+	return false;
+}
+
+bool RequestParser::hasCgiPrefix(const std::string& uri) const {
+	static const std::string cgiPrefix = "./variables/cgi";
+	return uri.find(cgiPrefix) != std::string::npos;
+}
+
+bool RequestParser::extractQueryString(std::string& uri) {
+	size_t pos = uri.find('?');
+	if (pos == std::string::npos)
+		return false;
+	_request.setQueryString(uri.substr(pos + 1));
+	uri.erase(pos);
+	return true;
+}
+
+//the problem is here send help
+bool RequestParser::checkCgiScript() {
+	std::string uri = _request.getRootedURI();
+	if (!hasCgiPrefix(uri)) {
+		return false;
+	}
+	if (_request.getMethod() == "DELETE" && extractQueryString(uri)) {
+		return false;
+	}
+	std::cout << "This is the uri: " << uri << std::endl;
+	_request.setRootedUri(uri);
+	return checkRequestURI();
+}
+
+bool	RequestParser::checkFile(const Server& server, const Location& location) {
+	if (checkCgiScript()) {
+		return true;
+	}
+	if (!checkRequestURI()) {
+		return false;
+	}
+	if (_request.getFileType() == DIRECTORY) {
+		if (!location._index.empty()) {
+			_request.setRootedUri(_request.getRootedURI() + location._index);
+		} else if (location._auto_index) {
 			_request.setFileType(AUTOINDEX);
 		} else if (!server.getIndex().empty()) {
 			_request.setRootedUri(_request.getRootedURI() + server.getIndex());
-        } else if (server.getAutoIndex()) {
+		} else if (server.getAutoIndex()) {
 			_request.setFileType(AUTOINDEX);
 		} else {
-			std::cout << "HERE IS PROBLEM CHECK FILE 2" << std::endl;
-            return false;
-        }
-		if (_request.getFileType() != AUTOINDEX && !checkReadingAccess()) {
-			std::cout << "HERE IS PROBLEM CHECK FILE 3" << std::endl;
 			return false;
 		}
-    }
+		if (_request.getFileType() != AUTOINDEX && !checkReadingAccess()) {
+			return false;
+		}
+	}
 	return true ;
 }
 

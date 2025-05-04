@@ -53,7 +53,6 @@ class Cgi : public EventHandler {
 		int					_readFromChild[2];
 		pid_t				_cgiPid;
 		std::string			_body;
-		char				**_env;
 		std::string			_method;
 		Client*				_client;
 	

@@ -6,7 +6,7 @@
 /*   By: andmadri <andmadri@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:06:22 by maraasve          #+#    #+#             */
-/*   Updated: 2025/05/01 16:25:33 by andmadri         ###   ########.fr       */
+/*   Updated: 2025/05/04 17:16:41 by andmadri         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -211,6 +211,10 @@ void printRequestObject(Request& request) {
 }
 
 void	Client::handleResponseState() {
+	if (_request.getErrorCode() == "404") {
+		std::cout << "Exiting before annoying image" << std::endl;
+		exit(1);
+	}
 	std::cout << "\t\t\nHandle Response State" << std::endl;
 	printRequestObject(_request);
 	_responseString =_response.createResponseStr(_request);

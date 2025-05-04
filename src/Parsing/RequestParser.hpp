@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   RequestParser.hpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: maraasve <maraasve@student.42.fr>          +#+  +:+       +#+        */
+/*   By: andmadri <andmadri@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:05:58 by maraasve          #+#    #+#             */
-/*   Updated: 2025/04/16 18:25:23 by maraasve         ###   ########.fr       */
+/*   Updated: 2025/05/04 16:15:09 by andmadri         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,8 +35,8 @@ class RequestParser
 {
 	private:
 		requestState	_state = requestState::PARSING_HEADER;
-		ssize_t			_bytes_read;
-		Request			_request;
+		ssize_t				_bytes_read;
+		Request				_request;
 		
 	public:
 		RequestParser();
@@ -48,6 +48,8 @@ class RequestParser
 		bool	parseBody(std::string& requestStr, ssize_t bytes);
 
 		void	splitUri(std::string uri);
+		bool	extractQueryString(std::string& uri);
+		bool	hasCgiPrefix(const std::string& uri) const;
 
 		bool	checkPath() const;
 		bool	checkQuery() const;
@@ -60,16 +62,17 @@ class RequestParser
 		void	checkServerDependentHeaders(const Server& server, const Location& location);
 		bool	checkMatchURI(const Server& server, const Location& location);
 		bool	checkFile(const Server& server, const Location& location);
-		bool	checkRequestURI(int mode);
-		bool    checkAllowedMethods(const Location& location);
+		bool	checkCgiScript();
+		bool	checkRequestURI();
+		bool	checkAllowedMethods(const Location& location);
 		bool	checkBodyLength(const Server& server, const Location& location);
 
-		std::string		getErrorCode();
-		requestState	getState();
-		Request			getRequest() &&;
+		std::string			getErrorCode();
+		requestState		getState();
+		Request					getRequest() &&;
 		const Request&	getRequest() const &;
 
-		std::string		trim(std::string str);
+		std::string			trim(std::string str);
 };
 
 #endif

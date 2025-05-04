@@ -12,7 +12,6 @@ Cgi::Cgi(const std::string& file_path, const std::string& extension, const std::
 	, _writeToChild{-1, -1}
 	, _readFromChild{-1, -1}
 	, _cgiPid(-1)
-	, _env(environ)
 	, _method(method)
 	, _client(client)
 {
