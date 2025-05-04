@@ -21,7 +21,7 @@
         document.getElementById('deleteForm').addEventListener('submit', async function(event) {
             event.preventDefault();
             const filename = document.getElementById('filename').value;
-            const response = await fetch(`/cgi-bin/delete_file.py?file=${encodeURIComponent(filename)}`, {
+            const response = await fetch(`/cgi-bin/delete_form.py?file=${encodeURIComponent(filename)}`, {
                 method: 'DELETE'
             });
             const text = await response.text();

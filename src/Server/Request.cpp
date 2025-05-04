@@ -6,7 +6,7 @@
 /*   By: andmadri <andmadri@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:14:13 by maraasve          #+#    #+#             */
-/*   Updated: 2025/04/24 17:13:50 by andmadri         ###   ########.fr       */
+/*   Updated: 2025/05/04 15:20:20 by andmadri         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,12 +23,16 @@ std::string Request::getURI() const {
 	return (_uri);
 }
 
+std::string&	Request::getRootedURI() {
+	return (_rooted_uri);
+}
+
 std::string	Request::getRootedURI() const {
 	return (_rooted_uri);
 }
 
 std::string Request::getQueryString() const{
-	return (_query);
+	return (_query_string);
 }
 
 std::string Request::getHTTPVersion() const{
@@ -83,9 +87,6 @@ void	Request::setPort(std::string port) {
     _port = port;
 }
 
-void	Request::setQueryString(std::string queryString) {
-    _query = queryString;
-}
 
 void	Request::setHTTPVersion(std::string httpVersion) {
     _http_version = httpVersion;
@@ -124,6 +125,11 @@ void	Request::setFileType(int file_type) {
 void	Request::setContentLength(ssize_t contentLength) {
 	_content_length = contentLength;
 }
+
+void	Request::setQueryString(std::string query_string) {
+	_query_string = query_string;
+}
+
 
 void	Request::addHeader(std::string key, std::string value) {
 	_headers.emplace(key, value);
