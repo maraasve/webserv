@@ -6,7 +6,7 @@
 /*   By: andmadri <andmadri@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:06:22 by maraasve          #+#    #+#             */
-/*   Updated: 2025/05/04 17:16:41 by andmadri         ###   ########.fr       */
+/*   Updated: 2025/05/04 19:08:57 by andmadri         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -133,6 +133,7 @@ void	Client::handleParsingCheckState() {
 bool Client::shouldRunCgi() {
 	static const std::set<std::string> cgiExtensions = {"py", "php"};
 	const std::string& uri = _request.getRootedURI();
+	std::cout << "This is the rooted uri: " << uri << std::endl;
 	size_t pos = uri.find_last_of('.');
 	if (pos == std::string::npos || pos == uri.size() - 1) {
 		return false;
@@ -177,6 +178,13 @@ void	Client::handleCgiState() {
 				}
 				onCgiAccepted(_Cgi->getWriteFd(), EPOLLOUT);
 			}
+			if (_request.getMethod() == "DELETE") {
+				if (setenv("QUERY_STRING", _request.getQueryString().c_str(), 1) != 0) {
+					_state = clientState::ERROR;
+					handleIncoming();
+					return;
+				}
+			}
 			onCgiAccepted(_Cgi->getReadFd(), EPOLLIN);
 		} else {
 			_state = clientState::ERROR;
@@ -211,10 +219,6 @@ void printRequestObject(Request& request) {
 }
 
 void	Client::handleResponseState() {
-	if (_request.getErrorCode() == "404") {
-		std::cout << "Exiting before annoying image" << std::endl;
-		exit(1);
-	}
 	std::cout << "\t\t\nHandle Response State" << std::endl;
 	printRequestObject(_request);
 	_responseString =_response.createResponseStr(_request);

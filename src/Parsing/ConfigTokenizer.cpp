@@ -4,16 +4,17 @@ ConfigTokenizer::ConfigTokenizer(std::string file): index(0) {
 	while (index < file.length()) {
 		while (index < file.length() && std::isspace(file[index])) {
 			index++;
-		}
-		char c = file[index];
-		if (std::isalnum(c) || c == '/') {
-			handleKeys(file);
-		} else if (isSymbol(c)) {
-			handleSymbols(c);
-		} else if (c == '#') {
-			skipComments(file);
-		} else if (!std::isspace(c)){
-				throw std::runtime_error("Unexpected character: " + std::string(1, file[index]));
+		} if (index < file.length()) {
+			char c = file[index];
+			if (std::isalnum(c) || c == '/') {
+				handleKeys(file);
+			} else if (isSymbol(c)) {
+				handleSymbols(c);
+			} else if (c == '#') {
+				skipComments(file);
+			} else if (!std::isspace(c)){
+					throw std::runtime_error("Unexpected character: " + std::string(1, file[index]));
+			}
 		}
 	}
 }
