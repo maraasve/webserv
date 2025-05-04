@@ -172,7 +172,9 @@ void	Client::handleCgiState() {
 		if (onCgiAccepted) {
 			if (_request.getMethod() == "POST") {
 				_Cgi->setBody(_request.getBody());
-				_Cgi->setUpEnvironment();
+				if (!_Cgi->setUpEnvironment()) {
+					return ;
+				}
 				onCgiAccepted(_Cgi->getWriteFd(), EPOLLOUT);
 			}
 			onCgiAccepted(_Cgi->getReadFd(), EPOLLIN);

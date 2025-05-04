@@ -69,7 +69,7 @@ class Cgi : public EventHandler {
 		void 			executeChildProcess();
 
 		void			setBody(std::string body);
-		void			setUpEnvironment();
+		bool			setUpEnvironment();
 	
 		void			handleIncoming() override;
 		void			handleOutgoing() override;
