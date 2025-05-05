@@ -205,7 +205,13 @@ bool	RequestParser::checkHTTP() const {
 }
 
 void	RequestParser::checkServerDependentHeaders(const Server& server, const Location& location) {
-	if (!checkMatchURI(server, location) || !checkFile(server, location)) {
+	//the question is how should we handle the redirections? I wonder
+	if (!location._redirection.first.empty()) {
+		_request.setErrorCode(location._redirection.first);
+		_request.setRedirectionURI(location._redirection.second);
+		return;
+	}
+	if (!checkMatchURI(server, location) || (location._redirection.first.empty() && !checkFile(server, location))) {
 		std::cout << "\n\n\tFail: Check MAtch Uri or CheckFile (404)" << std::endl;
 		_request.setErrorCode("404");
 		return ;

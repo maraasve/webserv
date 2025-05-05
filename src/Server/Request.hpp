@@ -25,11 +25,12 @@ class	Request {
 		std::string																		_path;
 		std::string																		_http_version;
 		std::string																		_body;
-		std::unordered_map<std::string, std::string>	_headers;
+		std::unordered_map<std::string, std::string>									_headers;
 		std::string																		_error_code = "200";
-		ssize_t																				_content_length;
+		ssize_t																			_content_length;
 		std::string																		_query_string;
-		int																						_file_type = -1;
+		std::string																		_redirection_uri;
+		int																				_file_type = -1;
 
 	public:
 		Request() = default;
@@ -45,9 +46,11 @@ class	Request {
 		std::string																		getHTTPVersion() const;
 		std::string																		getBody() const;
 		std::string																		getErrorCode() const;
-		std::unordered_map<std::string, std::string>	getHeaders() const;
-		ssize_t 																			getContentLength() const;
-		int																						getFileType() const;
+		std::string																		getRedirectionURI() const;
+		std::unordered_map<std::string, std::string>									getHeaders() const;
+		ssize_t 																		getContentLength() const;
+		int																				getFileType() const;
+
 
 
 		// better to pass const std::string& in all of these:
@@ -64,6 +67,7 @@ class	Request {
 		void	setRequestLine(std::string method, std::string uri, std::string version);
 		void	setContentLength(ssize_t contentLength);
 		void	setRootedUri(std::string rootedUri);
+		void	setRedirectionURI(std::string redirection_uri);
 		void	addHeader(std::string key, std::string value);
 		void	setFileType(int file_type);
 };

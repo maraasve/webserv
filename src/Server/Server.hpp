@@ -20,7 +20,7 @@ struct Location {
 	unsigned long long _client_max_body = 0;
 	std::vector<std::string> _allowed_methods;
 	std::pair<std::string, std::string> _error_page;
-	// std::pair<std::string, std::string> HTTP_redirection; //301 (code: int) http://new_webstie (redirection: string)
+	std::pair<std::string, std::string> _redirection; //301 (code: int) http://new_webstie (redirection: string)
 };
 
 class Server : public EventHandler {
