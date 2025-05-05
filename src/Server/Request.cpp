@@ -15,6 +15,10 @@
 Request::~Request(){
 }
 
+std::string Request::getRedirectionURI() const {
+	return (_redirection_uri);
+}
+
 std::string	Request::getMethod() const{
 	return (_method);
 }
@@ -130,6 +134,9 @@ void	Request::setQueryString(std::string query_string) {
 	_query_string = query_string;
 }
 
+void	Request::setRedirectionURI(std::string redirection_uri) {
+	_redirection_uri = redirection_uri;
+}
 
 void	Request::addHeader(std::string key, std::string value) {
 	_headers.emplace(key, value);

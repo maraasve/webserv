@@ -21,9 +21,13 @@
 [?]	CheckHeaders
 
 PROBLEMS:
-[] we cannot connect two servers with same host and port but different server name: Bind failed with errno 98: Address already in use
-[] When we have two servers only one works, the otherone returns 500 error for some reason, maybe we are not finding it properly
+[X] we cannot connect two servers with same host and port but different server name: Bind failed with errno 98: Address already in use
+[X?] When we have two servers only one works, the otherone returns 500 error for some reason, maybe we are not finding it properly
+[] Servers work but for some reason the landing page for both is always the same, but if you go to /blog you can see the difference for instance
 [] Post works sometimes??
+[] Can there be two(more) servers with the same port, host and server name?
+[] Can the program work without a server_name? It should
+[] The first server for a host:port will be the default for this host:port (meaning it will respond to all requests that do not belong to another server)
 
 
 [] Test with changes in the configuration file, whatever happens, it should not crash

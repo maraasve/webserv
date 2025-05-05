@@ -48,6 +48,7 @@ void ConfigParser::printServerDetails(Server& server) {
 					std::cout << "Index: " << loc._index << "\n";
 					std::cout << "Auto Index: " << (loc._auto_index ? "On" : "Off") << "\n";
 					std::cout << "Client Max Body: " << loc._client_max_body << " bytes\n";
+					std::cout << "Redirections: " << loc._redirection.first << " " << loc._redirection.second << "\n";
 
 					// Print Methods
 					std::cout << "Allowed Methods: ";
@@ -78,9 +79,9 @@ ConfigParser::ConfigParser(const std::string &filename, std::vector<Server> &web
 	// 	std::cout << printEnum(tokens.token_type) << " --> " << tokens.value << std::endl;
 	// }
 	parseServer(Tokenizer.getTokens());
-	for(auto& server : servers) {
-		printServerDetails(server);
-	}		
+	// for(auto& server : servers) {
+	// 	printServerDetails(server);
+	// }		
 }
 
 void ConfigParser::parseServer(std::vector<Token> tokens)
@@ -255,9 +256,9 @@ void ConfigParser::parseServer(std::vector<Token> tokens)
 void ConfigParser::parseLocation(Location &location, std::vector<Token>::iterator &it, std::vector<Token>::iterator end)
 {
 	std::unordered_set<std::string> valid_directives = {
-			"error_page", "client_max_body", "auto_index", "root", "index", "allowed_methods"};
+			"error_page", "client_max_body", "auto_index", "root", "index", "allowed_methods", "return"};
 	std::unordered_map<std::string, bool> check_duplicates = {
-			{"error_page", false}, {"client_max_body", false}, {"auto_index", false}, {"root", false}, {"index", false}, {"allowed_methods", false}};
+			{"error_page", false}, {"client_max_body", false}, {"auto_index", false}, {"root", false}, {"index", false}, {"allowed_methods", false}, {"return", false}};
 	while (it != end)
 	{
 		if (it->token_type == BRACE_CLOSE)
@@ -353,6 +354,35 @@ void ConfigParser::parseLocation(Location &location, std::vector<Token>::iterato
 				error_check("Invalid auto_index value: " + value);
 			}
 			location._auto_index = (value == "on");
+		}
+		else if (directive == "return") 
+		{
+			if (value != "301" && value != "302")
+			{
+				error_check("Invalid redirection value: " + value);
+			}
+			if (it->token_type == KEYWORD && (it->value == "http" || it->value == "https")) {
+				std::string uri_redirection;
+				uri_redirection.append(it->value);
+				++it;
+				if(it->token_type != COLON) {
+					break;
+				}
+				uri_redirection.append(it->value);
+				++it;
+				if (it->token_type != KEYWORD) {
+					break;
+				}
+				uri_redirection.append(it->value);
+				location._redirection = std::make_pair(value, uri_redirection);
+				++it;
+			}
+			else if (it->token_type == KEYWORD && it->value[0] == '/') {
+				location._redirection = std::make_pair(value, it->value);
+				++it;
+			} else {
+				error_check("Wrongly formated redirection directive return");
+			}
 		}
 		if (it == end || it->token_type != SEMI_COLON)
 		{

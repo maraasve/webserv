@@ -63,6 +63,8 @@ if _error_code is empty then that means we did not set up an error before that
 Response::Response() : _errorsTexts({
     {"200", "OK"},
     {"201", "Created"},
+    {"301", "Moved Permanently"},
+    {"302", "Found"},
     {"400", "Bad Request"},
     {"403", "Forbidden"},
     {"404", "Not Found"},
@@ -195,7 +197,11 @@ void Response::handleRequest(const Request& request) {
 
 std::string Response::createResponseStr(const Request& request) {
     setErrorCodeText(request.getErrorCode());
-    if (_error_code != "200") {
+    if (_error_code == "301" || _error_code == "302") {
+        _headers["Location"] = request.getRedirectionURI();
+        createHeaders("text/html", 0);
+    }
+    else if (_error_code != "200") {
         createErrorPage();
         createHeaders("text/html", std::to_string(_body.size()));
     } else {
