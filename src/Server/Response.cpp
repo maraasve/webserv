@@ -199,7 +199,7 @@ std::string Response::createResponseStr(const Request& request) {
     setErrorCodeText(request.getErrorCode());
     if (_error_code == "301" || _error_code == "302") {
         _headers["Location"] = request.getRedirectionURI();
-        createHeaders("text/html", 0);
+        createHeaders("text/html", "0");
     }
     else if (_error_code != "200") {
         createErrorPage();
