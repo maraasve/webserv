@@ -92,7 +92,7 @@ void ConfigParser::parseServer(std::vector<Token> tokens)
 	std::unordered_map<std::string, bool> check_duplicates = {
 			{"listen", false}, {"host", false}, {"server_name", false}, {"root", false}, {"index", false}, {"auto_index", false}, {"client_max_body", false}, {"error_page", false}};
 	auto it = tokens.begin();
-	int i = 0; //changed this
+	int i = -1; //changed this
 	int location_count = 0;
 	bool inside_server_block = false;
 
@@ -118,20 +118,21 @@ void ConfigParser::parseServer(std::vector<Token> tokens)
 		}
 		if (it->value == "server" && !inside_server_block)
 		{
+			servers.emplace_back();
 			++it;
 			if (it == tokens.end() || it->token_type != BRACE_OPEN)
 			{
 				error_check("Missing opening braces for server block");
 			}
 			inside_server_block = true;
-			++open_braces;
-			i = 0; //changed this
+			i++; //changed this
+			location_count = 0;
 			++it;
+			++open_braces;
 			for (auto &entry : check_duplicates)
 			{
 				entry.second = false;
 			}
-			servers.emplace_back();
 			continue;
 		}
 
@@ -231,8 +232,8 @@ void ConfigParser::parseServer(std::vector<Token> tokens)
 			{
 				++open_braces;
 				++it;
-				servers[i].getLocations().emplace_back(); //the problem is here :)
-				servers[i].getLocations()[location_count]._path = value; //vector of length 121, capacity 121
+				servers[i].getLocations().emplace_back();
+				servers[i].getLocations()[location_count]._path = value;
 				parseLocation(servers[i].getLocations()[location_count++], it, tokens.end());
 			}
 			else
@@ -446,7 +447,6 @@ bool ConfigParser::isValidPort(std::string &port)
 	}
 	catch (...)
 	{
-		std::cout << "It is here" << std::endl;
 		return false;
 	}
 }

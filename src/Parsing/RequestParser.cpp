@@ -6,7 +6,7 @@
 /*   By: andmadri <andmadri@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:06:13 by maraasve          #+#    #+#             */
-/*   Updated: 2025/05/04 19:10:48 by andmadri         ###   ########.fr       */
+/*   Updated: 2025/05/05 15:32:31 by andmadri         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -266,7 +266,7 @@ bool	RequestParser::checkReadingAccess() {
 	}
 	return true;
 }
-//
+
 bool	RequestParser::checkRequestURI() {
 	struct stat sb;
 	std::cout << "Rooted URI: " << _request.getRootedURI() << std::endl;
@@ -346,13 +346,15 @@ bool	RequestParser::checkFile(const Server& server, const Location& location) {
 
 bool RequestParser::checkBodyLength(const Server& server, const Location& location) {
 	ssize_t	contentLength = _request.getContentLength();
-	if (location._client_max_body > 0 && contentLength <= static_cast<ssize_t>(location._client_max_body)) {
-		return true;
+	std::cout << "Content-Length (CheckBOdyLength): " << contentLength << std::endl;
+	std::cout << "CLient Max Body: " << location._client_max_body << std::endl;
+	if (location._client_max_body && contentLength > static_cast<ssize_t>(location._client_max_body)) {
+		return false;
 	}
-	else if (contentLength <= static_cast<ssize_t>(server.getClientMaxBody())) {
-		return true;
+	else if (contentLength > static_cast<ssize_t>(server.getClientMaxBody())) {
+		return false;
 	}
-    return false;
+    return true;
 }
 
 std::string	RequestParser::getErrorCode() {

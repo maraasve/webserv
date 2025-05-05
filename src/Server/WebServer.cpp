@@ -17,9 +17,6 @@ void WebServer::run() {
 			int event_fd = event.data.fd;
 			auto handler = _eventHandlers.find(event_fd);
 			if (handler != _eventHandlers.end()) {
-				//the cgi is not working because we always want to make the client go in if the state is CGI
-				//Even if we we use a flag, the client does not go back in handleIncoming because
-				//the client has already done his action
 				if (event.events & EPOLLIN) {
 					handler->second->handleIncoming();
 				}
@@ -37,6 +34,7 @@ void	WebServer::handleNewClient(int client_fd, Server &server) {
 	_eventHandlers[client_fd] = newClient;
 	_epoll.addFd(client_fd, EPOLLIN);
 	newClient->assignServer = [this](Client& client) {
+		//client has a default server?
 		this->assignServer(client);
 	};
 	newClient->onCgiAccepted = [this, newClient](int cgiFd, int event_type) {
@@ -55,6 +53,7 @@ void	WebServer::handleNewClient(int client_fd, Server &server) {
 		_eventHandlers.erase(client_fd);
 	};
 }
+//make sure that you are getting a 400 page and not a segmentation fault
 void	WebServer::assignServer(Client &client) {
 	int			fd = client.getSocketFd();
 	std::string	host = client.getRequestParser().getRequest().getHost();
@@ -90,6 +89,7 @@ void WebServer::setupServerSockets(Epoll& epoll) {
 
 		int	socketFd;
 		if (addressToFd.find(key) == addressToFd.end()) {
+			std::cout << server.getHost_string() << " " << port << std::endl;
 			auto serverSocket = std::make_shared<Socket>();
 			socketFd = serverSocket->getSocketFd();
 			serverSocket->bindSocket(port, host);
