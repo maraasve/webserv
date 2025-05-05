@@ -13,12 +13,9 @@
 	So we have a vector of servers for each socket.
 [X]	CGI 
 
+SHOULD WE:
 [?]	Clean Up the Parsing
-[?]	Maybe change the request class and requestParser so that request has an instance 
-	of requestParser after all, i think its cleaner, because request will only contain the variables
-	and client can acces it more easily
 [?]	Check if GET has a body, if so then send 400 BAD REQUEST
-[?]	CheckHeaders
 
 PROBLEMS:
 [X] we cannot connect two servers with same host and port but different server name: Bind failed with errno 98: Address already in use
@@ -29,13 +26,15 @@ PROBLEMS:
 [] Can the program work without a server_name? It should
 [] The first server for a host:port will be the default for this host:port (meaning it will respond to all requests that do not belong to another server)
 
-
+TODO:
+[] Big files somehow crash the webserver when we upload them
+[] Client Max Body is not working properly when uploading
 [] Test with changes in the configuration file, whatever happens, it should not crash
-[] Test with two servers and more
-[] HTTP Redirections!!
+[X] Test with two servers and more
+[X] HTTP Redirections!!
 [] Have a default server in case there is no configuration specified? Do we need to do this?
 [] Test that the error codes are accurate
 [] How do we close the webserver? SIGNALS?
 [] Do we need actual forms or by uploading an image is good enough?
 [] We need to find a solution to /favicon.ico cause it keeps causing issues, thought I solved it but apparently I did so not :/
-
+[] Check why 2 sockets get created for 2 servers with same host/port

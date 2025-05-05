@@ -6,7 +6,7 @@
 /*   By: andmadri <andmadri@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:06:22 by maraasve          #+#    #+#             */
-/*   Updated: 2025/05/04 19:08:57 by andmadri         ###   ########.fr       */
+/*   Updated: 2025/05/05 15:53:36 by andmadri         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -100,6 +100,7 @@ void	Client::handleBodyState() {
 			return ;
 		}
 	} else {
+		//the error to hello.txt is here
 		_state = clientState::ERROR;
 		handleIncoming();
 	}
@@ -133,7 +134,6 @@ void	Client::handleParsingCheckState() {
 bool Client::shouldRunCgi() {
 	static const std::set<std::string> cgiExtensions = {"py", "php"};
 	const std::string& uri = _request.getRootedURI();
-	std::cout << "This is the rooted uri: " << uri << std::endl;
 	size_t pos = uri.find_last_of('.');
 	if (pos == std::string::npos || pos == uri.size() - 1) {
 		return false;
@@ -215,14 +215,14 @@ void printRequestObject(Request& request) {
 	// for (auto it = request.getHeaders().begin() ; it != request.getHeaders().end() ; ++it) {
 	// 	std::cout << it->first << ": " << it->second << std::endl;
 	// }
-	std::cout << request.getBody() << std::endl;
+	// std::cout << request.getBody() << std::endl;
 }
 
 void	Client::handleResponseState() {
 	std::cout << "\t\t\nHandle Response State" << std::endl;
 	printRequestObject(_request);
 	_responseString =_response.createResponseStr(_request);
-	std::cout << "\n---Response String-- \n" << _responseString << std::endl;
+	// std::cout << "\n---Response String-- \n" << _responseString << std::endl;
 	_epoll.modifyFd(_fd, EPOLLOUT);
 }
 

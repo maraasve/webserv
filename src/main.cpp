@@ -7,13 +7,14 @@
 #define PORT 8080
 
 int main(int argc, char *argv[]) {
+	std::string configuration_file;
 	if (argc != 2) {
-		std::cerr << "Wrong Argument Count" << std::endl;
-		//we need to make it work with a default configuration file
-		return 1;
+		configuration_file = "./configuration_files/default.conf";
+	} else {
+		configuration_file = argv[1];
 	}
 	try {
-		WebServer webserver(argv[1]);
+		WebServer webserver(configuration_file);
 		webserver.run();
 	} catch (const std::runtime_error& e) {
 		std::cerr << "Error: " << e.what() << std::endl;
