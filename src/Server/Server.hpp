@@ -53,11 +53,10 @@ public:
 	void setServerNames(std::vector<std::string> server_names);
 	void setIndex(std::string index);
 	void setRoot(std::string root);
-	void setLocations();
 	void setSocket(const std::shared_ptr<Socket>& socket);
 	
 	// Socket& getServerSocket(); << using smart pointer now
-	std::pair<std::string, std::string>	getErrorPage() const;
+	std::pair<std::string, std::string>	getErrorPage();
 	std::vector<std::string>			getServerNames() const;
 	std::vector<Location>&				getLocations();
 	unsigned long long					getClientMaxBody() const;

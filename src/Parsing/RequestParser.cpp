@@ -205,7 +205,7 @@ bool	RequestParser::checkHTTP() const {
 }
 
 void	RequestParser::checkServerDependentHeaders(const Server& server, const Location& location) {
-	//the question is how should we handle the redirections? I wonder
+	//what happens if location is empty because there are no locations?
 	if (!location._redirection.first.empty()) {
 		_request.setErrorCode(location._redirection.first);
 		_request.setRedirectionURI(location._redirection.second);
@@ -244,7 +244,9 @@ bool	RequestParser::checkMatchURI(const Server& server, const Location& location
 		rest_uri = "/";
 	}
 	const std::string& base_root = location._root.empty() ? server.getRoot() : location._root;
-	_request.setRootedUri("." + base_root + rest_uri);
+	_request.setBaseRoot("." + base_root);
+	_request.setRootedUri(_request.getBaseRoot() + rest_uri);
+	std::cout << "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nThis is the base_root: " << _request.getBaseRoot() << std::endl;
 	return true;
 }
 
@@ -290,7 +292,9 @@ bool	RequestParser::checkRequestURI() {
 }
 
 bool RequestParser::hasCgiPrefix(const std::string& uri) const {
-	static const std::string cgiPrefix = "./variables/cgi";
+	//change this to root
+	//we need to check this
+	static const std::string cgiPrefix = "/cgi";
 	return uri.find(cgiPrefix) != std::string::npos;
 }
 
@@ -307,12 +311,12 @@ bool RequestParser::extractQueryString(std::string& uri) {
 bool RequestParser::checkCgiScript() {
 	std::string& uri = _request.getRootedURI();
 	if (!hasCgiPrefix(uri)) {
+		std::cerr << "CGI: Your root folder should contain a CGI folder" << std::endl;
 		return false;
 	}
 	if (extractQueryString(uri)) {
 		return false;
 	}
-	std::cout << "This is the uri: " << uri << std::endl;
 	_request.setRootedUri(uri);
 	return checkRequestURI();
 }

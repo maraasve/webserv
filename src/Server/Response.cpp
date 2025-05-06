@@ -87,8 +87,8 @@ void Response::setErrorCodeText(std::string error_code) {
     }
 }
 
-void Response::createErrorPage() {
-    std::string filename = "./variables/errors/" + _error_code + ".html";
+void Response::createErrorPage(std::string filename) {
+    // std::string filename = "./variables/errors/" + _error_code + ".html";
     std::ifstream file(filename);
     if (!file) {
         _body = "<h1>" + _error_code + "-" + _error_text + "</h1>";
@@ -137,32 +137,32 @@ std::string Response::setContentType(const std::string& path) {
     }
 }
 
-void    Response::serveFile(const std::string& file_path) {
-    std::ifstream file(file_path);
+void    Response::serveFile(Request& request) {
+    std::ifstream file(request.getRootedURI());
     if (!file) {
         setErrorCodeText("500");
-        createErrorPage();
+        createErrorPage("./variables/errors/" + _error_code + ".html"); //the only one is not working now is 500 if someone redifines that
         createHeaders("text/html", std::to_string(_body.size()));
         return ;
     }
     std::stringstream buffer;
     buffer << file.rdbuf();
     _body = buffer.str();
-    createHeaders(setContentType(file_path), std::to_string(_body.size()));
+    createHeaders(setContentType(request.getRootedURI()), std::to_string(_body.size()));
     file.close();
 }
 
-void Response::serveDirectoryListing(const std::string& dir_path) {
+void Response::serveDirectoryListing(Request& request) {
     std::stringstream dirc_listing;
 
 
-    dirc_listing << "<html><head><title>Index of " << dir_path << "</title></head>";
-    dirc_listing << "<body><h1>Index of " << dir_path << "</h1><ul>";
+    dirc_listing << "<html><head><title>Index of " << request.getRootedURI() << "</title></head>";
+    dirc_listing << "<body><h1>Index of " << request.getRootedURI() << "</h1><ul>";
 
-    std::filesystem::path path(dir_path);
+    std::filesystem::path path(request.getRootedURI());
     if (!std::filesystem::exists(path) || !std::filesystem::is_directory(path)) {
         setErrorCodeText("500");
-        createErrorPage();
+        createErrorPage("./variables/errors/" + _error_code + ".html"); //The only one that is not handled now is 500 if we redifined it
         createHeaders("text/html", std::to_string(_body.size()));
         return ;
     }
@@ -177,9 +177,7 @@ void Response::serveDirectoryListing(const std::string& dir_path) {
 }
 
 
-void Response::handleRequest(const Request& request) {
-    //we gotta change this because it will not only be one cgi it can be many rigth?
-    //how can I make sure that it comes from the cgi?
+void Response::handleRequest(Request& request) {
     if (request.getFileType() == CGI_FILE) {
         _body = request.getBody();
         createHeaders("text/html", std::to_string(_body.size()));
@@ -188,22 +186,25 @@ void Response::handleRequest(const Request& request) {
     std::string method = request.getMethod();
      if (method == "GET") {
         if (request.getFileType() != AUTOINDEX) {
-            serveFile(request.getRootedURI());
+            serveFile(request);
         } else if (request.getFileType() == AUTOINDEX) {
-            serveDirectoryListing(request.getRootedURI());
+            serveDirectoryListing(request);
         }
     }
 }
 
-std::string Response::createResponseStr(const Request& request) {
+std::string Response::createResponseStr(Request& request) {
     setErrorCodeText(request.getErrorCode());
     if (_error_code == "301" || _error_code == "302") {
         _headers["Location"] = request.getRedirectionURI();
         createHeaders("text/html", "0");
     }
     else if (_error_code != "200") {
-        createErrorPage();
-        createHeaders("text/html", std::to_string(_body.size()));
+        if (request.getErrorPagePath().empty()) {
+            createErrorPage("./variables/errors/" + _error_code + ".html");
+        } else {
+            createErrorPage(request.getBaseRoot() + request.getErrorPagePath());
+        }
     } else {
         handleRequest(request);
     }

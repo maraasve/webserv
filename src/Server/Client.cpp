@@ -143,6 +143,16 @@ bool Client::shouldRunCgi() {
 }
 
 bool	Client::resolveLocation(std::string uri) {
+	if (_serverPtr->getLocations().empty()) {
+		std::cout << "No location on Config File, making one" << std::endl;
+		Location location;
+		location._path = "/";
+		location._root = _serverPtr->getRoot();
+		location._index = _serverPtr->getIndex();
+		_serverPtr->getLocations().emplace_back(location);
+		_location = _serverPtr->getLocations().back();
+		return true;
+	}
 	size_t bestMatchLength = 0;
     for (const auto& location : _serverPtr->getLocations()) {
         if (uri.compare(0, location._path.size(), location._path) == 0) {
@@ -184,6 +194,9 @@ void	Client::handleCgiState() {
 					handleIncoming();
 					return;
 				}
+				// if (setenv("UPLOAD_DIR", , 1) != 0) {
+
+				// }
 			}
 			onCgiAccepted(_Cgi->getReadFd(), EPOLLIN);
 		} else {
@@ -212,6 +225,9 @@ void printRequestObject(Request& request) {
 	std::cout << request.getURI() << std::endl;
 	std::cout << request.getHTTPVersion() << std::endl;
 	std::cout << request.getHost() << std::endl;
+	std::cout << request.getBaseRoot() << std::endl;
+	std::cout << request.getRootedURI() << std::endl;
+
 	// for (auto it = request.getHeaders().begin() ; it != request.getHeaders().end() ; ++it) {
 	// 	std::cout << it->first << ": " << it->second << std::endl;
 	// }
@@ -221,6 +237,13 @@ void printRequestObject(Request& request) {
 void	Client::handleResponseState() {
 	std::cout << "\t\t\nHandle Response State" << std::endl;
 	printRequestObject(_request);
+	if (!_location._error_page.first.empty() && _request.getErrorCode() == _location._error_page.first) {
+		_request.setErrorCode(_location._error_page.first);
+		_request.setErrorPagePath(_location._error_page.second);
+	} else if (!_serverPtr->getErrorPage().first.empty() && _request.getErrorCode() == _serverPtr->getErrorPage().first) {
+		_request.setErrorCode(_serverPtr->getErrorPage().first);
+		_request.setErrorPagePath(_serverPtr->getErrorPage().second);
+	}
 	_responseString =_response.createResponseStr(_request);
 	// std::cout << "\n---Response String-- \n" << _responseString << std::endl;
 	_epoll.modifyFd(_fd, EPOLLOUT);

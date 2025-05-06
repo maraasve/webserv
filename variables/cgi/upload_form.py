@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 import cgi, os
 
-UPLOAD_DIR = "variables/uploads"
+#this has to be the root
+# UPLOAD_DIR = "variables/uploads"
+UPLOAD_DIR = os.environ.get("UPLOAD_DIR", "")
+
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 form = cgi.FieldStorage()

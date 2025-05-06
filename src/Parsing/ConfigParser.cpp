@@ -75,6 +75,9 @@ ConfigParser::ConfigParser(const std::string &filename, std::vector<Server> &web
 		error_check("Failed to Open File: " + filename);
 	}
 	Tokenizer = ConfigTokenizer(loadFileAsString(file));
+	if (Tokenizer.getTokens().empty()) {
+		error_check("Configuration File is Empty");
+	}
 	// for (auto tokens : Tokenizer.getTokens()) {
 	// 	std::cout << printEnum(tokens.token_type) << " --> " << tokens.value << std::endl;
 	// }
