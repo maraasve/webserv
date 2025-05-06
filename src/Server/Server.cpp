@@ -55,7 +55,7 @@ bool Server::getAutoIndex() const {
 	return _auto_index;
 }
 
-std::pair<std::string, std::string> Server::getErrorPage() const {
+std::pair<std::string, std::string> Server::getErrorPage() {
 	return _error_page;
 }
 

@@ -31,6 +31,10 @@ std::string&	Request::getRootedURI() {
 	return (_rooted_uri);
 }
 
+std::string&	Request::getErrorPagePath() {
+	return (_error_page_path);
+}
+
 std::string	Request::getRootedURI() const {
 	return (_rooted_uri);
 }
@@ -57,6 +61,9 @@ std::string	Request::getHost() const{
 		return (it->second);
 	}
 	return ("");
+}
+std::string& Request::getBaseRoot() {
+	return (_base_root);
 }
 
 std::unordered_map<std::string, std::string> Request::getHeaders() const{
@@ -91,6 +98,9 @@ void	Request::setPort(std::string port) {
     _port = port;
 }
 
+void	Request::setErrorPagePath(std::string error_path) {
+	_error_page_path = error_path;
+}
 
 void	Request::setHTTPVersion(std::string httpVersion) {
     _http_version = httpVersion;
@@ -102,6 +112,10 @@ void	Request::setBody(std::string body) {
 
 void	Request::setHeaders(std::unordered_map<std::string, std::string> headers) {
     _headers = headers;
+}
+
+void	Request::setBaseRoot(std::string baseroot) {
+	_base_root = baseroot;
 }
 
 void	Request::setHost(std::string host) {

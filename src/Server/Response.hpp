@@ -22,31 +22,30 @@ private:
     std::string _error_text;
     std::string _body;
     std::unordered_map<std::string, std::string> _headers;
-    Location _location;
 
     std::string formatStatusLine();
     std::string formatHeaders();
 
-    void serveFile(const std::string& file_path);
-    void serveDirectoryListing(const std::string& dir_path);
+    void serveFile(Request& requesth);
+    void serveDirectoryListing(Request& request);
 
     void createHeaders(const std::string& content_type, const std::string& content_length);
-    void createErrorPage();
+    void createErrorPage(std::string filename);
 
     void setErrorCodeText(std::string error_code);
     std::string setContentType(const std::string& path);
 
-    void uploadFile(const Request& request);
+    void uploadFile(Request& request);
 	std::string findFileName(const Request& request);
 
-    void handleRequest(const Request& request);
+    void handleRequest(Request& request);
 
 
 public:
     Response();
     ~Response() = default;
 
-	std::string    createResponseStr(const Request& request);
+	std::string    createResponseStr(Request& request);
 };
 
 #endif

@@ -246,6 +246,9 @@ bool Cgi::setUpEnvironment() {
 			return false;
 		}
 	}
+	// if ((setenv("UPLOAD_DIR", ), 1) != 0) {
+					
+	// }
 	return true;
 }
 
