@@ -4,9 +4,7 @@ import cgi, os
 #this has to be the root
 # UPLOAD_DIR = "variables/uploads"
 UPLOAD_DIR = os.environ.get("UPLOAD_DIR", "")
-
 os.makedirs(UPLOAD_DIR, exist_ok=True)
-
 form = cgi.FieldStorage()
 fileitem = form['file'] if 'file' in form else None
 
