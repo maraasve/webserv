@@ -27,14 +27,17 @@ PROBLEMS:
 [] The first server for a host:port will be the default for this host:port (meaning it will respond to all requests that do not belong to another server)
 
 TODO:
-[] Big files somehow crash the webserver when we upload them
-[] Client Max Body is not working properly when uploading
+[X] Big files somehow crash the webserver when we upload them
+[X] Client Max Body is not working properly when uploading
 [] Test with changes in the configuration file, whatever happens, it should not crash
 [X] Test with two servers and more
 [X] HTTP Redirections!!
-[] Have a default server in case there is no configuration specified? Do we need to do this?
+[X] Have a default server in case there is no configuration specified? Do we need to do this?
 [] Test that the error codes are accurate
 [] How do we close the webserver? SIGNALS?
-[] Do we need actual forms or by uploading an image is good enough?
+[X] Do we need actual forms or by uploading an image is good enough?
 [] We need to find a solution to /favicon.ico cause it keeps causing issues, thought I solved it but apparently I did so not :/
-[] Check why 2 sockets get created for 2 servers with same host/port
+[X] Check why 2 sockets get created for 2 servers with same host/port
+[] Determine how to handle custom root and cgi-bin
+[] Handle multiple server_names anddd handle same host - same port - no server name
+[] Optimize child process, make sure there's no zombie processes / handle time-out

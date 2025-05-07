@@ -17,19 +17,19 @@ Cgi::Cgi(const std::string& file_path, const std::string& extension, const std::
 {
 	if (!_args || _execPath.empty()) {
 		errorHandler(_args);
-		handleIncoming();
+		_client->handleIncoming();
 		return ;
     }
 	if (_method == "POST") {
 		if (pipe(_writeToChild) ==  -1) {
 			errorHandler(_args);
-			handleIncoming();
+			_client->handleIncoming();
 			return;
 		}
 	}
 	if(pipe(_readFromChild) == -1) {
 		errorHandler(_args);
-		handleIncoming();
+		_client->handleIncoming();
 		return;
 	}
 }
@@ -40,6 +40,7 @@ Cgi::~Cgi() {
 	} else if (_state == cgiState::ERROR) {
 		std::cout << "The CGI had an error" << std::endl;
 	}
+	std::cout << "The CGI is deleted" << std::endl;
 	freeArgs(_args);
 }
 
@@ -63,7 +64,7 @@ void	Cgi::handleIncoming() {
 	if (bytes > 0) {
 		printf("CGI: Output of the child %s\n", buffer);
 		_body.append(buffer, bytes);
-		if (bytes < (ssize_t)(sizeof(buffer))) {
+		if (bytes < (ssize_t)(sizeof(buffer))) { //change this logic
 			if (onCgiPipeDone) {
 				onCgiPipeDone(_readFromChild[0]);
 			}
@@ -76,24 +77,28 @@ void	Cgi::handleIncoming() {
 		}
 	} else {
 		errorHandler(_args);
-		handleIncoming();
+		_client->handleIncoming();
 	}
 }
 
 void	Cgi::handleOutgoing() {
+	size_t writeSize;
 	if (_body.size() > 0) {
-		ssize_t bytes = write(_writeToChild[1], _body.c_str(), _body.size());
+		if (_body.size() < BUFSIZ) {
+			writeSize = _body.size();
+		} else {
+			writeSize = BUFSIZ;
+		}
+		ssize_t bytes = write(_writeToChild[1], _body.c_str(), writeSize);
 		if (bytes > 0) {
 			// std::cout << "Bytes read are above 0" << std::endl;
 			_body.erase(0, bytes);
-			_state = cgiState::SENDING_BODY;
 			std::cout << "CGI: SENDING_BODY" << std::endl;
 		} else if (bytes < 0) {
 			close(_writeToChild[1]); //we have to close the reading end as well but only once we know the child has done reading from it
 			_writeToChild[1] = -1;
 			errorHandler(_args);
-			handleIncoming();
-
+			_client->handleIncoming();
 			return ;
 		}
 	}
@@ -101,8 +106,7 @@ void	Cgi::handleOutgoing() {
 		onCgiPipeDone(_writeToChild[1]);
 		close(_writeToChild[1]); 
 		_writeToChild[1] = -1;
-		_state = cgiState::RUNNING;
-		std::cout << "CGI: RUNNING!" << std::endl;
+		std::cout << "CGI: WRITE DONE!" << std::endl;
 	}
 }
 
@@ -175,7 +179,7 @@ void Cgi::executeChildProcess() {
 	_readFromChild[1] = -1;
 	execve(_execPath.c_str(), _args, environ);
 	freeArgs(_args);
-	exit(1);
+	exit(1); //Do we need to exit? Will the destructor in the child be called automatically
 }
 
 void	Cgi::startCgi() {
@@ -183,7 +187,7 @@ void	Cgi::startCgi() {
 	if (_cgiPid < 0) {
 		std::cerr << "CGI: Error Forking" << std::endl;
 		errorHandler(_args);
-		handleIncoming();
+		_client->handleIncoming();
 		return ;
 	}
 	if (_cgiPid == 0) {
@@ -229,12 +233,12 @@ bool Cgi::setUpEnvironment() {
 	std::string length = std::to_string(_body.size());
 	if (setenv("CONTENT_LENGTH", length.c_str(), 1) != 0) {
 		errorHandler(_args);
-		handleIncoming();
+		_client->handleIncoming();
 		return false;
 	}
 	if(setenv("REQUEST_METHOD", _method.c_str(), 1) != 0) {
 		errorHandler(_args);
-		handleIncoming();
+		_client->handleIncoming();
 		return false;
 	}
 	auto headers = _client->getRequest().getHeaders();
@@ -242,13 +246,10 @@ bool Cgi::setUpEnvironment() {
 	if (it != headers.end()) {
 		if (setenv("CONTENT_TYPE", it->second.c_str(), 1) != 0) {
 			errorHandler(_args);
-			handleIncoming();
+			_client->handleIncoming();
 			return false;
 		}
 	}
-	// if ((setenv("UPLOAD_DIR", ), 1) != 0) {
-					
-	// }
 	return true;
 }
 

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: andmadri <andmadri@student.42.fr>          +#+  +:+       +#+        */
+/*   By: maraasve <maraasve@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:06:59 by maraasve          #+#    #+#             */
-/*   Updated: 2025/05/01 12:54:27 by andmadri         ###   ########.fr       */
+/*   Updated: 2025/05/07 13:06:57 by maraasve         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -54,6 +54,7 @@ private:
 
 public:
 	Client(int fd, Epoll& epoll, int socket_fd);
+	~Client();
 
 	
 	void									handleIncoming() override;
@@ -81,9 +82,9 @@ public:
 	
 	bool 									shouldRunCgi();
 
-	std::function<void(Client& client)>					assignServer;
+	std::function<void(Client& client)>		assignServer;
 	std::function<void(int, int)>			onCgiAccepted;
-	std::function<void()>					closeClientConnection;
+	std::function<void(int)>				closeClientConnection;
 };
 
 #endif

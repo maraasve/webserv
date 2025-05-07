@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   RequestParser.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: andmadri <andmadri@student.42.fr>          +#+  +:+       +#+        */
+/*   By: maraasve <maraasve@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:06:13 by maraasve          #+#    #+#             */
-/*   Updated: 2025/05/05 15:32:31 by andmadri         ###   ########.fr       */
+/*   Updated: 2025/05/07 13:41:11 by maraasve         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -205,7 +205,6 @@ bool	RequestParser::checkHTTP() const {
 }
 
 void	RequestParser::checkServerDependentHeaders(const Server& server, const Location& location) {
-	//what happens if location is empty because there are no locations?
 	if (!location._redirection.first.empty()) {
 		_request.setErrorCode(location._redirection.first);
 		_request.setRedirectionURI(location._redirection.second);
@@ -354,6 +353,9 @@ bool RequestParser::checkBodyLength(const Server& server, const Location& locati
 	std::cout << "CLient Max Body: " << location._client_max_body << std::endl;
 	if (location._client_max_body && contentLength > static_cast<ssize_t>(location._client_max_body)) {
 		return false;
+	}
+	else if (location._client_max_body) {
+		return true;
 	}
 	else if (contentLength > static_cast<ssize_t>(server.getClientMaxBody())) {
 		return false;
