@@ -55,6 +55,7 @@ class Cgi : public EventHandler {
 		std::string			_body;
 		std::string			_method;
 		Client*				_client;
+		char				**_env;
 	
 		char**  		vecTo2DArray(std::vector<std::string>& vec);
 		void			freeArgs(char **array);
