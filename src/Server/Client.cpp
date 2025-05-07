@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: andmadri <andmadri@student.42.fr>          +#+  +:+       +#+        */
+/*   By: maraasve <maraasve@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:06:22 by maraasve          #+#    #+#             */
-/*   Updated: 2025/05/05 15:53:36 by andmadri         ###   ########.fr       */
+/*   Updated: 2025/05/07 13:16:55 by maraasve         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,10 @@
 
 Client::Client(int fd, Epoll& epoll, int socket_fd): _fd(fd), _serverPtr(nullptr), _epoll(epoll), _socketFd(socket_fd) {
 	std::cout << "Client socket(" << _fd << ") is created" << std::endl;
+}
+
+Client::~Client() {
+	std::cout << "Client is deleted" <<std::endl;
 }
 
 void	Client::handleIncoming() {
@@ -46,7 +50,7 @@ void Client::handleOutgoing() {
 		_responseString.erase(0, bytes);
 	} else if (_responseString.empty() && closeClientConnection) {
 		std::cout << "\tClosing client connection after sending" << std::endl;
-		closeClientConnection();
+		closeClientConnection(_fd);
 	}
 }
 
@@ -56,7 +60,7 @@ void	Client::handleHeaderState() {
 	if (bytes == 0) {
 		//Sometimes the webbrowser sends stuff to us that are not client interaction and we read no bytes
 		//therefore we just have to close the connection without processing it
-		closeClientConnection();
+		closeClientConnection(_fd);
 	}
 	if (bytes < 0) {
 		_state = clientState::ERROR;
@@ -194,9 +198,6 @@ void	Client::handleCgiState() {
 					handleIncoming();
 					return;
 				}
-				// if (setenv("UPLOAD_DIR", _request.getBaseRoot(), 1) != 0) {
-
-				// }
 			}
 			onCgiAccepted(_Cgi->getReadFd(), EPOLLIN);
 		} else {

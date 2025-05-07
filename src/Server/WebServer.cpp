@@ -33,24 +33,28 @@ void	WebServer::handleNewClient(int client_fd, Server &server) {
 	auto newClient = std::make_shared<Client>(client_fd, _epoll, server.getSocketFd());
 	_eventHandlers[client_fd] = newClient;
 	_epoll.addFd(client_fd, EPOLLIN);
+
+	std::weak_ptr<Client> weakClient = newClient;
 	newClient->assignServer = [this](Client& client) {
 		//client has a default server?
 		this->assignServer(client);
 	};
-	newClient->onCgiAccepted = [this, newClient](int cgiFd, int event_type) {
-		_epoll.addFd(cgiFd, event_type);
-		auto newCgi = newClient->getCgi();
-		_eventHandlers[cgiFd] = newCgi;
-		newCgi->onCgiPipeDone = [this](int cgiFd) {
-			_epoll.deleteFd(cgiFd);
-			_eventHandlers.erase(cgiFd);
-		};
+	newClient->onCgiAccepted = [this, weakClient](int cgiFd, int event_type) {
+		if (auto client = weakClient.lock()) {
+			_epoll.addFd(cgiFd, event_type);
+			auto newCgi = client->getCgi();
+			_eventHandlers[cgiFd] = newCgi;
+			newCgi->onCgiPipeDone = [this](int cgiFd) {
+				_epoll.deleteFd(cgiFd);
+				_eventHandlers.erase(cgiFd);
+			};
+		}
+		//delete cgi shared_ptr
 	};
-	newClient->closeClientConnection = [this, newClient]() {
-		int client_fd = newClient->getFd();
+	newClient->closeClientConnection = [this](int client_fd) {
 		_epoll.deleteFd(client_fd);
-		close(client_fd);
 		_eventHandlers.erase(client_fd);
+		close(client_fd);
 	};
 }
 //make sure that you are getting a 400 page and not a segmentation fault
