@@ -19,7 +19,7 @@ struct Location {
 	bool _auto_index = false;
 	unsigned long long _client_max_body = 0;
 	std::vector<std::string> _allowed_methods;
-	std::pair<std::string, std::string> _error_page;
+	std::unordered_map<std::string, std::string> _error_page;
 	std::pair<std::string, std::string> _redirection; //301 (code: int) http://new_webstie (redirection: string)
 };
 
@@ -33,7 +33,7 @@ private:
 	std::string							_root;
 	std::string							_index;
 	bool								_auto_index = false;
-	std::pair<std::string, std::string>	_error_page;
+	std::unordered_map<std::string, std::string>	_error_page;
 	std::vector<Location>				_locations;
 	std::shared_ptr<Socket>				_serverSocket;
 	
@@ -56,7 +56,7 @@ public:
 	void setSocket(const std::shared_ptr<Socket>& socket);
 	
 	// Socket& getServerSocket(); << using smart pointer now
-	std::pair<std::string, std::string>	getErrorPage();
+	std::unordered_map<std::string, std::string>	getErrorPage();
 	std::vector<std::string>			getServerNames() const;
 	std::vector<Location>&				getLocations();
 	unsigned long long					getClientMaxBody() const;

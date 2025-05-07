@@ -6,7 +6,7 @@
 /*   By: maraasve <maraasve@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:06:13 by maraasve          #+#    #+#             */
-/*   Updated: 2025/05/07 13:41:11 by maraasve         ###   ########.fr       */
+/*   Updated: 2025/05/07 17:14:52 by maraasve         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -232,18 +232,21 @@ void	RequestParser::checkServerDependentHeaders(const Server& server, const Loca
 bool	RequestParser::checkMatchURI(const Server& server, const Location& location) {
 	const std::string& uri = _request.getURI();
 	const std::string& loc_path = location._path;
+	const std::string& base_root = location._root.empty() ? server.getRoot() : location._root;
+	_request.setBaseRoot("." + base_root);
 	if (uri.compare(0, loc_path.size(), loc_path) != 0) {
+		//if you want to set an error_page outside in the server there shold be a root in the server
+		_request.setRootedUri(_request.getBaseRoot());
 		return false;
 	}
 	std::string rest_uri = uri.substr(loc_path.size());
 	if (!rest_uri.empty() && rest_uri[0] != '/') {
+		_request.setRootedUri(_request.getBaseRoot());
 		return false;
 	}
 	if (rest_uri.empty()) {
 		rest_uri = "/";
 	}
-	const std::string& base_root = location._root.empty() ? server.getRoot() : location._root;
-	_request.setBaseRoot("." + base_root);
 	_request.setRootedUri(_request.getBaseRoot() + rest_uri);
 	std::cout << "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nThis is the base_root: " << _request.getBaseRoot() << std::endl;
 	return true;
@@ -310,7 +313,7 @@ bool RequestParser::extractQueryString(std::string& uri) {
 bool RequestParser::checkCgiScript() {
 	std::string& uri = _request.getRootedURI();
 	if (!hasCgiPrefix(uri)) {
-		std::cerr << "CGI: Your root folder should contain a CGI folder" << std::endl;
+		std::cerr << "CGI: Your root folder should contain a CGI folder" << std::endl; //probably need to take this out
 		return false;
 	}
 	if (extractQueryString(uri)) {

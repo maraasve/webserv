@@ -10,8 +10,7 @@ void	Server::handleIncoming() {
 void	Server::handleOutgoing() {}
 
 void Server::setErrorPage(std::string error_code, std::string path) {
-	_error_page.first = error_code;
-	_error_page.second = path;
+	_error_page.emplace(error_code, path);
 }
 
 void Server::setPort(int port) {
@@ -55,7 +54,7 @@ bool Server::getAutoIndex() const {
 	return _auto_index;
 }
 
-std::pair<std::string, std::string> Server::getErrorPage() {
+std::unordered_map<std::string, std::string> Server::getErrorPage() {
 	return _error_page;
 }
 

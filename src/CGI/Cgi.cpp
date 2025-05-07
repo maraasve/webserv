@@ -44,42 +44,50 @@ Cgi::~Cgi() {
 	freeArgs(_args);
 }
 
-bool	Cgi::childFailed() {
+bool	Cgi::childExited() {
 	int status;
+	std::cout << "before waitpid" << std::endl;
 	pid_t result = waitpid(_cgiPid, &status, WNOHANG);
+	std::cout << "RESULT: "<< result << std::endl;
+	std::cout << "CGIPID: "<< _cgiPid << std::endl;
 	if (result == _cgiPid) {
-		if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
-			return true;
-		} else if (WIFSIGNALED(status)) {
-			return true;
-		}
+		return true;
 	}
+	else if (result == -1) {
+		return true;
+	}
+	std::cout << "after wexitstatus" << std::endl;
 	return false;
 }
 
 void	Cgi::handleIncoming() {
 	char buffer[BUFSIZ];
+	// int	status;
 	std::cout << "CGI: Parent reads output from Child" << std::endl;
 	ssize_t bytes = read(_readFromChild[0], buffer, sizeof(buffer));
+	std::cout << "BYTES: " << bytes << std::endl;
 	if (bytes > 0) {
 		printf("CGI: Output of the child %s\n", buffer);
 		_body.append(buffer, bytes);
-		if (bytes < (ssize_t)(sizeof(buffer))) { //change this logic
-			if (onCgiPipeDone) {
-				onCgiPipeDone(_readFromChild[0]);
-			}
-			close(_readFromChild[0]);
-			_readFromChild[0] = -1;
-			_state = cgiState::COMPLETE;
-			std::cout << "CGI: COMPLETE" << std::endl;
-			_client->handleIncoming();
-			return;
-		}
-	} else {
+	} else if (bytes < 0) {
 		errorHandler(_args);
 		_client->handleIncoming();
+		return;
+	}
+	if (childExited() || !bytes){
+		std::cout << "do we get here???" << std::endl;
+		if (onCgiPipeDone) {
+			onCgiPipeDone(_readFromChild[0]);
+		}
+		close(_readFromChild[0]);
+		_readFromChild[0] = -1;
+		_state = cgiState::COMPLETE;
+		std::cout << "CGI: COMPLETE" << std::endl;
+		_client->handleIncoming();
+		return;
 	}
 }
+
 
 void	Cgi::handleOutgoing() {
 	size_t writeSize;
@@ -229,7 +237,7 @@ void	Cgi::setBody(std::string	body) {
 	_body = body;
 }
 
-bool Cgi::setUpEnvironment() {
+bool Cgi::setUpEnvironment() { //change this to 2d array instead of setenv
 	std::string length = std::to_string(_body.size());
 	if (setenv("CONTENT_LENGTH", length.c_str(), 1) != 0) {
 		errorHandler(_args);
