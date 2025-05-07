@@ -74,7 +74,7 @@ class Cgi : public EventHandler {
 		void			handleOutgoing() override;
 		void 			errorHandler(char **array);
 		
-		bool			childFailed();
+		bool			childExited();
 		int				getExitStatus() const;
 		cgiState 		getState() const;
         int         	getWriteFd();

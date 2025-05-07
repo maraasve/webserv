@@ -34,8 +34,8 @@ void ConfigParser::printServerDetails(Server& server) {
 	std::cout << "\n";
 
 	// Print Error Page
-	std::pair<std::string, std::string> error_page = server.getErrorPage();
-	std::cout << "Error Page: Code " << error_page.first << " -> " << error_page.second << "\n";
+	// std::unordered_map<std::string, std::string> error_page = server.getErrorPage();
+	// std::cout << "Error Page: Code " << error_page.first << " -> " << error_page.second << "\n";
 
 	// Print Locations
 	std::vector<Location> locations = server.getLocations();
@@ -58,7 +58,7 @@ void ConfigParser::printServerDetails(Server& server) {
 					std::cout << "\n";
 
 					// Print Error Page for Location
-					std::cout << "Error Page: Code " << loc._error_page.first << " -> " << loc._error_page.second << "\n";
+					// std::cout << "Error Page: Code " << loc._error_page.first << " -> " << loc._error_page.second << "\n";
 
 					// Print HTTP Redirection
 					//std::cout << "HTTP Redirection: " << loc.HTTP_redirection.first << " -> " << loc.HTTP_redirection.second << "\n";
@@ -93,7 +93,7 @@ void ConfigParser::parseServer(std::vector<Token> tokens)
 			"listen", "host", "server_name", "root", "index", "auto_index", "client_max_body",
 			"error_page", "location"};
 	std::unordered_map<std::string, bool> check_duplicates = {
-			{"listen", false}, {"host", false}, {"server_name", false}, {"root", false}, {"index", false}, {"auto_index", false}, {"client_max_body", false}, {"error_page", false}};
+			{"listen", false}, {"host", false}, {"server_name", false}, {"root", false}, {"index", false}, {"auto_index", false}, {"client_max_body", false}};
 	auto it = tokens.begin();
 	int i = -1; //changed this
 	int location_count = 0;
@@ -128,7 +128,7 @@ void ConfigParser::parseServer(std::vector<Token> tokens)
 				error_check("Missing opening braces for server block");
 			}
 			inside_server_block = true;
-			i++; //changed this
+			i++;
 			location_count = 0;
 			++it;
 			++open_braces;
@@ -149,7 +149,7 @@ void ConfigParser::parseServer(std::vector<Token> tokens)
 		{
 			error_check("Missing value for directive: " + directive);
 		}
-		if (check_duplicates[directive] == true && directive != "location")
+		if (check_duplicates[directive] == true && directive != "location" && directive != "error_page")
 		{
 			error_check("Duplicate directive inside server block: " + directive);
 		}
@@ -262,7 +262,7 @@ void ConfigParser::parseLocation(Location &location, std::vector<Token>::iterato
 	std::unordered_set<std::string> valid_directives = {
 			"error_page", "client_max_body", "auto_index", "root", "index", "allowed_methods", "return"};
 	std::unordered_map<std::string, bool> check_duplicates = {
-			{"error_page", false}, {"client_max_body", false}, {"auto_index", false}, {"root", false}, {"index", false}, {"allowed_methods", false}, {"return", false}};
+			{"client_max_body", false}, {"auto_index", false}, {"root", false}, {"index", false}, {"allowed_methods", false}, {"return", false}};
 	while (it != end)
 	{
 		if (it->token_type == BRACE_CLOSE)
@@ -281,7 +281,7 @@ void ConfigParser::parseLocation(Location &location, std::vector<Token>::iterato
 		{
 			error_check("Missing value for directive: " + directive);
 		}
-		if (check_duplicates[directive] == true)
+		if (check_duplicates[directive] == true && directive != "error_page")
 		{
 			error_check("Duplicate directive inside location block: " + directive);
 		}
@@ -298,8 +298,7 @@ void ConfigParser::parseLocation(Location &location, std::vector<Token>::iterato
 			{
 				error_check("Invalid error_page path");
 			}
-			location._error_page.first = value;
-			location._error_page.second = it->value;
+			location._error_page.emplace(value, it->value);
 			++it;
 		}
 		else if (directive == "allowed_methods")
@@ -503,7 +502,7 @@ unsigned long long ConfigParser::isValidClientBodySize(std::string &client_body_
 
 bool ConfigParser::isValidIndex(std::string &index)
 {
-	const std::regex index_regex(R"(^[a-zA-Z][a-zA-Z0-9_\-]*\.(?:html?|php?|py?|jpg)$)");
+	const std::regex index_regex(R"(^[0-9a-zA-Z][a-zA-Z0-9_\-]*\.(?:html?|php?|py?|jpg)$)");
 	return std::regex_match(index, index_regex);
 }
 

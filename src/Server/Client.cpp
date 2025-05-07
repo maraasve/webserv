@@ -6,7 +6,7 @@
 /*   By: maraasve <maraasve@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:06:22 by maraasve          #+#    #+#             */
-/*   Updated: 2025/05/07 13:16:55 by maraasve         ###   ########.fr       */
+/*   Updated: 2025/05/07 17:36:40 by maraasve         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -138,7 +138,7 @@ void	Client::handleParsingCheckState() {
 bool Client::shouldRunCgi() {
 	static const std::set<std::string> cgiExtensions = {"py", "php"};
 	const std::string& uri = _request.getRootedURI();
-	size_t pos = uri.find_last_of('.');
+	size_t pos = uri.find_last_of('.'); //will this work with query string ?
 	if (pos == std::string::npos || pos == uri.size() - 1) {
 		return false;
 	}
@@ -199,13 +199,9 @@ void	Client::handleCgiState() {
 					return;
 				}
 			}
-			onCgiAccepted(_Cgi->getReadFd(), EPOLLIN);
-		} else {
-			_state = clientState::ERROR;
-			handleIncoming();
-			return;
+			onCgiAccepted(_Cgi->getReadFd(), EPOLLIN | EPOLLHUP);
 		}
-		_Cgi->startCgi();
+	_Cgi->startCgi();
 	} 
 	if (_Cgi->getState() == cgiState::COMPLETE) {
 		_request.setBody(_Cgi->getBody());
@@ -238,12 +234,10 @@ void printRequestObject(Request& request) {
 void	Client::handleResponseState() {
 	std::cout << "\t\t\nHandle Response State" << std::endl;
 	printRequestObject(_request);
-	if (!_location._error_page.first.empty() && _request.getErrorCode() == _location._error_page.first) {
-		_request.setErrorCode(_location._error_page.first);
-		_request.setErrorPagePath(_location._error_page.second);
-	} else if (!_serverPtr->getErrorPage().first.empty() && _request.getErrorCode() == _serverPtr->getErrorPage().first) {
-		_request.setErrorCode(_serverPtr->getErrorPage().first);
-		_request.setErrorPagePath(_serverPtr->getErrorPage().second);
+	if (!_location._error_page[_request.getErrorCode()].empty()) {
+		_request.setErrorPagePath(_location._error_page[_request.getErrorCode()]);
+	} else if (!_serverPtr->getErrorPage()[_request.getErrorCode()].empty()) {
+		_request.setErrorPagePath(_serverPtr->getErrorPage()[_request.getErrorCode()]);
 	}
 	_responseString =_response.createResponseStr(_request);
 	// std::cout << "\n---Response String-- \n" << _responseString << std::endl;

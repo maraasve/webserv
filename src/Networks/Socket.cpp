@@ -3,8 +3,9 @@
 Socket::Socket() 
 : socketfd(socket(AF_INET, SOCK_STREAM, 0)) {
     error_check(socketfd, "Socket Creation");
-    // int opt = 1;
-	// int val = setsockopt(socketfd, SOL_SOCKET, SO_REUSEPORT, &opt, sizeof(opt));
+    int opt = 1;
+	setsockopt(socketfd, SOL_SOCKET, SO_REUSEPORT, &opt, sizeof(opt));
+	setsockopt(socketfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));;
     // if (val < 0) {
     //     close(socketfd);
     //     error_check(val, "Seting Socket SO_REUSEPORT");

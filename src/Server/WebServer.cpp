@@ -17,7 +17,7 @@ void WebServer::run() {
 			int event_fd = event.data.fd;
 			auto handler = _eventHandlers.find(event_fd);
 			if (handler != _eventHandlers.end()) {
-				if (event.events & EPOLLIN) {
+				if (event.events & EPOLLIN || event.events & EPOLLHUP) {
 					handler->second->handleIncoming();
 				}
 				if (event.events & EPOLLOUT) {
