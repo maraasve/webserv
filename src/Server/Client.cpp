@@ -194,7 +194,7 @@ void	Client::handleCgiState() {
 					handleIncoming();
 					return;
 				}
-				// if (setenv("UPLOAD_DIR", , 1) != 0) {
+				// if (setenv("UPLOAD_DIR", _request.getBaseRoot(), 1) != 0) {
 
 				// }
 			}
