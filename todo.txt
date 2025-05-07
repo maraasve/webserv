@@ -39,5 +39,6 @@ TODO:
 [] We need to find a solution to /favicon.ico cause it keeps causing issues, thought I solved it but apparently I did so not :/
 [X] Check why 2 sockets get created for 2 servers with same host/port
 [] Determine how to handle custom root and cgi-bin -> only check file extensions
-[] Handle multiple server_names anddd handle same host - same port - no server name
-[] Optimize child process, make sure there's no zombie processes / handle time-out
+[X] Handle multiple server_names anddd
+[] handle same host - same port - no server name
+[X] Optimize child process, make sure there's no zombie processes / handle time-out

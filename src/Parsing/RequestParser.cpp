@@ -6,7 +6,7 @@
 /*   By: maraasve <maraasve@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:06:13 by maraasve          #+#    #+#             */
-/*   Updated: 2025/05/07 17:14:52 by maraasve         ###   ########.fr       */
+/*   Updated: 2025/05/07 18:22:04 by maraasve         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -144,6 +144,7 @@ bool	RequestParser::checkHost(const std::unordered_map<std::string, std::string>
 			_request.setHost(host);
 		}
 	}
+	std::cout << _request.getHost() << std::endl;
 	return true;
 }
 

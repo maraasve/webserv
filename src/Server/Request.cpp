@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Request.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: andmadri <andmadri@student.42.fr>          +#+  +:+       +#+        */
+/*   By: maraasve <maraasve@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:14:13 by maraasve          #+#    #+#             */
-/*   Updated: 2025/05/04 15:20:20 by andmadri         ###   ########.fr       */
+/*   Updated: 2025/05/07 18:24:20 by maraasve         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -56,11 +56,7 @@ std::string	Request::getPath() const{
 }
 
 std::string	Request::getHost() const{
-	auto it = _headers.find("Host");
-	if (it != _headers.end()) {
-		return (it->second);
-	}
-	return ("");
+	return (_host);
 }
 std::string& Request::getBaseRoot() {
 	return (_base_root);

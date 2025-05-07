@@ -6,7 +6,7 @@
 /*   By: maraasve <maraasve@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:06:22 by maraasve          #+#    #+#             */
-/*   Updated: 2025/05/07 17:36:40 by maraasve         ###   ########.fr       */
+/*   Updated: 2025/05/07 18:21:02 by maraasve         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -75,6 +75,7 @@ void	Client::handleHeaderState() {
 			//is there already a default server
 			return ;
 		}
+		std::cout << _requestParser.getRequest().getHost() << std::endl;
 		assignServer(*this);
 		if (_requestParser.getState() == requestState::PARSING_BODY) {
 			_state = clientState::READING_BODY;

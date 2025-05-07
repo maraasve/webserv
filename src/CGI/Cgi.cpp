@@ -185,7 +185,7 @@ void Cgi::executeChildProcess() {
 	}
 	close(_readFromChild[1]);
 	_readFromChild[1] = -1;
-	execve(_execPath.c_str(), _args, environ);
+	execve(_execPath.c_str(), _args, _env);
 	freeArgs(_args);
 	exit(1); //Do we need to exit? Will the destructor in the child be called automatically
 }
