@@ -10,6 +10,7 @@
 #include <iostream>
 #include <unordered_map>
 #include <functional>
+#include <csignal>
 
 class Client;
 

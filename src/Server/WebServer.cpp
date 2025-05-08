@@ -1,6 +1,8 @@
 #include "./WebServer.hpp"
 #include "./Client.hpp"
 
+extern volatile sig_atomic_t shutdownRequested;
+
 WebServer::WebServer(const std::string& config_file) {
 	ConfigParser parser(config_file, _servers);
 	_servers = parser.getServers();
@@ -9,7 +11,7 @@ WebServer::WebServer(const std::string& config_file) {
 void WebServer::run() {
 	setupServerSockets(_epoll);
 
-	while(true) {
+	while(!shutdownRequested) {
 		int	ready_fds = _epoll.getReadyFd();
 		struct epoll_event *ready_events = _epoll.getEvents();
 		for (int i = 0; i < ready_fds; ++i) {
