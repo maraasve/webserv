@@ -42,5 +42,8 @@ TODO:
 [X] Handle multiple server_names anddd
 [X] handle same host - same port - no server name
 [X] Optimize child process, make sure there's no zombie processes / handle time-out
-[X] set env variables for CGI
-[] Is there already a default server if nothing matches????
+[] set env variables for CGI
+
+Clean up code
+[] Alter makefile so we're not using wildcard anymore
+[] Link header files in library so we can include <webserv.hpp> instead of "../src/server/webserv.hpp"
