@@ -41,45 +41,47 @@ enum class cgiState {
 class Client;
 
 class Cgi : public EventHandler {
-	private:
+private:
+		Client*						_client;
+		Request&					_request;
 		const std::string	_filePathString;
 		const std::string	_extension;
-		const char			*_filePath;
-		char				**_args;
-		const std::string	_execPath;
-		int					_exitStatus;
-		cgiState			_state;
-		int					_writeToChild[2];
-		int					_readFromChild[2];
-		pid_t				_cgiPid;
-		std::string			_body;
-		std::string			_method;
-		Client*				_client;
-		char				**_env;
+		const char				*_filePath;
+		std::string	_execPath;
+		int								_exitStatus;
+		cgiState					_state;
+		int								_writeToChild[2];
+		int								_readFromChild[2];
+		pid_t							_cgiPid;
+		std::string				_body;
+		std::string				_method;
+		char							**_args;
+		char							**_env;
 	
-		char**  		vecTo2DArray(std::vector<std::string>& vec);
-		void			freeArgs(char **array);
-		char**			setArgs();
-	public:
-		Cgi() = default;
-		Cgi(const std::string& file_path, const std::string& extension, const std::string& method, Client* client);
-		~Cgi();
+		char**				vecTo2DArray(std::vector<std::string>& vec);
+		void					freeArgs(char **array);
+		char**				setArgs();
+public:
+									Cgi() = default;
+									Cgi(Client* client);
+									~Cgi();
 
-		void			startCgi();
-		void 			executeChildProcess();
+		void					startCgi();
+		void					executeChildProcess();
 
-		void			setBody(std::string body);
-		bool			setUpEnvironment();
+		void					setBody(std::string body);
+		char**				setUpEnvironment();
 	
-		void			handleIncoming() override;
-		void			handleOutgoing() override;
-		void 			errorHandler(char **array);
+		void					handleIncoming() override;
+		void					handleOutgoing() override;
+		void					errorHandler(char **array);
 		
-		bool			childExited();
-		int				getExitStatus() const;
-		cgiState 		getState() const;
-        int         	getWriteFd();
-        int         	getReadFd();
+		bool					childExited();
+		bool					init();
+		cgiState			getState() const;
+		int						getExitStatus() const;
+		int         	getWriteFd();
+		int						getReadFd();
 		std::string		getExecPath();
 		std::string		getBody() const;
 

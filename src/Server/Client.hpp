@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: maraasve <maraasve@student.42.fr>          +#+  +:+       +#+        */
+/*   By: andmadri <andmadri@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:06:59 by maraasve          #+#    #+#             */
-/*   Updated: 2025/05/07 13:06:57 by maraasve         ###   ########.fr       */
+/*   Updated: 2025/05/10 14:26:38 by andmadri         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -73,12 +73,13 @@ public:
 	
 	int										getFd();
 	int										getSocketFd();
-	std::string&							getRequestStr();
-	std::string&							getResponseStr();
-	Server*									getServer();
-	Request&								getRequest();
-	RequestParser&							getRequestParser();
-	std::shared_ptr<Cgi>					getCgi();
+	std::string&					getRequestStr();
+	std::string&					getResponseStr();
+	Server*								getServer();
+	Request&							getRequest();
+	RequestParser&				getRequestParser();
+	std::shared_ptr<Cgi>	getCgi();
+	std::string&					getCgiExtension();
 	
 	bool 									shouldRunCgi();
 

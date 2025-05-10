@@ -4,15 +4,6 @@ static constexpr std::array<const char*, 5> TokenNames = {{
 	"KEYWORD", "BRACE_OPEN", "BRACE_CLOSE", "COLON", "SEMI_COLON"
 }};
 
-std::unordered_map<std::string, bool> seenDirective;
-
-std::string ConfigParser::printTokenType(int i) {
-	if (i < 0 || i >= (int)TokenNames.size()) {
-		return {};
-	}
-	return TokenNames[i];
-}
-
 template<typename T>
 std::function<void(T&, TokenIt&, TokenIt&)> wrapParser(void (ConfigParser::*fn)(T&, TokenIt&, TokenIt&)) {
 	return [this, fn](T& target, TokenIt& it, TokenIt& end) {
@@ -20,30 +11,56 @@ std::function<void(T&, TokenIt&, TokenIt&)> wrapParser(void (ConfigParser::*fn)(
 	};
 }
 
+std::string ConfigParser::printTokenType(int i) {
+	if (i < 0 || i >= static_cast<int>(TokenNames.size())) {
+		return {};
+	}
+	return TokenNames[i];
+}
+
+ConfigParser::ConfigParser(const std::string &filename, std::vector<Server> &webservers)
+	: open_braces(0), servers(webservers){
+	initParsers();
+	auto tokens = loadTokensFromFile(filename);
+	// for (auto tokens : Tokenizer.getTokens()) {
+	// 	std::cout << printEnum(tokens.token_type) << " --> " << tokens.value << std::endl;
+	// }
+	parseServer(tokens);
+	// for(auto& server : servers) {
+	// 	printServerDetails(server);
+	// }		
+}
+
+
 void ConfigParser::initParsers() {
 	_serverParsers["root"] = wrapParser(&ConfigParser::parseRoot<Server>);
 	_serverParsers["index"] = wrapParser(&ConfigParser::parseIndex<Server>);
+	_serverParsers["auto_index"] = wrapParser(&ConfigParser::parseAutoIndex<Server>);
+	_serverParsers["client_max_body"] = wrapParser(&ConfigParser::parseClientMaxBody<Server>);
+	_serverParsers["error_page"] = wrapParser(&ConfigParser::parseErrorPage<Server>);
 	_serverParsers["listen"] = wrapParser(&ConfigParser::parseListen<Server>);
 	_serverParsers["host"] = wrapParser(&ConfigParser::parseHost<Server>);
 	_serverParsers["server_name"] = wrapParser(&ConfigParser::parseServerName<Server>);
-	_serverParsers["auto_index"] = wrapParser(&ConfigParser::parseAutoIndex<Server>);
-	_serverParsers["error_page"] = wrapParser(&ConfigParser::parseErrorPage<Server>);
-	_serverParsers["client_max_body"] = wrapParser(&ConfigParser::parseClientMaxBody<Server>);
-	_serverParsers["location"] = [this](Server &s, TokenIt &it, TokenIt &end){ return parseLocation(s, it, end); }},
-
-	_locationParsers[""] = wrapParser(&ConfigParser::parseRoot<Location>);
+	_serverParsers["location"] = [this](Server &s, TokenIt &it, TokenIt &end){ parseLocation(s, it, end); };
+	
+	_locationParsers["root"] = wrapParser(&ConfigParser::parseRoot<Location>);
+	_locationParsers["index"] = wrapParser(&ConfigParser::parseIndex<Location>);
+	_locationParsers["auto_index"] = wrapParser(&ConfigParser::parseAutoIndex<Location>);
+	_locationParsers["client_max_body"] = wrapParser(&ConfigParser::parseClientMaxBody<Location>);
+	_locationParsers["error_page"] = wrapParser(&ConfigParser::parseErrorPage<Location>);
+	// _locationParsers["allowed_methods"] = wrapParser(&ConfigParser::parseAllowedMethods<Location>);
+	// _locationParsers["return"] = wrapParser(&ConfigParser::parseReturn<Location>);
+	
 }
 
 void ConfigParser::expectTokenType(TokenName expected_type, TokenIt& it, TokenIt& end) {
 	if (it == end) {
 		error("Unexpected end of tokens: expected token \"" 
 			+ printTokenType(expected_type) + "\"");
-	}
-	if (it->token_type != expected_type) {
-		std::string got = printTokenType(it->token_type);
-		std::string want = printTokenType(expected_type);
-		error("Unexpected token type: expected \"" 
-			+ want + "\", got \"" + got + "\"");
+		}
+		if (it->token_type != expected_type) {
+			error("Unexpected token type: expected \"" + printTokenType(expected_type) 
+		+ "\", got \"" + printTokenType(it->token_type) + "\"");
 	}
 }
 
@@ -87,17 +104,106 @@ void ConfigParser::parseConfigFile(const std::vector<Token>& tokens) {
 void ConfigParser::parseServerBlock(Server &s, TokenIt &it, TokenIt &end) {
 	while (it != end || it->token_type == BRACE_CLOSE) {
 		std::string directive = it->value;
-		auto dpIt = _serverParsers.find(directive);
-		if (dpIt == _serverParsers.end()) {
+		auto parser_it = _serverParsers.find(directive);
+		if (parser_it == _serverParsers.end()) {
 			error("Unknown directive: " + directive);
 		}
 		assertNotDuplicate(directive);
 		++it;
 		expectTokenType(KEYWORD, it, end);
-		dpIt->second(servers.back(), it, end);
+		parser_it->second(servers.back(), it, end);
 		expectTokenType(SEMI_COLON, it, end);
 		++it;
 	}
+}
+
+void ConfigParser::parseLocationBlock(Server &s, TokenIt &it, TokenIt &end) {
+	const std::string loc_path = it->value;
+	if (!isValidPath(loc_path)) {
+		error_check("Location directive: Invalid path \"" + loc_path + "\"");
+	}
+	++it;
+	expectTokenType(BRACE_OPEN, it, end);
+	++it;
+	++open_braces; //is there a better way to do this?
+	expectTokenType(KEYWORD, it, end);
+	Location& loc = addLocation(s.getLocations(), loc_path);
+	while (it != end && it->token_type != BRACE_CLOSE) {
+		std::string directive = it->value;
+		auto parser_it = location_parsers.find(directive);
+		if (parser_it == location_parsers.end()) {
+			error("Unknown location-directive: " + directive);
+		}
+		parser_it->second(loc, it, end);
+	}
+	expectTokenType(it, end, BRACE_CLOSE);
+	open_braces--;
+	++it;
+}
+
+Location& ConfigParser::addLocation(Server &s, const std::string& location_path) {
+	auto locs = s.getLocations();
+	locs.emplace_back();
+	locs.back()._path = location_path;
+	return locs.back();
+}
+
+
+template<typename T>
+void ConfigParser::parseReturn(T &t, TokenIt &it, TokenIt &end) {
+
+	// else if (directive == "return") 
+	// {
+	// 	if (value != "301" && value != "302")
+	// 	{
+	// 		error_check("Invalid redirection value: " + value);
+	// 	}
+	// 	if (it->token_type == KEYWORD && (it->value == "http" || it->value == "https")) {
+	// 		std::string uri_redirection;
+	// 		uri_redirection.append(it->value);
+	// 		++it;
+	// 		if(it->token_type != COLON) {
+	// 			break;
+	// 		}
+	// 		uri_redirection.append(it->value);
+	// 		++it;
+	// 		if (it->token_type != KEYWORD) {
+	// 			break;
+	// 		}
+	// 		uri_redirection.append(it->value);
+	// 		location._redirection = std::make_pair(value, uri_redirection);
+	// 		++it;
+	// 	}
+	// 	else if (it->token_type == KEYWORD && it->value[0] == '/') {
+	// 		location._redirection = std::make_pair(value, it->value);
+	// 		++it;
+	// 	} else {
+	// 		error_check("Wrongly formated redirection directive return");
+	// 	}
+	// }
+}
+
+template<typename T>
+void ConfigParser::parseAllowedMethods(T &t, TokenIt &it, TokenIt &end) {
+	std::set<std::string> unique_methods;
+	// for (int i = 0; i < 3; i++)
+	// {
+	// 	if (value != "GET" && value != "POST" && value != "DELETE")
+	// 	{
+	// 		error_check("Invalid allowed_method method: " + value);
+	// 	}
+	// 	if (!unique_methods.insert(value).second)
+	// 	{
+	// 		error_check("Duplicated method in allowed_method directive: " + value);
+	// 	}
+	// 	location._allowed_methods.push_back(value);
+	// 	if (it->token_type != KEYWORD)
+	// 	{
+	// 		break;
+	// 	}
+	// 	value = it->value;
+	// 	++it;
+	// }
 }
 
 template<typename T>
@@ -196,97 +302,6 @@ void ConfigParser::parseErrorPage(T &t, TokenIt &it, TokenIt &end) {
 	++it;
 }
 
-Location& ConfigParser::addLocation(Server &s, const std::string& location_path) {
-	auto locs = s.getLocations();
-	locs.emplace_back();
-	locs.back()._path = location_path;
-	return locs.back();
-}
-
-void ConfigParser::parseLocationBlock(Server &s, TokenIt &it, TokenIt &end) {
-	const std::string loc_path = it->value;
-	if (!isValidPath(loc_path)) {
-		error_check("Location directive: Invalid path \"" + loc_path + "\"");
-	}
-	++it;
-	expectTokenType(BRACE_OPEN, it, end);
-	++it;
-	++open_braces; //is there a better way to do this?
-	expectTokenType(KEYWORD, it, end);
-	Location& loc = addLocation(s.getLocations(), loc_path);
-	while (it != end && it->token_type != BRACE_CLOSE) {
-		std::string directive = it->value;
-		auto dp = location_parsers.find(directive);
-		if (dp == location_parsers.end()) {
-			error("Unknown location-directive: " + directive);
-		}
-		dp->second(loc, it, end);
-	}
-	expectTokenType(it, end, BRACE_CLOSE);
-	open_braces--;
-	++it;
-}
-
-
-/*
-	What is location parsing?
-	error_page
-	allowed_methods
-	client_max_body
-	root
-	index
-	auto_index
-	return
-*/
-
-
-
-ConfigParser::ConfigParser(const std::string &filename, std::vector<Server> &webservers)
-	: open_braces(0)
-	, servers(webservers)
-	, _serverParsers({
-		{"listen",			[this](Server &s, TokenIt &it, TokenIt &end){ return parseListen(s, it, end); }},
-		{"host",			[this](Server &s, TokenIt &it, TokenIt &end){ return parseHost(s, it, end); }},
-		{"root",			[this](Server &s, TokenIt &it, TokenIt &end){ return parseRoot(s, it, end); }},
-		{"index",			[this](Server &s, TokenIt &it, TokenIt &end){ return parseIndex(s, it, end); }},
-		{"auto_index",		[this](Server &s, TokenIt &it, TokenIt &end){ return parseAutoIndex(s, it, end); }},
-		{"server_name",		[this](Server &s, TokenIt &it, TokenIt &end){ return parseServerName(s, it, end); }},
-		{"location",		[this](Server &s, TokenIt &it, TokenIt &end){ return parseLocation(s, it, end); }},
-		{"client_max_body", [this](Server &s, TokenIt &it, TokenIt &end){ return parseClientMaxBody(s, it, end); }},
-		{"error_page",		[this](Server &s, TokenIt &it, TokenIt &end){ return parseErrorPage(s, it, end); }},
-		{},
-
-
-	})
-	, _locationParsers({
-		{"root", [this](Location &l, TokenIt &it, TokenIt &end){ return parseRoot(l, it, end); }},
-		{"index", },
-		{"auto_index", },
-		{"return", },
-		{"client_max_body", },
-		{"allowed_methods", },
-		{"error_page", },
-		{},
-		{},
-		{},
-		{},
-		{},
-		{},
-		{},
-		{},
-
-	}) {
-	initParsers();
-	auto tokens = loadTokensFromFile(filename);
-	// for (auto tokens : Tokenizer.getTokens()) {
-	// 	std::cout << printEnum(tokens.token_type) << " --> " << tokens.value << std::endl;
-	// }
-	parseServer(tokens);
-	// for(auto& server : servers) {
-	// 	printServerDetails(server);
-	// }		
-}
-
 std::vector<Token> ConfigParser::loadTokensFromFile(const std::string& filename) {
 	std::ifstream in(filename);
 	if (!in) {
@@ -305,173 +320,6 @@ std::vector<Token> ConfigParser::loadTokensFromFile(const std::string& filename)
 	}
 	return tokens;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void ConfigParser::parseLocation(Location &location, std::vector<Token>::iterator &it, std::vector<Token>::iterator end)
-{
-	std::unordered_set<std::string> valid_directives = {
-			"error_page", "client_max_body", "auto_index", "root", "index", "allowed_methods", "return"};
-	std::unordered_map<std::string, bool> check_duplicates = {
-			{"client_max_body", false}, {"auto_index", false}, {"root", false}, {"index", false}, {"allowed_methods", false}, {"return", false}};
-	while (it != end)
-	{
-		if (it->token_type == BRACE_CLOSE)
-		{
-			--open_braces;
-			++it;
-			return;
-		}
-		if (valid_directives.find(it->value) == valid_directives.end())
-		{
-			error_check("Unexpected directive inside location block: " + it->value);
-		}
-		std::string directive = it->value;
-		++it;
-		if (it == end || it->token_type != KEYWORD)
-		{
-			error_check("Missing value for directive: " + directive);
-		}
-		if (check_duplicates[directive] == true && directive != "error_page")
-		{
-			error_check("Duplicate directive inside location block: " + directive);
-		}
-		check_duplicates[directive] = true;
-		std::string value = it->value;
-		++it;
-		if (directive == "error_page")
-		{
-			if (!isValidErrorCode(value))
-			{
-				error_check("Invalid error_page code: " + value);
-			}
-			if (it == end || it->token_type != KEYWORD || !isValidPath(it->value))
-			{
-				error_check("Invalid error_page path");
-			}
-			location._error_page.emplace(value, it->value);
-			++it;
-		}
-		else if (directive == "allowed_methods")
-		{
-			std::set<std::string> unique_methods;
-			for (int i = 0; i < 3; i++)
-			{
-				if (value != "GET" && value != "POST" && value != "DELETE")
-				{
-					error_check("Invalid allowed_method method: " + value);
-				}
-				if (!unique_methods.insert(value).second)
-				{
-					error_check("Duplicated method in allowed_method directive: " + value);
-				}
-				location._allowed_methods.push_back(value);
-				if (it->token_type != KEYWORD)
-				{
-					break;
-				}
-				value = it->value;
-				++it;
-			}
-		}
-		else if (directive == "client_max_body")
-		{
-			unsigned long long bytes = isValidClientBodySize(value);
-			if (!bytes)
-			{
-				error_check("Invalid client's body size: " + value);
-			}
-			location._client_max_body = bytes;
-		}
-		else if (directive == "root")
-		{
-			if (!isValidPath(value))
-			{
-				error_check("Invalid root path: " + value);
-			}
-			location._root = value;
-			required_directives.has_root = true;
-		}
-		else if (directive == "index")
-		{
-			if (!isValidIndex(value))
-			{
-				error_check("Invalid index file: " + value);
-			}
-			location._index = value;
-			required_directives.has_index = true;
-		}
-		else if (directive == "auto_index")
-		{
-			if (value != "on" && value != "off")
-			{
-				error_check("Invalid auto_index value: " + value);
-			}
-			location._auto_index = (value == "on");
-		}
-		else if (directive == "return") 
-		{
-			if (value != "301" && value != "302")
-			{
-				error_check("Invalid redirection value: " + value);
-			}
-			if (it->token_type == KEYWORD && (it->value == "http" || it->value == "https")) {
-				std::string uri_redirection;
-				uri_redirection.append(it->value);
-				++it;
-				if(it->token_type != COLON) {
-					break;
-				}
-				uri_redirection.append(it->value);
-				++it;
-				if (it->token_type != KEYWORD) {
-					break;
-				}
-				uri_redirection.append(it->value);
-				location._redirection = std::make_pair(value, uri_redirection);
-				++it;
-			}
-			else if (it->token_type == KEYWORD && it->value[0] == '/') {
-				location._redirection = std::make_pair(value, it->value);
-				++it;
-			} else {
-				error_check("Wrongly formated redirection directive return");
-			}
-		}
-		if (it == end || it->token_type != SEMI_COLON)
-		{
-			error_check("Missing semicolon for directive: " + directive);
-		}
-		++it;
-	}
-	error_check("Missing closing braces");
-}
-
 
 bool ConfigParser::isValidServerName(std::string &server_name) {
 	if (server_name == "localhost") {
@@ -504,29 +352,23 @@ bool ConfigParser::isValidErrorCode(std::string &error_code) {
 }
 
 unsigned long long ConfigParser::isValidClientBodySize(std::string &client_body_size) {
-	const std::regex client_body_regex(R"(^([1-9][0-9]*)([mMkKgG])$)");
+	static const std::regex pattern(R"(^([1-9][0-9]*)([mMkKgG])$)");
+	static const std::unordered_map<char, unsigned long long> multipliers = {
+		{'k', 1024ULL},
+		{'m', 1024ULL * 1024},
+		{'g', 1024ULL * 1024 * 1024}
+	};
 	std::smatch match;
-	if (std::regex_match(client_body_size, match, client_body_regex)) {
+	if (std::regex_match(client_body_size, match, pattern)) {
 		try {
-			char unit = match[2].str()[0];
-			unsigned long long num = std::stoull(match[1]); // check this
-			switch (unit) {
-			case 'k':
-			case 'K':
-				num *= 1024;
-				break;
-			case 'm':
-			case 'M':
-				num *= 1024 * 1024;
-				break;
-			case 'g':
-			case 'G':
-				num *= 1024 * 1024 * 1024;
-				break;
-			default:
+			unsigned long long num = std::stoull(match[1].str());
+			char unit = std::tolower(match[2].str()[0]);
+			auto it = multipliers.find(unit);
+			if (it == multipliers.end()) {
 				return 0;
 			}
-			if (num > 4294967296){
+			num *= it->second;
+			if (num  > 4294967296ULL) {
 				return 0;
 			}
 			return num;
@@ -588,3 +430,200 @@ const std::vector<Server> &ConfigParser::getServers() const {
 void ConfigParser::error(const std::string &msg) const {
 	throw std::runtime_error("Error: " + msg);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// void ConfigParser::parseLocation(Location &location, std::vector<Token>::iterator &it, std::vector<Token>::iterator end)
+// {
+// 	std::unordered_set<std::string> valid_directives = {
+// 			"error_page", "client_max_body", "auto_index", "root", "index", "allowed_methods", "return"};
+// 	std::unordered_map<std::string, bool> check_duplicates = {
+// 			{"client_max_body", false}, {"auto_index", false}, {"root", false}, {"index", false}, {"allowed_methods", false}, {"return", false}};
+// 	while (it != end)
+// 	{
+// 		if (it->token_type == BRACE_CLOSE)
+// 		{
+// 			--open_braces;
+// 			++it;
+// 			return;
+// 		}
+// 		if (valid_directives.find(it->value) == valid_directives.end())
+// 		{
+// 			error_check("Unexpected directive inside location block: " + it->value);
+// 		}
+// 		std::string directive = it->value;
+// 		++it;
+// 		if (it == end || it->token_type != KEYWORD)
+// 		{
+// 			error_check("Missing value for directive: " + directive);
+// 		}
+// 		if (check_duplicates[directive] == true && directive != "error_page")
+// 		{
+// 			error_check("Duplicate directive inside location block: " + directive);
+// 		}
+// 		check_duplicates[directive] = true;
+// 		std::string value = it->value;
+// 		++it;
+// 		// if (directive == "error_page")
+// 		// {
+// 		// 	if (!isValidErrorCode(value))
+// 		// 	{
+// 		// 		error_check("Invalid error_page code: " + value);
+// 		// 	}
+// 		// 	if (it == end || it->token_type != KEYWORD || !isValidPath(it->value))
+// 		// 	{
+// 		// 		error_check("Invalid error_page path");
+// 		// 	}
+// 		// 	location._error_page.emplace(value, it->value);
+// 		// 	++it;
+// 		// }
+// 		else if (directive == "allowed_methods")
+// 		{
+// 			std::set<std::string> unique_methods;
+// 			for (int i = 0; i < 3; i++)
+// 			{
+// 				if (value != "GET" && value != "POST" && value != "DELETE")
+// 				{
+// 					error_check("Invalid allowed_method method: " + value);
+// 				}
+// 				if (!unique_methods.insert(value).second)
+// 				{
+// 					error_check("Duplicated method in allowed_method directive: " + value);
+// 				}
+// 				location._allowed_methods.push_back(value);
+// 				if (it->token_type != KEYWORD)
+// 				{
+// 					break;
+// 				}
+// 				value = it->value;
+// 				++it;
+// 			}
+// 		}
+// 		else if (directive == "client_max_body")
+// 		{
+// 			unsigned long long bytes = isValidClientBodySize(value);
+// 			if (!bytes)
+// 			{
+// 				error_check("Invalid client's body size: " + value);
+// 			}
+// 			location._client_max_body = bytes;
+// 		}
+// 		else if (directive == "root")
+// 		{
+// 			if (!isValidPath(value))
+// 			{
+// 				error_check("Invalid root path: " + value);
+// 			}
+// 			location._root = value;
+// 			required_directives.has_root = true;
+// 		}
+// 		else if (directive == "index")
+// 		{
+// 			if (!isValidIndex(value))
+// 			{
+// 				error_check("Invalid index file: " + value);
+// 			}
+// 			location._index = value;
+// 			required_directives.has_index = true;
+// 		}
+// 		else if (directive == "auto_index")
+// 		{
+// 			if (value != "on" && value != "off")
+// 			{
+// 				error_check("Invalid auto_index value: " + value);
+// 			}
+// 			location._auto_index = (value == "on");
+// 		}
+// 		else if (directive == "return") 
+// 		{
+// 			if (value != "301" && value != "302")
+// 			{
+// 				error_check("Invalid redirection value: " + value);
+// 			}
+// 			if (it->token_type == KEYWORD && (it->value == "http" || it->value == "https")) {
+// 				std::string uri_redirection;
+// 				uri_redirection.append(it->value);
+// 				++it;
+// 				if(it->token_type != COLON) {
+// 					break;
+// 				}
+// 				uri_redirection.append(it->value);
+// 				++it;
+// 				if (it->token_type != KEYWORD) {
+// 					break;
+// 				}
+// 				uri_redirection.append(it->value);
+// 				location._redirection = std::make_pair(value, uri_redirection);
+// 				++it;
+// 			}
+// 			else if (it->token_type == KEYWORD && it->value[0] == '/') {
+// 				location._redirection = std::make_pair(value, it->value);
+// 				++it;
+// 			} else {
+// 				error_check("Wrongly formated redirection directive return");
+// 			}
+// 		}
+// 		if (it == end || it->token_type != SEMI_COLON)
+// 		{
+// 			error_check("Missing semicolon for directive: " + directive);
+// 		}
+// 		++it;
+// 	}
+// 	error_check("Missing closing braces");
+// }
+
+
