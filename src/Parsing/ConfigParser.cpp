@@ -29,8 +29,8 @@ void ConfigParser::initParsers() {
 	_serverParsers["error_page"] = wrapParser(&ConfigParser::parseErrorPage<Server>);
 	_serverParsers["listen"] = wrapParser(&ConfigParser::parseListen<Server>);
 	_serverParsers["host"] = wrapParser(&ConfigParser::parseHost<Server>);
-	_serverParsers["server_name"] = wrapParser(&ConfigParser::parseServerName<Server>);
-	_serverParsers["location"] = [this](Server &s, TokenIt &it, TokenIt &end){ parseLocation(s, it, end); };
+	_serverParsers["server_name"] = wrapParser(&ConfigParser::parseServerNames<Server>);
+	_serverParsers["location"] = [this](Server &s, TokenIt &it, TokenIt &end){ parseLocationBlock(s, it, end); };
 	
 	_locationParsers["root"] = wrapParser(&ConfigParser::parseRoot<Location>);
 	_locationParsers["index"] = wrapParser(&ConfigParser::parseIndex<Location>);
@@ -64,7 +64,7 @@ void ConfigParser::assertNotDuplicate(const std::string& directive) {
 
 void ConfigParser::parseConfigFile(const std::vector<Token>& tokens) {
 	auto it = tokens.begin();
-	auto it = tokens.end();
+	auto end = tokens.end();
 	bool insideServerBlock = false;
 	while (it != end) {
 		if (it->value != "server" || insideServerBlock) {
