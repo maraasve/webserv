@@ -12,6 +12,7 @@
 #include <stdbool.h>
 #include <unordered_map>
 
+//this needs functions to workd, basically setters for: root, index, error_page, client_max_body, allowed_methods, return
 struct Location {
 	std::string _path;
 	std::string _root;
