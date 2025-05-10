@@ -1,261 +1,337 @@
 #include "ConfigParser.hpp"
 
-std::string ConfigParser::printEnum(int i) {
-	switch (i) {
-		case 0:
-			return ("KEYWORD");
-		case 1:
-			return ("BRACE_OPEN");
-		case 2:
-			return ("BRACE_CLOSE");
-		case 3:
-			return ("COLON");
-		case 4:
-			return ("SEMI_COLON");
+static constexpr std::array<const char*, 5> TokenNames = {{ 
+	"KEYWORD", "BRACE_OPEN", "BRACE_CLOSE", "COLON", "SEMI_COLON"
+}};
+
+std::unordered_map<std::string, bool> seenDirective;
+
+std::string ConfigParser::printTokenType(int i) {
+	if (i < 0 || i >= (int)TokenNames.size()) {
+		return {};
 	}
-	return ("");
+	return TokenNames[i];
 }
 
-void ConfigParser::printServerDetails(Server& server) {
-	std::cout << "Server Details:\n";
-	std::cout << "----------------------------------\n";
-	std::cout << "Host: " << server.getHost_string() << "\n";
-	std::cout << "Port: " << server.getPort() << "\n";
-	std::cout << "Client Max Body Size: " << server.getClientMaxBody() << " bytes\n";
-	std::cout << "Root: " << server.getRoot() << "\n";
-	std::cout << "Index: " << server.getIndex() << "\n";
-	std::cout << "Auto Index: " << (server.getAutoIndex() ? "On" : "Off") << "\n";
-
-	// Print Server Names
-	std::cout << "Server Names: ";
-	for (const auto& name : server.getServerNames()) {
-			std::cout << name << " ";
-	}
-	std::cout << "\n";
-
-	// Print Error Page
-	// std::unordered_map<std::string, std::string> error_page = server.getErrorPage();
-	// std::cout << "Error Page: Code " << error_page.first << " -> " << error_page.second << "\n";
-
-	// Print Locations
-	std::vector<Location> locations = server.getLocations();
-	if (!locations.empty()) {
-			std::cout << "\nLocations:\n";
-			for (const auto& loc : locations) {
-					std::cout << "----------------------------------\n";
-					std::cout << "Path: " << loc._path << "\n";
-					std::cout << "Root: " << loc._root << "\n";
-					std::cout << "Index: " << loc._index << "\n";
-					std::cout << "Auto Index: " << (loc._auto_index ? "On" : "Off") << "\n";
-					std::cout << "Client Max Body: " << loc._client_max_body << " bytes\n";
-					std::cout << "Redirections: " << loc._redirection.first << " " << loc._redirection.second << "\n";
-
-					// Print Methods
-					std::cout << "Allowed Methods: ";
-					for (const auto& method : loc._allowed_methods) {
-							std::cout << method << " ";
-					}
-					std::cout << "\n";
-
-					// Print Error Page for Location
-					// std::cout << "Error Page: Code " << loc._error_page.first << " -> " << loc._error_page.second << "\n";
-
-					// Print HTTP Redirection
-					//std::cout << "HTTP Redirection: " << loc.HTTP_redirection.first << " -> " << loc.HTTP_redirection.second << "\n";
-			}
-	}
-	std::cout << "----------------------------------\n";
+template<typename T>
+std::function<void(T&, TokenIt&, TokenIt&)> wrapParser(void (ConfigParser::*fn)(T&, TokenIt&, TokenIt&)) {
+	return [this, fn](T& target, TokenIt& it, TokenIt& end) {
+		(this->*fn)(target, it, end);
+	};
 }
 
-ConfigParser::ConfigParser(const std::string &filename, std::vector<Server> &webservers) : open_braces(0), servers(webservers)
-{
-	std::ifstream file(filename);
-	if (!file)
-	{
-		error_check("Failed to Open File: " + filename);
+void ConfigParser::initParsers() {
+	_serverParsers["root"] = wrapParser(&ConfigParser::parseRoot<Server>);
+	_serverParsers["index"] = wrapParser(&ConfigParser::parseIndex<Server>);
+	_serverParsers["listen"] = wrapParser(&ConfigParser::parseListen<Server>);
+	_serverParsers["host"] = wrapParser(&ConfigParser::parseHost<Server>);
+	_serverParsers["server_name"] = wrapParser(&ConfigParser::parseServerName<Server>);
+	_serverParsers["auto_index"] = wrapParser(&ConfigParser::parseAutoIndex<Server>);
+	_serverParsers["error_page"] = wrapParser(&ConfigParser::parseErrorPage<Server>);
+	_serverParsers["client_max_body"] = wrapParser(&ConfigParser::parseClientMaxBody<Server>);
+	_serverParsers["location"] = [this](Server &s, TokenIt &it, TokenIt &end){ return parseLocation(s, it, end); }},
+
+	_locationParsers[""] = wrapParser(&ConfigParser::parseRoot<Location>);
+}
+
+void ConfigParser::expectTokenType(TokenName expected_type, TokenIt& it, TokenIt& end) {
+	if (it == end) {
+		error("Unexpected end of tokens: expected token \"" 
+			+ printTokenType(expected_type) + "\"");
 	}
-	Tokenizer = ConfigTokenizer(loadFileAsString(file));
-	if (Tokenizer.getTokens().empty()) {
-		error_check("Configuration File is Empty");
+	if (it->token_type != expected_type) {
+		std::string got = printTokenType(it->token_type);
+		std::string want = printTokenType(expected_type);
+		error("Unexpected token type: expected \"" 
+			+ want + "\", got \"" + got + "\"");
 	}
+}
+
+void ConfigParser::assertNotDuplicate(const std::string& directive) {
+	if (seenDirective[directive] && RepeatableDirectives.count(directive) == 0) {
+		error("Unexpected duplicate directive: " + directive);
+	}
+	seenDirective[directive] = true;
+}
+
+void ConfigParser::parseConfigFile(const std::vector<Token>& tokens) {
+	auto it = tokens.begin();
+	auto it = tokens.end();
+	bool insideServerBlock = false;
+	while (it != end) {
+		if (it->value != "server" || insideServerBlock) {
+			error("Server: missing server directive or nested server block");
+		}
+		servers.emplace_back();
+		insideServerBlock = true;
+		++it;
+		expectTokenType(BRACE_OPEN, it, end);
+		++open_braces;
+		++it;
+		parseServerBlock(servers.back(), it, end);
+		expectTokenType(BRACE_CLOSE, it, end);
+		--open_braces;
+		if (!required_directives.has_index || !required_directives.has_root) {
+			error("Missing required directives in server block");
+		}
+		if (open_braces == 0) {
+			insideServerBlock = false;
+		}
+		++it;
+	}
+	if (open_braces != 0) {
+		error("Mismatched braces in configuration");
+	}
+}
+
+void ConfigParser::parseServerBlock(Server &s, TokenIt &it, TokenIt &end) {
+	while (it != end || it->token_type == BRACE_CLOSE) {
+		std::string directive = it->value;
+		auto dpIt = _serverParsers.find(directive);
+		if (dpIt == _serverParsers.end()) {
+			error("Unknown directive: " + directive);
+		}
+		assertNotDuplicate(directive);
+		++it;
+		expectTokenType(KEYWORD, it, end);
+		dpIt->second(servers.back(), it, end);
+		expectTokenType(SEMI_COLON, it, end);
+		++it;
+	}
+}
+
+template<typename T>
+void ConfigParser::parseListen(T &t, TokenIt &it, TokenIt &end) {
+	std::string port = it->value;
+	if (!isValidPort(port)) {
+		error("Listen directive: invalid port number \"" + port + "\"");
+	}
+	t.setPort(std::stoi(port));
+	++it;
+}
+
+template<typename T>
+void ConfigParser::parseHost(T &t, TokenIt &it, TokenIt &end) {
+	std::string host = it->value;
+	t.setHost_u_long(convertHost(host));
+	t.setHost_string(host);
+	++it;
+}
+
+template<typename T>
+void ConfigParser::parseRoot(T &t, TokenIt &it, TokenIt &end) {
+	std::string root = it->value;
+	if (!isValidPath(root)) {
+		error("Root directive: invalid root path \"" + root + "\"");
+	}
+	t.setRoot(root);
+	required_directives.has_root = true;
+	++it;
+}
+
+template<typename T>
+void ConfigParser::parseIndex(T &t, TokenIt &it, TokenIt &end) {
+	std::string index = it->value;
+	if (!isValidIndex(index)) {
+		error("Index directive: invalid file name \"" + index + "\"");
+	}
+	t.setIndex(index);
+	required_directives.has_index = true; //maybe there is a better way to do this?
+	++it;
+}
+
+template<typename T>
+void ConfigParser::parseServerNames(T &t, TokenIt &it, TokenIt &end) {
+	std::vector<std::string> server_names;
+	while (it != end) {
+		std::string name = it->value;
+		if (!isValidServerName(name)) {
+			error("Server Names directive: invalid server name \"" 
+				+ server_name + "\"");
+		}
+		server_names.push_back(name);
+		++it;
+		if (it->token_type == SEMI_COLON) {
+			t.setServerNames(server_names);
+			return;
+		}
+	}
+	error("Server Names directive: missing semi-colon");
+	
+}
+
+template<typename T>
+void ConfigParser::parseAutoIndex(T &t, TokenIt &it, TokenIt &end) {
+	std::string value = it->value;
+	if (value != "on" && value != "off") {
+		error("Auto Index directive: Invalid value \"" + value + "\"");
+	}
+	t.setAutoIndex(value == "on");
+	++it;
+}
+
+template<typename T>
+void ConfigParser::parseClientMaxBody(T &t, TokenIt &it, TokenIt &end) {
+	auto bytes = isValidClientBodySize(it->value);
+	if (!bytes) {
+		error("Client Max Body directive: Invalid value \"" + value + "\"");
+	}
+	t.setClientMaxBody(bytes);
+	++it;
+}
+
+template<typename T>
+void ConfigParser::parseErrorPage(T &t, TokenIt &it, TokenIt &end) {
+	std::string error_code = it->value;
+	if (!isValidErrorCode(error_code)){
+		error("Error Page: Invalid code \"" + error_code + "\"");
+	}
+	++it;
+	expectTokenType(KEYWORD, it, end);
+	std::string error_page_path = it->value;
+	if (!isValidPath(error_page_path)) {
+		error_check("Error Page: Invalid error page path \"" + error_page_path + "\"");
+	}
+	t.setErrorPage(error_code, error_page_path);
+	++it;
+}
+
+Location& ConfigParser::addLocation(Server &s, const std::string& location_path) {
+	auto locs = s.getLocations();
+	locs.emplace_back();
+	locs.back()._path = location_path;
+	return locs.back();
+}
+
+void ConfigParser::parseLocationBlock(Server &s, TokenIt &it, TokenIt &end) {
+	const std::string loc_path = it->value;
+	if (!isValidPath(loc_path)) {
+		error_check("Location directive: Invalid path \"" + loc_path + "\"");
+	}
+	++it;
+	expectTokenType(BRACE_OPEN, it, end);
+	++it;
+	++open_braces; //is there a better way to do this?
+	expectTokenType(KEYWORD, it, end);
+	Location& loc = addLocation(s.getLocations(), loc_path);
+	while (it != end && it->token_type != BRACE_CLOSE) {
+		std::string directive = it->value;
+		auto dp = location_parsers.find(directive);
+		if (dp == location_parsers.end()) {
+			error("Unknown location-directive: " + directive);
+		}
+		dp->second(loc, it, end);
+	}
+	expectTokenType(it, end, BRACE_CLOSE);
+	open_braces--;
+	++it;
+}
+
+
+/*
+	What is location parsing?
+	error_page
+	allowed_methods
+	client_max_body
+	root
+	index
+	auto_index
+	return
+*/
+
+
+
+ConfigParser::ConfigParser(const std::string &filename, std::vector<Server> &webservers)
+	: open_braces(0)
+	, servers(webservers)
+	, _serverParsers({
+		{"listen",			[this](Server &s, TokenIt &it, TokenIt &end){ return parseListen(s, it, end); }},
+		{"host",			[this](Server &s, TokenIt &it, TokenIt &end){ return parseHost(s, it, end); }},
+		{"root",			[this](Server &s, TokenIt &it, TokenIt &end){ return parseRoot(s, it, end); }},
+		{"index",			[this](Server &s, TokenIt &it, TokenIt &end){ return parseIndex(s, it, end); }},
+		{"auto_index",		[this](Server &s, TokenIt &it, TokenIt &end){ return parseAutoIndex(s, it, end); }},
+		{"server_name",		[this](Server &s, TokenIt &it, TokenIt &end){ return parseServerName(s, it, end); }},
+		{"location",		[this](Server &s, TokenIt &it, TokenIt &end){ return parseLocation(s, it, end); }},
+		{"client_max_body", [this](Server &s, TokenIt &it, TokenIt &end){ return parseClientMaxBody(s, it, end); }},
+		{"error_page",		[this](Server &s, TokenIt &it, TokenIt &end){ return parseErrorPage(s, it, end); }},
+		{},
+
+
+	})
+	, _locationParsers({
+		{"root", [this](Location &l, TokenIt &it, TokenIt &end){ return parseRoot(l, it, end); }},
+		{"index", },
+		{"auto_index", },
+		{"return", },
+		{"client_max_body", },
+		{"allowed_methods", },
+		{"error_page", },
+		{},
+		{},
+		{},
+		{},
+		{},
+		{},
+		{},
+		{},
+
+	}) {
+	initParsers();
+	auto tokens = loadTokensFromFile(filename);
 	// for (auto tokens : Tokenizer.getTokens()) {
 	// 	std::cout << printEnum(tokens.token_type) << " --> " << tokens.value << std::endl;
 	// }
-	parseServer(Tokenizer.getTokens());
+	parseServer(tokens);
 	// for(auto& server : servers) {
 	// 	printServerDetails(server);
 	// }		
 }
 
-void ConfigParser::parseServer(std::vector<Token> tokens)
-{
-	std::unordered_set<std::string> valid_directives = {
-			"listen", "host", "server_name", "root", "index", "auto_index", "client_max_body",
-			"error_page", "location"};
-	std::unordered_map<std::string, bool> check_duplicates = {
-			{"listen", false}, {"host", false}, {"server_name", false}, {"root", false}, {"index", false}, {"auto_index", false}, {"client_max_body", false}};
-	auto it = tokens.begin();
-	int i = -1; //changed this
-	int location_count = 0;
-	bool inside_server_block = false;
-
-	while (it != tokens.end())
-	{
-		if (it->token_type == BRACE_CLOSE)
-		{
-			--open_braces;
-			if (!required_directives.has_index || !required_directives.has_root)
-			{
-				error_check("Missing directives");
-			}
-			if (open_braces == 0)
-			{
-				inside_server_block = false;
-			}
-			++it;
-			continue;
-		}
-		if (it->value != "server" && !inside_server_block) //this is wrong logic because I want to check if 
-		{
-			error_check("Server block should start with directive server: " + it->value);
-		}
-		if (it->value == "server" && !inside_server_block)
-		{
-			servers.emplace_back();
-			++it;
-			if (it == tokens.end() || it->token_type != BRACE_OPEN)
-			{
-				error_check("Missing opening braces for server block");
-			}
-			inside_server_block = true;
-			i++;
-			location_count = 0;
-			++it;
-			++open_braces;
-			for (auto &entry : check_duplicates)
-			{
-				entry.second = false;
-			}
-			continue;
-		}
-
-		if (valid_directives.find(it->value) == valid_directives.end())
-		{
-			error_check("Unexpected directive inside server block: " + it->value);
-		}
-		std::string directive = it->value;
-		++it;
-		if (it == tokens.end() || it->token_type != KEYWORD)
-		{
-			error_check("Missing value for directive: " + directive);
-		}
-		if (check_duplicates[directive] == true && directive != "location" && directive != "error_page")
-		{
-			error_check("Duplicate directive inside server block: " + directive);
-		}
-		check_duplicates[directive] = true;
-		std::string value = it->value;
-		++it;
-		if (directive == "listen")
-		{
-			if (it == tokens.end() || it->token_type != SEMI_COLON || !isValidPort(value))
-			{
-				error_check("Invalid listen directive");
-			}
-			servers[i].setPort(std::stoi(value));
-		}
-		else if (directive == "host")
-		{
-			if (it == tokens.end() || it->token_type != SEMI_COLON)
-			{
-				error_check("Invalid listen directive");
-			}
-			servers[i].setHost_u_long(convertHost(value));
-			servers[i].setHost_string(value);
-		}
-		else if (directive == "server_name")
-		{
-			servers[i].setServerNames(parseServerName(value, it, tokens.end()));
-		}
-		else if (directive == "root")
-		{
-			if (!isValidPath(value))
-			{
-				error_check("Invalid path for root directive: " + value);
-			}
-			servers[i].setRoot(value);
-			required_directives.has_root = true;
-		}
-		else if (directive == "index")
-		{
-			if (!isValidIndex(value))
-			{
-				error_check("Invalid file for index directive: " + value);
-			}
-			servers[i].setIndex(value);
-			required_directives.has_index = true;
-		}
-		else if (directive == "auto_index")
-		{
-			if (value != "on" && value != "off")
-			{
-				error_check("Invalid auto_index value: " + value);
-			}
-			servers[i].setAutoIndex(value == "on");
-		}
-		else if (directive == "client_max_body")
-		{
-			unsigned long long bytes = isValidClientBodySize(value);
-			if (!bytes)
-			{
-				error_check("Invalid client's body size: " + value);
-			}
-			servers[i].setClientMaxBody(bytes);
-		}
-		else if (directive == "error_page")
-		{
-			if (!isValidErrorCode(value))
-			{
-				error_check("Invalid error_page code: " + value);
-			}
-			if (it == tokens.end() || it->token_type != KEYWORD || !isValidPath(it->value))
-			{
-				error_check("Invalid error_page path");
-			}
-			servers[i].setErrorPage(value, it->value);
-			++it;
-		}
-		else if (directive == "location")
-		{
-			if (!isValidPath(value))
-			{
-				error_check("Invalid path for location directive: " + value);
-			}
-			if (it != tokens.end() && it->token_type == BRACE_OPEN)
-			{
-				++open_braces;
-				++it;
-				servers[i].getLocations().emplace_back();
-				servers[i].getLocations()[location_count]._path = value;
-				parseLocation(servers[i].getLocations()[location_count++], it, tokens.end());
-			}
-			else
-			{
-				error_check("Missing opening braces for location directive");
-			}
-			continue;
-		}
-		if (it == tokens.end() || it->token_type != SEMI_COLON)
-		{
-			error_check("Missing semicolon for directive: " + directive);
-		}
-		++it;
+std::vector<Token> ConfigParser::loadTokensFromFile(const std::string& filename) {
+	std::ifstream in(filename);
+	if (!in) {
+		error("Could not open configuration file: " + filename);
 	}
-	if (open_braces != 0)
-	{
-		error_check("Uneven number of Opening/Closing Braces");
+	std::string text{
+		std::istreambuf_iterator<char>(in),
+		std::istreambuf_iterator<char>()
+	};
+	if (text.empty()) {
+		error("Configuration file is empty: " + filename);
 	}
+	auto tokens = ConfigTokenizer(text).getTokens();
+	if (tokens.empty()) {
+		error("No tokens found in configuration file: " + filename);
+	}
+	return tokens;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 void ConfigParser::parseLocation(Location &location, std::vector<Token>::iterator &it, std::vector<Token>::iterator end)
 {
@@ -396,81 +472,45 @@ void ConfigParser::parseLocation(Location &location, std::vector<Token>::iterato
 	error_check("Missing closing braces");
 }
 
-std::vector<std::string> ConfigParser::parseServerName(std::string value, std::vector<Token>::iterator &it, std::vector<Token>::iterator end)
-{
-	std::vector<std::string> server_names;
-	while (it != end)
-	{
-		if (!isValidServerName(value))
-		{
-			error_check("Invalid name for server_name directive: " + value);
-		}
-		server_names.push_back(value);
-		value = it->value;
-		if (it->token_type == SEMI_COLON)
-		{
-			return server_names;
-		}
-		it++;
-	}
-	if (it == end)
-	{
-		error_check("Missing semi-colon in server_name directive");
-	}
-	return server_names;
-}
 
-bool ConfigParser::isValidServerName(std::string &server_name)
-{
-	if (server_name == "localhost")
-	{
+bool ConfigParser::isValidServerName(std::string &server_name) {
+	if (server_name == "localhost") {
 		return true;
 	}
 	const std::regex domain_name(R"(^(?!-)([a-zA-Z0-9-]{1,63}\.)+[a-zA-Z0-9-]{1,63}$)");
 	return std::regex_match(server_name, domain_name);
 }
 
-bool ConfigParser::isValidPort(std::string &port)
-{
-	try
-	{
-		const std::regex port_regex(R"(^([1-9][0-9]*)$)");
-		if (!std::regex_match(port, port_regex))
-		{
-			return false;
-		}
-
+bool ConfigParser::isValidPort(std::string &port) {
+	const std::regex port_regex(R"(^([1-9][0-9]*)$)");
+	if (!std::regex_match(port, port_regex)) {
+		return false;
+	}
+	try {
 		int num = std::stoi(port);
-		if (num <= 0 || num > 65535)
-		{
+		if (num <= 0 || num > 65535) {
 			return false;
 		}
 		return true;
 	}
-	catch (...)
-	{
+	catch (...) {
 		return false;
 	}
 }
 
-bool ConfigParser::isValidErrorCode(std::string &error_code)
-{
+bool ConfigParser::isValidErrorCode(std::string &error_code) {
 	const std::regex error_code_regex(R"(^(?:400|403|404|405|408|413|500|502|503|504|505)$)");
 	return std::regex_match(error_code, error_code_regex);
 }
 
-unsigned long long ConfigParser::isValidClientBodySize(std::string &client_body_size)
-{
+unsigned long long ConfigParser::isValidClientBodySize(std::string &client_body_size) {
 	const std::regex client_body_regex(R"(^([1-9][0-9]*)([mMkKgG])$)");
 	std::smatch match;
-	if (std::regex_match(client_body_size, match, client_body_regex))
-	{
-		try
-		{
+	if (std::regex_match(client_body_size, match, client_body_regex)) {
+		try {
 			char unit = match[2].str()[0];
 			unsigned long long num = std::stoull(match[1]); // check this
-			switch (unit)
-			{
+			switch (unit) {
 			case 'k':
 			case 'K':
 				num *= 1024;
@@ -486,95 +526,65 @@ unsigned long long ConfigParser::isValidClientBodySize(std::string &client_body_
 			default:
 				return 0;
 			}
-			if (num > 4294967296)
-			{
+			if (num > 4294967296){
 				return 0;
 			}
 			return num;
 		}
-		catch (...)
-		{
+		catch (...) {
 			return 0;
 		}
 	}
 	return 0;
 }
 
-bool ConfigParser::isValidIndex(std::string &index)
-{
+bool ConfigParser::isValidIndex(std::string &index) {
 	const std::regex index_regex(R"(^[0-9a-zA-Z][a-zA-Z0-9_\-]*\.(?:html?|php?|py?|jpg)$)");
 	return std::regex_match(index, index_regex);
 }
 
-bool ConfigParser::isValidPath(std::string &path)
-{
-	if (path == "/")
-	{
+bool ConfigParser::isValidPath(std::string &path) {
+	if (path == "/") {
 		return true;
 	}
 	const std::regex path_regex(R"(^\/([a-zA-Z0-9_\-\.]+\/?)*$)");
 	return std::regex_match(path, path_regex);
 }
 
-std::string ConfigParser::loadFileAsString(std::ifstream &file)
-{
-	std::stringstream ss;
-	ss << file.rdbuf();
-	if (file.fail())
-	{
-		error_check("Config File Failed to Read");
-	}
-	if (ss.str().empty())
-	{
-		error_check("Config File is empty");
-	}
-	return ss.str();
-}
-
-u_long ConfigParser::convertHost(const std::string &host)
-{
+u_long ConfigParser::convertHost(const std::string &host) {
 
 	std::vector<int> bytes;
 	u_long ip{0};
 	std::stringstream ss(host);
 	std::string ip_segment;
 
-	if (host == "localhost")
-	{
+	if (host == "localhost") {
 		ip = INADDR_ANY;
 		return ip;
 	}
-
-	while (std::getline(ss, ip_segment, '.'))
-	{
-		try
-		{
+	while (std::getline(ss, ip_segment, '.')) {
+		try {
 			int num = std::stoi(ip_segment);
-			if (num < 0 || num > 255)
-			{
-				error_check("Invalid IP Number: " + ip_segment);
+			if (num < 0 || num > 255) {
+				error("Invalid IP Number: " + ip_segment);
 			}
 			bytes.push_back(num);
 		}
-		catch (...)
-		{
-			error_check("Invalid IP Number: " + ip_segment);
+		catch (...) {
+			error("Invalid IP Number: " + ip_segment);
 		}
 	}
-	if (bytes.size() != 4)
-	{
-		error_check("Invalid IP Length: " + host);
+	if (bytes.size() != 4) {
+		error("Invalid IP Length: " + host);
 	}
 	ip = (bytes[0] << 24) | (bytes[1] << 16) | (bytes[2] << 8) | bytes[3];
 	return ip;
 }
 
-const std::vector<Server> &ConfigParser::getServers() const
-{
+const std::vector<Server> &ConfigParser::getServers() const {
 	return this->servers;
 }
 
-void ConfigParser::error_check(const std::string &msg) const
-{
+void ConfigParser::error(const std::string &msg) const {
 	throw std::runtime_error("Error: " + msg);
 }

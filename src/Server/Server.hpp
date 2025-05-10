@@ -55,7 +55,6 @@ public:
 	void setRoot(std::string root);
 	void setSocket(const std::shared_ptr<Socket>& socket);
 	
-	// Socket& getServerSocket(); << using smart pointer now
 	std::unordered_map<std::string, std::string>	getErrorPage();
 	std::vector<std::string>			getServerNames() const;
 	std::vector<Location>&				getLocations();

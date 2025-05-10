@@ -8,6 +8,8 @@
 #include <iostream>
 #include <unordered_set>
 #include <vector>
+#include <array>
+#include <functional>
 #include <sstream>
 #include "../Server/Server.hpp"
 #include "./ConfigTokenizer.hpp"
@@ -19,16 +21,23 @@ struct ServerValidationState {
 
 class ConfigParser {
 private:
+	using TokenIt = std::vector<Token>::iterator;
+	using ServerHandler = std::function<void(Server&, TokenIt&, TokenIt&)>;
+	using LocationHandler = std::function<void(Location&, TokenIt&, TokenIt&)>;
+	
+	std::unordered_map<std::string, ServerHandler> _serverParsers;
+	std::unordered_map<std::string, LocationHandler> _locationParsers;
+
 	int open_braces;
 	std::vector<Server> servers;
-	ConfigTokenizer Tokenizer;
 	ServerValidationState required_directives;
 
 public:
 	ConfigParser(const std::string &filename, std::vector<Server>& webservers);
 
-	std::string loadFileAsString(std::ifstream &file);
+	std::vector<Token> loadTokensFromFile(const std::string& filename);
 	void parseServer(std::vector<Token> tokens);
+
 	void parseLocation(Location& location, std::vector<Token>::iterator& it, std::vector<Token>::iterator end);
 	void parseDirectiveListen(Server& server, std::string& value, std::vector<Token>::iterator& it, std::vector<Token>::iterator end);
 	std::vector<std::string> parseServerName(std::string value, std::vector<Token>::iterator& it, std::vector<Token>::iterator end);
@@ -41,7 +50,7 @@ public:
 	bool isValidErrorCode(std::string& error_code);
 
 	u_long convertHost(const std::string &host);
-	void error_check(const std::string &msg) const;
+	void error(const std::string &msg) const;
 
 	std::string printEnum(int i);
 	void printServerDetails(Server& server);
