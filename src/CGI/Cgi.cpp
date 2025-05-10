@@ -1,36 +1,26 @@
 #include "Cgi.hpp"
 #include "../Server/Client.hpp"
 
-Cgi::Cgi(const std::string& file_path, const std::string& extension, const std::string& method, Client* client)
-	: _filePathString(file_path)
-	, _extension(extension)
-	, _filePath(file_path.c_str())
-	, _args(setArgs())
-	, _execPath(getExecPath())
+Cgi::Cgi(Client* client)
+	: _client(client)
+	, _request(client->getRequest())
+	, _filePathString(_request.getRootedURI())
+	, _extension(client->getCgiExtension())
+	, _filePath(_filePathString.c_str())
 	, _exitStatus(0)
 	, _state(cgiState::INITIALIZED)
 	, _writeToChild{-1, -1}
 	, _readFromChild{-1, -1}
 	, _cgiPid(-1)
-	, _method(method)
-	, _client(client)
+	, _body(_request.getBody())
+	, _method(_request.getMethod())
+	, _args(nullptr)
+	, _env(nullptr)
 {
-	if (!_args || _execPath.empty()) {
+	if (!_args || _execPath.empty() || !_env) {
 		errorHandler(_args);
 		_client->handleIncoming();
 		return ;
-    }
-	if (_method == "POST") {
-		if (pipe(_writeToChild) ==  -1) {
-			errorHandler(_args);
-			_client->handleIncoming();
-			return;
-		}
-	}
-	if(pipe(_readFromChild) == -1) {
-		errorHandler(_args);
-		_client->handleIncoming();
-		return;
 	}
 }
 
@@ -44,28 +34,36 @@ Cgi::~Cgi() {
 	freeArgs(_args);
 }
 
+bool Cgi::init() {
+	_args = setArgs();
+	_execPath = getExecPath();
+	_env = setUpEnvironment();
+	if (!_args || _execPath.empty() || !_env) {
+		errorHandler(_args);
+		_client->handleIncoming();
+		return false;
+	}
+return true;
+}
+
 bool	Cgi::childExited() {
 	int status;
-	std::cout << "before waitpid" << std::endl;
 	pid_t result = waitpid(_cgiPid, &status, WNOHANG);
-	std::cout << "RESULT: "<< result << std::endl;
-	std::cout << "CGIPID: "<< _cgiPid << std::endl;
 	if (result == _cgiPid) {
 		return true;
 	}
 	else if (result == -1) {
 		return true;
 	}
-	std::cout << "after wexitstatus" << std::endl;
+	std::cout << "CGI: Child exited" << std::endl;
 	return false;
 }
 
 void	Cgi::handleIncoming() {
 	char buffer[BUFSIZ];
-	// int	status;
 	std::cout << "CGI: Parent reads output from Child" << std::endl;
 	ssize_t bytes = read(_readFromChild[0], buffer, sizeof(buffer));
-	std::cout << "BYTES: " << bytes << std::endl;
+	std::cout << "CGI: bytes read " << bytes << std::endl;
 	if (bytes > 0) {
 		printf("CGI: Output of the child %s\n", buffer);
 		_body.append(buffer, bytes);
@@ -75,7 +73,6 @@ void	Cgi::handleIncoming() {
 		return;
 	}
 	if (childExited() || !bytes){
-		std::cout << "do we get here???" << std::endl;
 		if (onCgiPipeDone) {
 			onCgiPipeDone(_readFromChild[0]);
 		}
@@ -99,7 +96,6 @@ void	Cgi::handleOutgoing() {
 		}
 		ssize_t bytes = write(_writeToChild[1], _body.c_str(), writeSize);
 		if (bytes > 0) {
-			// std::cout << "Bytes read are above 0" << std::endl;
 			_body.erase(0, bytes);
 			std::cout << "CGI: SENDING_BODY" << std::endl;
 		} else if (bytes < 0) {
@@ -187,10 +183,24 @@ void Cgi::executeChildProcess() {
 	_readFromChild[1] = -1;
 	execve(_execPath.c_str(), _args, _env);
 	freeArgs(_args);
-	exit(1); //Do we need to exit? Will the destructor in the child be called automatically
+	exit(1);
 }
 
 void	Cgi::startCgi() {
+	if (_method == "POST") {
+		if (pipe(_writeToChild) ==  -1) {
+			errorHandler(_args);
+			_client->handleIncoming();
+			return;
+		}
+		_client->onCgiAccepted(_writeToChild[1], EPOLLOUT);
+	}
+	if(pipe(_readFromChild) == -1) {
+		errorHandler(_args);
+		_client->handleIncoming();
+		return;
+	}
+	_client->onCgiAccepted(_readFromChild[0], EPOLLIN | EPOLLHUP);
 	_cgiPid = fork();
 	if (_cgiPid < 0) {
 		std::cerr << "CGI: Error Forking" << std::endl;
@@ -211,11 +221,11 @@ void	Cgi::startCgi() {
 	}
 }
 
-int         Cgi::getWriteFd() {
+int	Cgi::getWriteFd() {
 	return _writeToChild[1];
 }
 
-int         Cgi::getReadFd() {
+int	Cgi::getReadFd() {
 	return _readFromChild[0];
 }
 
@@ -232,34 +242,29 @@ void	Cgi::freeArgs(char **array) {
 	return ;
 }
 
-
 void	Cgi::setBody(std::string	body) {
 	_body = body;
 }
 
-bool Cgi::setUpEnvironment() { //change this to 2d array instead of setenv
-	std::string length = std::to_string(_body.size());
-	if (setenv("CONTENT_LENGTH", length.c_str(), 1) != 0) {
-		errorHandler(_args);
-		_client->handleIncoming();
-		return false;
+char** Cgi::setUpEnvironment() {
+	std::vector<std::string> env_strings;
+
+	if (!_body.empty()) {
+		std::string content_length = std::to_string(_body.size());
+		env_strings.push_back("CONTENT_LENGTH=" + content_length);
 	}
-	if(setenv("REQUEST_METHOD", _method.c_str(), 1) != 0) {
-		errorHandler(_args);
-		_client->handleIncoming();
-		return false;
-	}
-	auto headers = _client->getRequest().getHeaders();
+	env_strings.push_back("REQUEST_METHOD=" + _method);
+	auto headers = _request.getHeaders();
 	auto it = headers.find("Content-Type");
 	if (it != headers.end()) {
-		if (setenv("CONTENT_TYPE", it->second.c_str(), 1) != 0) {
-			errorHandler(_args);
-			_client->handleIncoming();
-			return false;
-		}
+		env_strings.push_back("CONTENT_TYPE=" + it->second);
 	}
-	return true;
+	if (!_request.getQueryString().empty()) {
+		env_strings.push_back("QUERY_STRING=" + _request.getQueryString());
+	}
+	return vecTo2DArray(env_strings);
 }
+
 
 std::string	Cgi::getBody() const{
 	return _body;
@@ -279,6 +284,7 @@ void Cgi::errorHandler(char **array) {
 	}
 	_state = cgiState::ERROR;
 	freeArgs(array);
+	freeArgs(_env);
 	if (_writeToChild[0] != -1) {
 		close(_writeToChild[0]);
 	}

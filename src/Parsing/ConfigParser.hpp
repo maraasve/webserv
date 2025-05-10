@@ -27,6 +27,7 @@ private:
 	
 	std::unordered_map<std::string, ServerHandler> _serverParsers;
 	std::unordered_map<std::string, LocationHandler> _locationParsers;
+	std::unordered_map<std::string, bool> seenDirective;
 
 	int open_braces;
 	std::vector<Server> servers;
@@ -54,6 +55,7 @@ public:
 
 	std::string printEnum(int i);
 	void printServerDetails(Server& server);
+	std::string printTokenType(int i);
 
 	const std::vector<Server> &getServers() const;
 };

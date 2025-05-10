@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: maraasve <maraasve@student.42.fr>          +#+  +:+       +#+        */
+/*   By: andmadri <andmadri@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:06:22 by maraasve          #+#    #+#             */
-/*   Updated: 2025/05/07 18:21:02 by maraasve         ###   ########.fr       */
+/*   Updated: 2025/05/10 16:02:13 by andmadri         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -105,7 +105,6 @@ void	Client::handleBodyState() {
 			return ;
 		}
 	} else {
-		//the error to hello.txt is here
 		_state = clientState::ERROR;
 		handleIncoming();
 	}
@@ -184,25 +183,11 @@ void	Client::handleErrorState() {
 void	Client::handleCgiState() {
 	std::cout << "\n\t--Handle Cgi State--" << std::endl;
 	if (!_Cgi) {
-		_Cgi = std::make_shared<Cgi>(_request.getRootedURI(), _cgi_extension, _request.getMethod(), this);
-		if (onCgiAccepted) {
-			if (_request.getMethod() == "POST") {
-				_Cgi->setBody(_request.getBody());
-				if (!_Cgi->setUpEnvironment()) {
-					return ;
-				}
-				onCgiAccepted(_Cgi->getWriteFd(), EPOLLOUT);
-			}
-			if (_request.getMethod() == "DELETE") {
-				if (setenv("QUERY_STRING", _request.getQueryString().c_str(), 1) != 0) {
-					_state = clientState::ERROR;
-					handleIncoming();
-					return;
-				}
-			}
-			onCgiAccepted(_Cgi->getReadFd(), EPOLLIN | EPOLLHUP);
+		_Cgi = std::make_shared<Cgi>(this);
+		if (!_Cgi->init()) {
+			return;
 		}
-	_Cgi->startCgi();
+		_Cgi->startCgi();
 	} 
 	if (_Cgi->getState() == cgiState::COMPLETE) {
 		_request.setBody(_Cgi->getBody());
@@ -225,23 +210,18 @@ void printRequestObject(Request& request) {
 	std::cout << request.getHost() << std::endl;
 	std::cout << request.getBaseRoot() << std::endl;
 	std::cout << request.getRootedURI() << std::endl;
-
-	// for (auto it = request.getHeaders().begin() ; it != request.getHeaders().end() ; ++it) {
-	// 	std::cout << it->first << ": " << it->second << std::endl;
-	// }
-	// std::cout << request.getBody() << std::endl;
 }
 
 void	Client::handleResponseState() {
 	std::cout << "\t\t\nHandle Response State" << std::endl;
 	printRequestObject(_request);
+	//THERE SHOULD BE A BETTER WAY TO DO THE ERROR-PAGE
 	if (!_location._error_page[_request.getErrorCode()].empty()) {
 		_request.setErrorPagePath(_location._error_page[_request.getErrorCode()]);
 	} else if (!_serverPtr->getErrorPage()[_request.getErrorCode()].empty()) {
 		_request.setErrorPagePath(_serverPtr->getErrorPage()[_request.getErrorCode()]);
 	}
 	_responseString =_response.createResponseStr(_request);
-	// std::cout << "\n---Response String-- \n" << _responseString << std::endl;
 	_epoll.modifyFd(_fd, EPOLLOUT);
 }
 
@@ -253,7 +233,7 @@ void	Client::setServer(Server& server) {
 	_serverPtr = &server;
 }
 
-int Client::getSocketFd(){
+int	Client::getSocketFd(){
 	return _socketFd;
 }
 
@@ -277,10 +257,14 @@ std::shared_ptr<Cgi>	Client::getCgi() {
 	return _Cgi;
 }
 
-Request& Client::getRequest() {
+Request&	Client::getRequest() {
 	return _request;
 }
 
-RequestParser& Client::getRequestParser() {
+RequestParser&	Client::getRequestParser() {
 	return _requestParser;
+}
+
+std::string&	Client::getCgiExtension() {
+	return _cgi_extension;
 }
