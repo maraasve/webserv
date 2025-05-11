@@ -38,19 +38,18 @@ enum class clientState {
 
 class Client : public EventHandler {
 private:
-	clientState						_state = clientState::READING_HEADERS;
-	int										_fd;
-	Server*								_serverPtr;
-	Location							_location;
-	Epoll&								_epoll;
-	id_t									_socketFd; //are we still using this?
-	std::string						_requestString;
-	std::string						_responseString; 
-	Request								_request;
-	RequestParser					_requestParser;
-	Response							_response;
+	clientState				_state = clientState::READING_HEADERS;
+	int						_fd;
+	Server*					_serverPtr;
+	Location				_location;
+	Epoll&					_epoll;
+	id_t					_socketFd; //are we still using this?
+	std::string				_requestString;
+	std::string				_responseString; 
+	Request					_request;
+	RequestParser			_requestParser;
 	std::shared_ptr<Cgi>	_Cgi;
-	std::string						_cgi_extension;
+	std::string				_cgi_extension;
 
 public:
 	Client(int fd, Epoll& epoll, int socket_fd);
@@ -71,17 +70,17 @@ public:
 	void									setResponseStr(Request& request);
 	void									setServer(Server& server);
 	
-	int										getFd();
-	int										getSocketFd();
-	std::string&					getRequestStr();
-	std::string&					getResponseStr();
-	Server*								getServer();
-	Request&							getRequest();
-	RequestParser&				getRequestParser();
+	int						getFd();
+	int						getSocketFd();
+	std::string&			getRequestStr();
+	std::string&			getResponseStr();
+	Server*					getServer();
+	Request&				getRequest();
+	RequestParser&			getRequestParser();
 	std::shared_ptr<Cgi>	getCgi();
-	std::string&					getCgiExtension();
+	std::string&			getCgiExtension();
 	
-	bool 									shouldRunCgi();
+	bool					shouldRunCgi();
 
 	std::function<void(Client& client)>		assignServer;
 	std::function<void(int, int)>			onCgiAccepted;

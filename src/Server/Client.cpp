@@ -58,8 +58,6 @@ void	Client::handleHeaderState() {
 	std::cout << "\n\t--Handling Header State--" << std::endl;
 	ssize_t	bytes = readIncomingData(_requestString, _fd);
 	if (bytes == 0) {
-		//Sometimes the webbrowser sends stuff to us that are not client interaction and we read no bytes
-		//therefore we just have to close the connection without processing it
 		closeClientConnection(_fd);
 	}
 	if (bytes < 0) {
@@ -149,21 +147,20 @@ bool Client::shouldRunCgi() {
 bool	Client::resolveLocation(std::string uri) {
 	if (_serverPtr->getLocations().empty()) {
 		std::cout << "No location on Config File, making one" << std::endl;
-		Location location;
-		location._path = "/";
-		location._root = _serverPtr->getRoot();
-		location._index = _serverPtr->getIndex();
-		_serverPtr->getLocations().emplace_back(location);
-		_location = _serverPtr->getLocations().back();
+		_location = _serverPtr->getLocations().emplace_back();
+		_location.setPath("/");
+		_location.setRoot(_serverPtr->getRoot());
+		_location.setIndex( _serverPtr->getIndex());
 		return true;
 	}
 	size_t bestMatchLength = 0;
-    for (const auto& location : _serverPtr->getLocations()) {
-        if (uri.compare(0, location._path.size(), location._path) == 0) {
-            if (location._path.size() < bestMatchLength) {
+    for (auto& location : _serverPtr->getLocations()) {
+        size_t path_size = location.getPath().size();
+		if (uri.compare(0, path_size, location.getPath()) == 0) {
+            if (path_size < bestMatchLength) {
                 continue;
             }
-            bestMatchLength = location._path.size();
+            bestMatchLength = path_size;
             _location = location;
 		}
 	}
@@ -215,13 +212,8 @@ void printRequestObject(Request& request) {
 void	Client::handleResponseState() {
 	std::cout << "\t\t\nHandle Response State" << std::endl;
 	printRequestObject(_request);
-	//THERE SHOULD BE A BETTER WAY TO DO THE ERROR-PAGE
-	if (!_location._error_page[_request.getErrorCode()].empty()) {
-		_request.setErrorPagePath(_location._error_page[_request.getErrorCode()]);
-	} else if (!_serverPtr->getErrorPage()[_request.getErrorCode()].empty()) {
-		_request.setErrorPagePath(_serverPtr->getErrorPage()[_request.getErrorCode()]);
-	}
-	_responseString =_response.createResponseStr(_request);
+	Response response(_request, &_location, *_serverPtr);
+	_responseString = response.createResponseStr();
 	_epoll.modifyFd(_fd, EPOLLOUT);
 }
 

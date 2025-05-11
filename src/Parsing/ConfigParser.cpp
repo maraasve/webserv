@@ -1,5 +1,79 @@
 #include "ConfigParser.hpp"
 
+static void printLocationDetails(Location& loc) {
+    std::cout << "    Location:" << "\n";
+    std::cout << "      path:            " << loc.getPath() << "\n";
+    std::cout << "      root:            " << loc.getRoot() << "\n";
+    std::cout << "      index:           " << loc.getIndex() << "\n";
+    std::cout << "      auto_index:      " << (loc.getAutoIndex() ? "on" : "off") << "\n";
+    std::cout << "      client_max_body: " << loc.getClientMaxBody() << "\n";
+
+    // allowed methods
+    std::cout << "      allowed_methods:";
+    for (const std::string& m : loc.getAllowedMethods()) {
+        std::cout << " " << m;
+    }
+    std::cout << "\n";
+
+    // error pages
+    std::cout << "      error_pages:\n";
+    for (const auto& kv : loc.getErrorPage()) {
+        std::cout << "        " << kv.first
+                  << " -> " << kv.second << "\n";
+    }
+
+    // redirection
+    const std::pair<std::string,std::string>& redir = loc.getRedirection();
+    if (!redir.first.empty()) {
+        std::cout << "      redirection:     "
+                  << redir.first << " -> " << redir.second << "\n";
+    }
+    std::cout << "\n";
+}
+
+void ConfigParser::printServerDetails(Server& s) {
+    std::cout << "=== Server Details ===\n";
+
+    // port and host
+    std::cout << "  port:              " << s.getPort() << "\n";
+    std::cout << "  host_string:       " << s.getHost_string() << "\n";
+    // if you want the numeric form:
+    std::cout << "  host_u_long:       " << s.getHost_u_long() << "\n";
+
+    // server names
+    std::cout << "  server_names:";
+    for (const std::string& name : s.getServerNames()) {
+        std::cout << " " << name;
+    }
+    std::cout << "\n";
+
+    // root / index / auto_index / client_max_body
+    std::cout << "  root:              " << s.getRoot() << "\n";
+    std::cout << "  index:             " << s.getIndex() << "\n";
+    std::cout << "  auto_index:        " << (s.getAutoIndex() ? "on" : "off") << "\n";
+    std::cout << "  client_max_body:   " << s.getClientMaxBody() << "\n";
+
+    // error pages
+    std::cout << "  error_pages:\n";
+    for (const auto& kv : s.getErrorPage()) {
+        std::cout << "    " << kv.first
+                  << " -> " << kv.second << "\n";
+    }
+
+    // locations
+    std::vector<Location>& locs = s.getLocations();
+    if (!locs.empty()) {
+        std::cout << "\n  locations:\n";
+        for (Location& loc : locs) {
+            printLocationDetails(loc);
+        }
+    }
+
+    std::cout << "=== End of Server ===\n\n";
+}
+
+
+
 ConfigParser::ConfigParser(const std::string &filename, std::vector<Server> &webservers)
 	: open_braces(0), servers(webservers){
 	initParsers();
@@ -8,9 +82,9 @@ ConfigParser::ConfigParser(const std::string &filename, std::vector<Server> &web
 	// 	std::cout << printEnum(tokens.token_type) << " --> " << tokens.value << std::endl;
 	// }
 	parseConfigFile(tokens);
-	// for(auto& server : servers) {
-	// 	printServerDetails(server);
-	// }
+	for(auto& server : servers) {
+		printServerDetails(server);
+	}
 	exit(1);
 }
 
@@ -39,7 +113,6 @@ void ConfigParser::initParsers() {
 	_locationParsers["error_page"] = wrapParser(&ConfigParser::parseErrorPage<Location>);
 	_locationParsers["allowed_methods"] = wrapParser(&ConfigParser::parseAllowedMethods<Location>);
 	_locationParsers["return"] = wrapParser(&ConfigParser::parseReturn<Location>);
-	
 }
 
 void ConfigParser::expectTokenType(TokenType expected_type, TokenIt& it, TokenIt& end) {
@@ -62,7 +135,7 @@ void ConfigParser::assertNotDuplicate(const std::string& directive) {
 	//this function would not work with loca
 }
 
-void ConfigParser::parseConfigFile(const std::vector<Token>& tokens) {
+void ConfigParser::parseConfigFile(std::vector<Token>& tokens) {
 	auto it = tokens.begin();
 	auto end = tokens.end();
 	bool insideServerBlock = false;
@@ -102,27 +175,28 @@ void ConfigParser::parseServerBlock(Server &s, TokenIt &it, TokenIt &end) {
 		assertNotDuplicate(directive);
 		++it;
 		expectTokenType(KEYWORD, it, end);
-		parser_it->second(servers.back(), it, end);
+		parser_it->second(s, it, end);
 		expectTokenType(SEMI_COLON, it, end);
 		++it;
 	}
 }
 
 void ConfigParser::parseLocationBlock(Server &s, TokenIt &it, TokenIt &end) {
-	const std::string loc_path = it->value;
+	std::string loc_path = it->value;
 	if (!isValidPath(loc_path)) {
-		error_check("Location directive: Invalid path \"" + loc_path + "\"");
+		error("Location directive: Invalid path \"" + loc_path + "\"");
 	}
 	++it;
 	expectTokenType(BRACE_OPEN, it, end);
 	++it;
-	++open_braces; //is there a better way to do this?
+	++open_braces;
 	expectTokenType(KEYWORD, it, end);
-	Location& loc = addLocation(s.getLocations(), loc_path);
+	Location& loc = s.getLocations().emplace_back();
+	loc.setPath(loc_path);
 	while (it != end && it->token_type != BRACE_CLOSE) {
 		std::string directive = it->value;
-		auto parser_it = location_parsers.find(directive);
-		if (parser_it == location_parsers.end()) {
+		auto parser_it = _locationParsers.find(directive);
+		if (parser_it == _locationParsers.end()) {
 			error("Unknown location-directive: " + directive);
 		}
 		assertNotDuplicate(directive);
@@ -131,16 +205,16 @@ void ConfigParser::parseLocationBlock(Server &s, TokenIt &it, TokenIt &end) {
 		expectTokenType(SEMI_COLON, it, end);
 		++it;
 	}
-	expectTokenType(it, end, BRACE_CLOSE);
+	expectTokenType(BRACE_CLOSE, it, end);
 	open_braces--;
 	++it;
 }
 
 Location& ConfigParser::addLocation(Server &s, const std::string& location_path) {
-	auto locs = s.getLocations();
-	locs.emplace_back();
-	locs.back()._path = location_path;
-	return locs.back();
+	auto loc = s.getLocations();
+	loc.emplace_back();
+	loc.back().setPath(location_path);
+	return loc.back();
 }
 
 std::vector<Token> ConfigParser::loadTokensFromFile(const std::string& filename) {

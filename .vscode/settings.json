@@ -61,7 +61,8 @@
         "*.tcc": "cpp",
         "ranges": "cpp",
         "span": "cpp",
-        "cinttypes": "cpp"
+        "cinttypes": "cpp",
+        "*.tpp": "cpp"
     },
     "github.copilot.enable": {
         "*": false,
