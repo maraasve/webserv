@@ -205,13 +205,13 @@ bool	RequestParser::checkHTTP() const {
 	return (_request.getHTTPVersion() == "HTTP/1.1");
 }
 
-void	RequestParser::checkServerDependentHeaders(const Server& server, const Location& location) {
-	if (!location._redirection.first.empty()) {
-		_request.setErrorCode(location._redirection.first);
-		_request.setRedirectionURI(location._redirection.second);
+void	RequestParser::checkServerDependentHeaders(const Server& server, Location& location) {
+	if (!location.getRedirection().first.empty()) {
+		_request.setErrorCode(location.getRedirection().first);
+		_request.setRedirectionURI(location.getRedirection().second);
 		return;
 	}
-	if (!checkMatchURI(server, location) || (location._redirection.first.empty() && !checkFile(server, location))) {
+	if (!checkMatchURI(server, location) || (location.getRedirection().first.empty() && !checkFile(server, location))) {
 		std::cout << "\n\n\tFail: Check MAtch Uri or CheckFile (404)" << std::endl;
 		_request.setErrorCode("404");
 		return ;
@@ -230,10 +230,10 @@ void	RequestParser::checkServerDependentHeaders(const Server& server, const Loca
 	}
 }
 
-bool	RequestParser::checkMatchURI(const Server& server, const Location& location) {
+bool	RequestParser::checkMatchURI(const Server& server, Location& location) {
 	const std::string& uri = _request.getURI();
-	const std::string& loc_path = location._path;
-	const std::string& base_root = location._root.empty() ? server.getRoot() : location._root;
+	const std::string& loc_path = location.getPath();
+	const std::string& base_root = location.getRoot().empty() ? server.getRoot() : location.getRoot();
 	_request.setBaseRoot("." + base_root);
 	if (uri.compare(0, loc_path.size(), loc_path) != 0) {
 		//if you want to set an error_page outside in the server there shold be a root in the server
@@ -253,11 +253,11 @@ bool	RequestParser::checkMatchURI(const Server& server, const Location& location
 	return true;
 }
 
-bool	RequestParser::checkAllowedMethods(const Location& location) {
-	if (location._allowed_methods.empty()) {
+bool	RequestParser::checkAllowedMethods(Location& location) {
+	if (location.getAllowedMethods().empty()) {
 		return true;
 	}
-	for (const std::string& allowed_method : location._allowed_methods) {
+	for (const std::string& allowed_method : location.getAllowedMethods()) {
 		if (allowed_method == _request.getMethod()) {
 			return true;
 		}
@@ -324,7 +324,7 @@ bool RequestParser::checkCgiScript() {
 	return checkRequestURI();
 }
 
-bool	RequestParser::checkFile(const Server& server, const Location& location) {
+bool	RequestParser::checkFile(const Server& server, Location& location) {
 	if (_request.getMethod() == "DELETE" && checkCgiScript()) {
 		return true;
 	}
@@ -333,9 +333,9 @@ bool	RequestParser::checkFile(const Server& server, const Location& location) {
 		return false;
 	}
 	if (_request.getFileType() == DIRECTORY) {
-		if (!location._index.empty()) {
-			_request.setRootedUri(_request.getRootedURI() + location._index);
-		} else if (location._auto_index) {
+		if (!location.getIndex().empty()) {
+			_request.setRootedUri(_request.getRootedURI() + location.getIndex());
+		} else if (location.getAutoIndex()) {
 			_request.setFileType(AUTOINDEX);
 		} else if (!server.getIndex().empty()) {
 			_request.setRootedUri(_request.getRootedURI() + server.getIndex());
@@ -351,14 +351,14 @@ bool	RequestParser::checkFile(const Server& server, const Location& location) {
 	return true ;
 }
 
-bool RequestParser::checkBodyLength(const Server& server, const Location& location) {
+bool RequestParser::checkBodyLength(const Server& server, Location& location) {
 	ssize_t	contentLength = _request.getContentLength();
 	std::cout << "Content-Length (CheckBOdyLength): " << contentLength << std::endl;
-	std::cout << "CLient Max Body: " << location._client_max_body << std::endl;
-	if (location._client_max_body && contentLength > static_cast<ssize_t>(location._client_max_body)) {
+	std::cout << "CLient Max Body: " << location.getClientMaxBody() << std::endl;
+	if (location.getClientMaxBody() && contentLength > static_cast<ssize_t>(location.getClientMaxBody())) {
 		return false;
 	}
-	else if (location._client_max_body) {
+	else if (location.getClientMaxBody()) {
 		return true;
 	}
 	else if (contentLength > static_cast<ssize_t>(server.getClientMaxBody())) {

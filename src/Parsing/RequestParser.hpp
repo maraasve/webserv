@@ -59,13 +59,13 @@ class RequestParser
 		bool	checkReadingAccess();
 		bool	checkHost(const std::unordered_map<std::string, std::string>& headers);
 		bool	checkContentLength(const std::unordered_map<std::string, std::string>& headers);
-		void	checkServerDependentHeaders(const Server& server, const Location& location);
-		bool	checkMatchURI(const Server& server, const Location& location);
-		bool	checkFile(const Server& server, const Location& location);
+		void	checkServerDependentHeaders(const Server& server, Location& location);
+		bool	checkMatchURI(const Server& server, Location& location);
+		bool	checkFile(const Server& server, Location& location);
 		bool	checkCgiScript();
 		bool	checkRequestURI();
-		bool	checkAllowedMethods(const Location& location);
-		bool	checkBodyLength(const Server& server, const Location& location);
+		bool	checkAllowedMethods(Location& location);
+		bool	checkBodyLength(const Server& server, Location& location);
 
 		std::string			getErrorCode();
 		requestState		getState();

@@ -15,37 +15,31 @@
 
 class Response {
 private:
-    const std::unordered_map<std::string, std::string> _errorsTexts;
-
-    std::string _rooted_uri;
-    std::string _error_code;
+    Request&    _request;
+    Location*   _location;
+    Server&     _server;
     std::string _error_text;
+    const std::unordered_map<std::string, std::string> _errorsTexts;
+    std::string _error_code;
     std::string _body;
     std::unordered_map<std::string, std::string> _headers;
 
     std::string formatStatusLine();
     std::string formatHeaders();
 
-    void serveFile(Request& requesth);
-    void serveDirectoryListing(Request& request);
-
+    void serveFile();
+    void serveDirectoryListing();
     void createHeaders(const std::string& content_type, const std::string& content_length);
     void createErrorPage(std::string filename);
-
-    void setErrorCodeText(std::string error_code);
+    void setErrorCodeText();
+    void handleRequest();
     std::string setContentType(const std::string& path);
-
-    void uploadFile(Request& request);
-	std::string findFileName(const Request& request);
-
-    void handleRequest(Request& request);
-
+    std::string resolveErrorPagePath(const std::string& code);
 
 public:
-    Response();
+    Response(Request& request, Location* location, Server& server);
     ~Response() = default;
-
-	std::string    createResponseStr(Request& request);
+	std::string    createResponseStr();
 };
 
 #endif

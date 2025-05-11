@@ -26,23 +26,22 @@ void ConfigParser::parseReturn(T &t, typename ConfigParser::TokenIt& it, typenam
 	++it;
 	expectTokenType(KEYWORD, it, end);
 	std::string uri_redirection = it->value;
-	if (t->value[0] == '/') {
-		t.setRedirection(error_code, uri_redirection);
+	if (it->value[0] == '/') {
+		t.setRedirection(std::make_pair(error_code, uri_redirection));
 		++it;
 		return;
+	} else if (it->value == "http" || it->value == "https") {
+		++it;
+		expectTokenType(COLON, it, end);
+		uri_redirection.append(it->value);
+		++it;
+		expectTokenType(KEYWORD, it, end);
+		uri_redirection.append(it->value);
+		t.setRedirection(std::make_pair(error_code, uri_redirection));
+		++it;
+		return ;
 	}
-	if (it->value != "http" && it->value != "https") {
-		error("Redirection directive: Missing http/https");
-	}
-	++it;
-	expectTokenType(COLON, it, end);
-	uri_redirection.append(it->value);
-	++it;
-	expectTokenType(KEYWORD, it, end);
-	uri_redirection.append(it->value);
-	t.setRedirection(error_code, uri_redirection);
-	++it;
-	//std::make_pair(error_code, uri_redirection)
+	error("Redirection directive: Wrong format");
 }
 
 template<typename T>

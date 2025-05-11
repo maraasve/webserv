@@ -43,3 +43,4 @@ TODO:
 [X] handle same host - same port - no server name
 [X] Optimize child process, make sure there's no zombie processes / handle time-out
 [X] set env variables for CGI
+[] Is there already a default server if nothing matches????

@@ -42,7 +42,7 @@ public:
 
 	void	initParsers();
 	void	expectTokenType(TokenType expected_type, TokenIt& it, TokenIt& end);
-	void	parseConfigFile(const std::vector<Token>& tokens);
+	void	parseConfigFile(std::vector<Token>& tokens);
 	void	parseServerBlock(Server &s, TokenIt &it, TokenIt &end);
 	void	parseLocationBlock(Server &s, TokenIt &it, TokenIt &end);
 	void	assertNotDuplicate(const std::string& directive);
