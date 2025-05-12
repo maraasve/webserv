@@ -144,13 +144,13 @@ std::string Response::resolveErrorPagePath(const std::string& code) {
         auto const& loc_map = _location->getErrorPage();
         auto it = loc_map.find(code);
         if (it != loc_map.end() && !it->second.empty()) {
-           return _request.getBaseRoot() + it->second;
+           return it->second;
         }
     }
     auto const& srv_map = _server.getErrorPage();
     auto it2 = srv_map.find(code);
     if (it2 != srv_map.end() && !it2->second.empty()) {
-        return _request.getBaseRoot() + it2->second;
+        return it2->second;
     }
     return "./variables/errors/" + code + ".html";
 }
