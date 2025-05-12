@@ -45,6 +45,11 @@ int Epoll::getReadyFd()
 {
 	int timeout = 100;
 	ready_fds = epoll_wait(epollfd, events, MAX_EVENTS, timeout);
+	if (ready_fds == -1) {
+		if (errno == EINTR) {
+			return (0);
+		}
+	}
 	error_check(ready_fds, "Epoll waiting on file descriptor");
 	return ready_fds;
 }
