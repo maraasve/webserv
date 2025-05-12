@@ -2,6 +2,8 @@
 
 Epoll::Epoll(): epollfd(epoll_create(1024)), ready_fds(0) {
 	error_check(epollfd, "Epoll create");
+	// int flags = fcntl(epollfd, F_GETFD);
+	// fcntl(epollfd, F_SETFD, flags | FD_CLOEXEC);
 	std::cout << "Epoll instance created" << std::endl;
 }
 
@@ -52,6 +54,10 @@ int Epoll::getReadyFd()
 	}
 	error_check(ready_fds, "Epoll waiting on file descriptor");
 	return ready_fds;
+}
+
+int Epoll::getEpollFd() {
+	return epollfd;
 }
 
 struct epoll_event* Epoll::getEvents() {

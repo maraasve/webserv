@@ -32,6 +32,7 @@ public:
 	void deleteFd(int client_fd);
 	void modifyFd(int client_fd, int event_type);
 	int getReadyFd();
+	int getEpollFd();
 	struct epoll_event* getEvents();
 
 };

@@ -41,11 +41,13 @@ Code:
 [X] handle same host - same port - no server name
 [X] Optimize child process, make sure there's no zombie processes / handle time-out
 [X] set env variables for CGI
+[X] Close socket fd's in child process
 [] Determine how to handle custom root and cgi-bin -> only check file extensions
 [] We need to find a solution to /favicon.ico cause it keeps causing issues, thought I solved it but apparently I did so not :/
+[] CGI needs to run according to extensions
 
 Test:
-[] Signals - valgrind, open fd's, 
+[X] Signals - valgrind, open fd's, 
 [] Test that the error codes are accurate
 [] Test with changes in the configuration file, whatever happens, it should not crash
 [] Error page Redirections
