@@ -6,7 +6,7 @@
 /*   By: maraasve <maraasve@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:06:22 by maraasve          #+#    #+#             */
-/*   Updated: 2025/05/12 14:16:07 by maraasve         ###   ########.fr       */
+/*   Updated: 2025/05/12 17:16:30 by maraasve         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -66,11 +66,11 @@ void	Client::handleHeaderState() {
 		return ;
 	}
 	if (_requestParser.parseHeader(_requestString)) {
-		if (_requestParser.getErrorCode() != "200" ) {
+		if (_requestParser.getRequest().getErrorCode() != "200" ) {
+			_request = std::move(_requestParser).getRequest();
+			assignServer(*this);
 			_state = clientState::RESPONDING ;
 			handleIncoming();
-			//how can we return here if we do not assign a server first?? THIS REQUIRES ATTENTION
-			//is there already a default server
 			return ;
 		}
 		std::cout << _requestParser.getRequest().getHost() << std::endl;
@@ -97,7 +97,8 @@ void	Client::handleBodyState() {
 			handleIncoming();
 			return ;
 		}
-		if (_requestParser.getErrorCode() != "200") {
+		if (_requestParser.getRequest().getErrorCode() != "200") {
+			_request = std::move(_requestParser).getRequest();
 			_state = clientState::RESPONDING;
 			handleIncoming();
 			return ;
@@ -110,7 +111,7 @@ void	Client::handleBodyState() {
 
 void	Client::handleParsingCheckState() {
 	std::cout << "\n\t--Handling Parsing Check State--" << std::endl;
-	if (_requestParser.getErrorCode() != "200") {
+	if (_requestParser.getRequest().getErrorCode() != "200") {
 		_request = std::move(_requestParser).getRequest();
 		_state = clientState::RESPONDING;
 		handleIncoming();
