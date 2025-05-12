@@ -16,4 +16,3 @@ if fileitem is not None and fileitem.filename:
     print(f"<p><a href=\"/uploads/{fn}\">Download</a></p>")
 else:
     print("<h1>No file was uploaded</h1>")
-
