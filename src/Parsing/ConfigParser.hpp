@@ -31,7 +31,9 @@ private:
 	
 	std::unordered_map<std::string, ServerHandler> _serverParsers;
 	std::unordered_map<std::string, LocationHandler> _locationParsers;
-	std::unordered_map<std::string, bool> seenDirective;
+	std::unordered_map<std::string, bool> seenDirectiveServer;
+	std::unordered_map<std::string, bool> seenDirectiveLocation;
+
 
 	int open_braces;
 	std::vector<Server> servers;
@@ -45,8 +47,7 @@ public:
 	void	parseConfigFile(std::vector<Token>& tokens);
 	void	parseServerBlock(Server &s, TokenIt &it, TokenIt &end);
 	void	parseLocationBlock(Server &s, TokenIt &it, TokenIt &end);
-	void	assertNotDuplicate(const std::string& directive);
-	Location&	addLocation(Server &s, const std::string& location_path);
+	void assertNotDuplicate(const std::string& directive, std::unordered_map<std::string, bool>& seenDirectives, const std::set<std::string>& allowDuplicates);
 	std::vector<Token>	loadTokensFromFile(const std::string& filename);
 
 	bool isValidPath(std::string& path);
@@ -55,6 +56,8 @@ public:
 	bool isValidIndex(std::string& index);
 	unsigned long long isValidClientBodySize(std::string& client_body_size);
 	bool isValidErrorCode(std::string& error_code);
+	void resetServerRequirements();
+	void resetLocationRequirements();
 
 	u_long convertHost(const std::string &host);
 	void error(const std::string &msg) const;
