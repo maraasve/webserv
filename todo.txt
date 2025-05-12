@@ -42,16 +42,18 @@ Code:
 [X] Optimize child process, make sure there's no zombie processes / handle time-out
 [X] set env variables for CGI
 [X] Close socket fd's in child process
-[] Determine how to handle custom root and cgi-bin -> only check file extensions
+[X] Determine how to handle custom root and cgi-bin -> only check file extensions
+[X] CGI needs to run according to extensions
 [] We need to find a solution to /favicon.ico cause it keeps causing issues, thought I solved it but apparently I did so not :/
-[] CGI needs to run according to extensions
+[] We need to add an upload directory for POST
 
 Test:
 [X] Signals - valgrind, open fd's, 
+[X] Is there already a default server if nothing matches???? -> Test with curl?
 [] Test that the error codes are accurate
 [] Test with changes in the configuration file, whatever happens, it should not crash
 [] Error page Redirections
-[] Is there already a default server if nothing matches???? -> Test with curl?
+[] Ask someone about CGI location
 
 Clean up:
 [] Makefile so we're not using wildcard anymore
