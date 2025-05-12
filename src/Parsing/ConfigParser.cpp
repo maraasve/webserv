@@ -73,7 +73,6 @@ void ConfigParser::printServerDetails(Server& s) {
 }
 
 
-
 ConfigParser::ConfigParser(const std::string &filename, std::vector<Server> &webservers)
 	: open_braces(0), servers(webservers){
 	initParsers();
@@ -126,13 +125,29 @@ void ConfigParser::expectTokenType(TokenType expected_type, TokenIt& it, TokenIt
 	}
 }
 
-void ConfigParser::assertNotDuplicate(const std::string& directive) {
-	if (seenDirective[directive] && (directive != "location" || directive != "error_page")) {
+void ConfigParser::assertNotDuplicate(
+	const std::string& directive, 
+	std::unordered_map<std::string, bool>& seenDirectives,
+	const std::set<std::string>& allowDuplicates
+) {
+	if (seenDirectives[directive] && allowDuplicates.find(directive) == allowDuplicates.end()) {
 		error("Unexpected duplicate directive: " + directive);
 	}
-	seenDirective[directive] = true;
-	//this they should be reset after every serverblock and locationblock parsing
-	//this function would not work with loca
+	seenDirectives[directive] = true;
+}
+
+void ConfigParser::resetServerRequirements() {
+	required_directives.has_index = false;
+	required_directives.has_root = false;
+	for (auto& pair : seenDirectiveServer) {
+		pair.second = false;
+	}
+}
+
+void ConfigParser::resetLocationRequirements() {
+	for (auto& pair : seenDirectiveLocation) {
+		pair.second = false;
+	}
 }
 
 void ConfigParser::parseConfigFile(std::vector<Token>& tokens) {
@@ -143,7 +158,8 @@ void ConfigParser::parseConfigFile(std::vector<Token>& tokens) {
 		if (it->value != "server" || insideServerBlock) {
 			error("Server: missing server directive or nested server block");
 		}
-		servers.emplace_back();
+		servers.emplace_back(); 
+		resetServerRequirements();
 		insideServerBlock = true;
 		++it;
 		expectTokenType(BRACE_OPEN, it, end);
@@ -166,16 +182,19 @@ void ConfigParser::parseConfigFile(std::vector<Token>& tokens) {
 }
 
 void ConfigParser::parseServerBlock(Server &s, TokenIt &it, TokenIt &end) {
-	while (it != end || it->token_type == BRACE_CLOSE) {
+	while (it != end && it->token_type != BRACE_CLOSE) {
 		std::string directive = it->value;
+		std::cout << directive << std::endl;
 		auto parser_it = _serverParsers.find(directive);
 		if (parser_it == _serverParsers.end()) {
 			error("Unknown directive: " + directive);
 		}
-		assertNotDuplicate(directive);
+		assertNotDuplicate(directive, seenDirectiveServer, {"location", "error_page"});
 		++it;
 		expectTokenType(KEYWORD, it, end);
+		std::cout << it->value << std::endl;
 		parser_it->second(s, it, end);
+		std::cout << it->value << std::endl;
 		expectTokenType(SEMI_COLON, it, end);
 		++it;
 	}
@@ -191,6 +210,7 @@ void ConfigParser::parseLocationBlock(Server &s, TokenIt &it, TokenIt &end) {
 	++it;
 	++open_braces;
 	expectTokenType(KEYWORD, it, end);
+	resetLocationRequirements();
 	Location& loc = s.getLocations().emplace_back();
 	loc.setPath(loc_path);
 	while (it != end && it->token_type != BRACE_CLOSE) {
@@ -199,7 +219,7 @@ void ConfigParser::parseLocationBlock(Server &s, TokenIt &it, TokenIt &end) {
 		if (parser_it == _locationParsers.end()) {
 			error("Unknown location-directive: " + directive);
 		}
-		assertNotDuplicate(directive);
+		assertNotDuplicate(directive, seenDirectiveLocation, {"error_page"});
 		++it;
 		parser_it->second(loc, it, end);
 		expectTokenType(SEMI_COLON, it, end);
@@ -208,13 +228,6 @@ void ConfigParser::parseLocationBlock(Server &s, TokenIt &it, TokenIt &end) {
 	expectTokenType(BRACE_CLOSE, it, end);
 	open_braces--;
 	++it;
-}
-
-Location& ConfigParser::addLocation(Server &s, const std::string& location_path) {
-	auto loc = s.getLocations();
-	loc.emplace_back();
-	loc.back().setPath(location_path);
-	return loc.back();
 }
 
 std::vector<Token> ConfigParser::loadTokensFromFile(const std::string& filename) {

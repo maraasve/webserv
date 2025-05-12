@@ -1,6 +1,6 @@
 NAME = webserv
 CPP = c++
-CPPFLAGS = -Wall -Werror -Wextra -std=c++17 -MMD -g3 -fPIE
+CPPFLAGS = -Wall -Werror -Wextra -std=c++17 -MMD -g3 -fPIE -O0
 LDFLAGS = -pie
 RM = rm -rf
 SRC_DIR = src

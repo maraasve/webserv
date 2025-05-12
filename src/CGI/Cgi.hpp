@@ -62,7 +62,6 @@ private:
 		void					freeArgs(char **array);
 		char**				setArgs();
 public:
-									Cgi() = default;
 									Cgi(Client* client);
 									~Cgi();
 
