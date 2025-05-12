@@ -20,7 +20,7 @@ unsigned long long Location::getClientMaxBody() {
     return _client_max_body;
 }
 
-std::vector<std::string> Location::getAllowedMethods() {
+std::vector<std::string>& Location::getAllowedMethods() {
     return _allowed_methods;
 }
 

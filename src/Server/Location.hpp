@@ -23,7 +23,7 @@ public:
 	std::string getIndex();
 	bool getAutoIndex();
 	unsigned long long getClientMaxBody();
-	std::vector<std::string> getAllowedMethods();
+	std::vector<std::string>& getAllowedMethods();
 	std::unordered_map<std::string, std::string> getErrorPage();
 	std::pair<std::string, std::string> getRedirection();
 
