@@ -84,7 +84,6 @@ ConfigParser::ConfigParser(const std::string &filename, std::vector<Server> &web
 	for(auto& server : servers) {
 		printServerDetails(server);
 	}
-	exit(1);
 }
 
 std::string ConfigParser::printTokenType(int i) {
@@ -184,7 +183,7 @@ void ConfigParser::parseConfigFile(std::vector<Token>& tokens) {
 void ConfigParser::parseServerBlock(Server &s, TokenIt &it, TokenIt &end) {
 	while (it != end && it->token_type != BRACE_CLOSE) {
 		std::string directive = it->value;
-		std::cout << directive << std::endl;
+		// std::cout << directive << std::endl;
 		auto parser_it = _serverParsers.find(directive);
 		if (parser_it == _serverParsers.end()) {
 			error("Unknown directive: " + directive);
@@ -192,9 +191,12 @@ void ConfigParser::parseServerBlock(Server &s, TokenIt &it, TokenIt &end) {
 		assertNotDuplicate(directive, seenDirectiveServer, {"location", "error_page"});
 		++it;
 		expectTokenType(KEYWORD, it, end);
-		std::cout << it->value << std::endl;
+		// std::cout << it->value << std::endl;
 		parser_it->second(s, it, end);
-		std::cout << it->value << std::endl;
+		// std::cout << it->value << std::endl;
+		if (directive == "location") {
+			continue;
+		}
 		expectTokenType(SEMI_COLON, it, end);
 		++it;
 	}

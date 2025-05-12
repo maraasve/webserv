@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: andmadri <andmadri@student.42.fr>          +#+  +:+       +#+        */
+/*   By: maraasve <maraasve@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:06:22 by maraasve          #+#    #+#             */
-/*   Updated: 2025/05/10 16:02:13 by andmadri         ###   ########.fr       */
+/*   Updated: 2025/05/12 14:16:07 by maraasve         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -178,10 +178,12 @@ void	Client::handleErrorState() {
 }
 
 void	Client::handleCgiState() {
-	std::cout << "\n\t--Handle Cgi State--" << std::endl;
+	// std::cout << "\n\t--Handle Cgi State--" << std::endl;
 	if (!_Cgi) {
+		std::cout << "CGI: Will be initialised" << std::endl;
 		_Cgi = std::make_shared<Cgi>(this);
 		if (!_Cgi->init()) {
+			std::cout << "CGI: Init failed" << std::endl;
 			return;
 		}
 		_Cgi->startCgi();

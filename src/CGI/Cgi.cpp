@@ -17,11 +17,6 @@ Cgi::Cgi(Client* client)
 	, _args(nullptr)
 	, _env(nullptr)
 {
-	if (!_args || _execPath.empty() || !_env) {
-		errorHandler(_args);
-		_client->handleIncoming();
-		return ;
-	}
 }
 
 Cgi::~Cgi() {
@@ -40,10 +35,12 @@ bool Cgi::init() {
 	_env = setUpEnvironment();
 	if (!_args || _execPath.empty() || !_env) {
 		errorHandler(_args);
-		_client->handleIncoming();
+		std::cout << "CGI INIT RETURNS FALSE" << std::endl;
+		//_client->handleIncoming();
 		return false;
 	}
-return true;
+	std::cout << "CGI INIT RETURNS TRUE" << std::endl;
+	return true;
 }
 
 bool	Cgi::childExited() {
@@ -182,11 +179,13 @@ void Cgi::executeChildProcess() {
 	close(_readFromChild[1]);
 	_readFromChild[1] = -1;
 	execve(_execPath.c_str(), _args, _env);
+	fprintf(stderr, "EXECVE FAILS\n");
 	freeArgs(_args);
 	exit(1);
 }
 
 void	Cgi::startCgi() {
+	std::cout << "CGI: Starting CGI" << std::endl;
 	if (_method == "POST") {
 		if (pipe(_writeToChild) ==  -1) {
 			errorHandler(_args);

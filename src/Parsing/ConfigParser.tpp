@@ -57,10 +57,10 @@ void ConfigParser::parseAllowedMethods(T &t, typename ConfigParser::TokenIt& it,
 			error("Allowed Methods Directive: Invalid duplicated method \"" + method + "\"");
 		}
 		t.getAllowedMethods().push_back(method);
+		++it;
 		if (it->token_type != KEYWORD) {
 			break;
 		}
-		++it;
 	}
 }
 
