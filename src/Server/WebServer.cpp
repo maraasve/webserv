@@ -50,8 +50,13 @@ void	WebServer::handleNewClient(int client_fd, Server &server) {
 				_epoll.deleteFd(cgiFd);
 				_eventHandlers.erase(cgiFd);
 			};
+			newCgi->closeInheritedFds = [this]() {
+				for (auto it : _eventHandlers) {
+					close(it.first);
+				}
+				close(_epoll.getEpollFd());
+			};
 		}
-		//delete cgi shared_ptr
 	};
 	newClient->closeClientConnection = [this](int client_fd) {
 		_epoll.deleteFd(client_fd);

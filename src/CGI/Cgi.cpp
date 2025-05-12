@@ -27,6 +27,7 @@ Cgi::~Cgi() {
 	}
 	std::cout << "The CGI is deleted" << std::endl;
 	freeArgs(_args);
+	freeArgs(_env);
 }
 
 bool Cgi::init() {
@@ -36,7 +37,7 @@ bool Cgi::init() {
 	if (!_args || _execPath.empty() || !_env) {
 		errorHandler(_args);
 		std::cout << "CGI INIT RETURNS FALSE" << std::endl;
-		//_client->handleIncoming();
+		_client->handleIncoming();
 		return false;
 	}
 	std::cout << "CGI INIT RETURNS TRUE" << std::endl;
@@ -62,7 +63,7 @@ void	Cgi::handleIncoming() {
 	ssize_t bytes = read(_readFromChild[0], buffer, sizeof(buffer));
 	std::cout << "CGI: bytes read " << bytes << std::endl;
 	if (bytes > 0) {
-		printf("CGI: Output of the child %s\n", buffer);
+		//printf("CGI: Output of the child %s\n", buffer);
 		_body.append(buffer, bytes);
 	} else if (bytes < 0) {
 		errorHandler(_args);
@@ -178,9 +179,10 @@ void Cgi::executeChildProcess() {
 	}
 	close(_readFromChild[1]);
 	_readFromChild[1] = -1;
+	closeInheritedFds();
 	execve(_execPath.c_str(), _args, _env);
-	fprintf(stderr, "EXECVE FAILS\n");
 	freeArgs(_args);
+	freeArgs(_env);
 	exit(1);
 }
 

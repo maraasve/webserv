@@ -85,6 +85,7 @@ public:
 		std::string		getBody() const;
 
 		std::function<void(int)> onCgiPipeDone;
+		std::function<void()> closeInheritedFds;
 };
 
 #endif
