@@ -1,16 +1,14 @@
 import os
 import urllib.parse
 
-#this has to change depending on the root
-# UPLOAD_DIR = os.environ.get("UPLOAD_DIR", "")
-UPLOAD_DIR = "variables/uploads"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+upload_dir = os.environ.get("UPLOAD_DIR", "")
+os.makedirs(upload_dir, exist_ok=True)
 query_string = os.environ.get("QUERY_STRING", "")
 params = urllib.parse.parse_qs(query_string)
 file_param = params.get("file", [None])[0]
 if file_param:
 	safe_filename = os.path.basename(file_param)
-	file_path = os.path.join(UPLOAD_DIR, safe_filename)
+	file_path = os.path.join(upload_dir, safe_filename)
 	try:
 		os.remove(file_path)
 		print("Content-Type: text/plain\n")

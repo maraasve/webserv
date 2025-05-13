@@ -48,7 +48,6 @@ void ConfigTokenizer::handleKeys(std::string line) {
 	while(index < line.length() && !std::isspace(line[index]) && !isSymbol(line[index])) {
 		key.push_back(line[index]);
 		index++;
-		//validate a path happens here
 	}
 	addToken(KEYWORD, key);
 }

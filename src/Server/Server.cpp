@@ -58,10 +58,6 @@ std::unordered_map<std::string, std::string> Server::getErrorPage() {
 	return _error_page;
 }
 
-// Socket& Server::getServerSocket() {
-// 	return _server_socket;
-// }
-
 std::string Server::getIndex() const {
 	return _index;
 }

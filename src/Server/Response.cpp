@@ -138,7 +138,6 @@ void Response::handleRequest() {
     }
 }
 
-//maybe this is not correct?
 std::string Response::resolveErrorPagePath(const std::string& code) {
     if (_location) {
         auto const& loc_map = _location->getErrorPage();

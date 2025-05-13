@@ -28,7 +28,6 @@ void WebServer::run() {
 			}
 		}
 	}
-	//clean up resources
 }
 
 void	WebServer::handleNewClient(int client_fd, Server &server) {
@@ -38,7 +37,6 @@ void	WebServer::handleNewClient(int client_fd, Server &server) {
 
 	std::weak_ptr<Client> weakClient = newClient;
 	newClient->assignServer = [this](Client& client) {
-		//client has a default server?
 		this->assignServer(client);
 	};
 	newClient->onCgiAccepted = [this, weakClient](int cgiFd, int event_type) {
@@ -64,7 +62,7 @@ void	WebServer::handleNewClient(int client_fd, Server &server) {
 		close(client_fd);
 	};
 }
-//make sure that you are getting a 400 page and not a segmentation fault
+
 void	WebServer::assignServer(Client &client) {
 	int			fd = client.getSocketFd();
 	std::string	host = client.getRequestParser().getRequest().getHost();
@@ -73,7 +71,7 @@ void	WebServer::assignServer(Client &client) {
 		if (fd == server.getSocketFd()) {
 			for (std::string serverName : server.getServerNames()) {
 				if (strcasecmp(host.c_str(), serverName.c_str()) == 0) {
-					client.setServer(server); //if socket matches, but not servername NGINX sets a fallback server
+					client.setServer(server);
 					return ;
 				}
 			}
@@ -100,7 +98,6 @@ void WebServer::setupServerSockets(Epoll& epoll) {
 
 		int	socketFd;
 		if (addressToFd.find(key) == addressToFd.end()) {
-			std::cout << server.getHost_string() << " " << port << std::endl;
 			auto serverSocket = std::make_shared<Socket>();
 			socketFd = serverSocket->getSocketFd();
 			serverSocket->bindSocket(port, host);

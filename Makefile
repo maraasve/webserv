@@ -1,7 +1,7 @@
 NAME = webserv
 CPP = c++
 CPPFLAGS = -Wall -Werror -Wextra -std=c++17 -MMD -g3 -fPIE
-CPPFLAGS += -fno-limit-debug-info
+# CPPFLAGS += -fno-limit-debug-info
 LDFLAGS = -pie
 RM = rm -rf
 SRC_DIR = src
@@ -24,7 +24,7 @@ $(NAME):$(OBJS)
 	$(CPP) $(OBJS) -o $(NAME) $(LDFLAGS)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp | $(OBJ_DIR)
-	$(CPP) $(CPPFLAGS) -c $< -o $@
+	$(CPP) -c $< -o $@
 
 -include $(DEPS)
 

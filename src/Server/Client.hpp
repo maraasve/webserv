@@ -43,7 +43,7 @@ private:
 	Server*					_serverPtr;
 	Location				_location;
 	Epoll&					_epoll;
-	id_t					_socketFd; //are we still using this?
+	id_t					_socketFd;
 	std::string				_requestString;
 	std::string				_responseString; 
 	Request					_request;
@@ -79,6 +79,7 @@ public:
 	RequestParser&			getRequestParser();
 	std::shared_ptr<Cgi>	getCgi();
 	std::string&			getCgiExtension();
+	Location&				getLocation();
 	
 	bool					shouldRunCgi();
 

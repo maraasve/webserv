@@ -16,6 +16,10 @@ bool Location::getAutoIndex() {
     return _auto_index;
 }
 
+std::string Location::getUploadDir() {
+    return _upload_dir;
+}
+
 unsigned long long Location::getClientMaxBody() {
     return _client_max_body;
 }
@@ -63,3 +67,8 @@ void Location::setErrorPage(std::string error_code, std::string error_page_path)
 void Location::setRedirection(std::pair<std::string, std::string> redirection) {
     _redirection = redirection;
 }
+
+void Location::setUploadDir(std::string upload_dir) {
+    _upload_dir = upload_dir;
+}
+

@@ -16,11 +16,13 @@ private:
 	std::vector<std::string> _allowed_methods;
 	std::unordered_map<std::string, std::string> _error_page;
 	std::pair<std::string, std::string> _redirection;
+	std::string	_upload_dir;
 
 public:
 	std::string getPath();
 	std::string getRoot();
 	std::string getIndex();
+	std::string getUploadDir();
 	bool getAutoIndex();
 	unsigned long long getClientMaxBody();
 	std::vector<std::string>& getAllowedMethods();
@@ -34,7 +36,9 @@ public:
 	void setClientMaxBody(unsigned long long client_max_body);
 	void setAllowedMethods(std::vector<std::string> allowed_methods);
 	void setErrorPage(std::string error_code, std::string path);
-	void setRedirection(std::pair<std::string, std::string> redirection);
+	void setRedirection(std::pair<std::string, std::string> redirectic);
+	void setUploadDir(std::string upload_dir);
+	
 };
 
 #endif

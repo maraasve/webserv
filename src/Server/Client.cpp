@@ -73,7 +73,6 @@ void	Client::handleHeaderState() {
 			handleIncoming();
 			return ;
 		}
-		std::cout << _requestParser.getRequest().getHost() << std::endl;
 		assignServer(*this);
 		if (_requestParser.getState() == requestState::PARSING_BODY) {
 			_state = clientState::READING_BODY;
@@ -137,7 +136,7 @@ void	Client::handleParsingCheckState() {
 bool Client::shouldRunCgi() {
 	static const std::set<std::string> cgiExtensions = {"py", "php"};
 	const std::string& uri = _request.getRootedURI();
-	size_t pos = uri.find_last_of('.'); //will this work with query string ?
+	size_t pos = uri.find_last_of('.');
 	if (pos == std::string::npos || pos == uri.size() - 1) {
 		return false;
 	}
@@ -179,7 +178,6 @@ void	Client::handleErrorState() {
 }
 
 void	Client::handleCgiState() {
-	// std::cout << "\n\t--Handle Cgi State--" << std::endl;
 	if (!_Cgi) {
 		std::cout << "CGI: Will be initialised" << std::endl;
 		_Cgi = std::make_shared<Cgi>(this);
@@ -204,12 +202,12 @@ void	Client::handleCgiState() {
 
 void printRequestObject(Request& request) {
 	std::cout << "---Printing Request From Client---" << std::endl;
-	std::cout << request.getMethod() << std::endl;
-	std::cout << request.getURI() << std::endl;
-	std::cout << request.getHTTPVersion() << std::endl;
-	std::cout << request.getHost() << std::endl;
-	std::cout << request.getBaseRoot() << std::endl;
-	std::cout << request.getRootedURI() << std::endl;
+	std::cout << "Method: " << request.getMethod() << std::endl;
+	std::cout << "Uri: " << request.getURI() << std::endl;
+	std::cout << "Http Version: " << request.getHTTPVersion() << std::endl;
+	std::cout << "Host: " << request.getHost() << std::endl;
+	std::cout << "Root: " << request.getBaseRoot() << std::endl;
+	std::cout << "Rooted Uri: " << request.getRootedURI() << std::endl;
 }
 
 void	Client::handleResponseState() {
@@ -262,4 +260,8 @@ RequestParser&	Client::getRequestParser() {
 
 std::string&	Client::getCgiExtension() {
 	return _cgi_extension;
+}
+
+Location&	Client::getLocation() {
+	return _location;
 }

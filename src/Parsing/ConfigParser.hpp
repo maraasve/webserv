@@ -99,6 +99,9 @@ public:
 
 	template<typename T>
 	void parseErrorPage(T &t, TokenIt &it, TokenIt &end);
+
+	template<typename T>
+	void parseUploadDir(T &t, TokenIt& it, TokenIt& end);
 };
 
 #include "./ConfigParser.tpp"

@@ -65,7 +65,7 @@ void	RequestParser::parseRequestLine(std::istringstream& stream) {
 		return ;
 	}
 	splitUri(uri);
-	if (!checkPath() || !checkQuery()){ //are we using this?
+	if (!checkPath() || !checkQuery()){
 		_request.setErrorCode("400"); 
 		return ;
 	}
@@ -236,7 +236,6 @@ bool	RequestParser::checkMatchURI(const Server& server, Location& location) {
 	const std::string& base_root = location.getRoot().empty() ? server.getRoot() : location.getRoot();
 	_request.setBaseRoot("." + base_root);
 	if (uri.compare(0, loc_path.size(), loc_path) != 0) {
-		//if you want to set an error_page outside in the server there shold be a root in the server
 		_request.setRootedUri(_request.getBaseRoot());
 		return false;
 	}
@@ -249,7 +248,6 @@ bool	RequestParser::checkMatchURI(const Server& server, Location& location) {
 		rest_uri = "/";
 	}
 	_request.setRootedUri(_request.getBaseRoot() + rest_uri);
-	std::cout << "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nThis is the base_root: " << _request.getBaseRoot() << std::endl;
 	return true;
 }
 
@@ -274,7 +272,6 @@ bool	RequestParser::checkReadingAccess() {
 
 bool	RequestParser::checkRequestURI() {
 	struct stat sb;
-	std::cout << "Rooted URI: " << _request.getRootedURI() << std::endl;
 	if (stat(_request.getRootedURI().c_str(), &sb) == -1) {
 	std::cout << "CheckRequestURI: stat problem\n\n\n\n" << std::endl;
 		return false;
@@ -295,8 +292,6 @@ bool	RequestParser::checkRequestURI() {
 }
 
 bool RequestParser::hasCgiPrefix(const std::string& uri) const {
-	//change this to root
-	//we need to check this
 	static const std::string cgiPrefix = "/cgi";
 	return uri.find(cgiPrefix) != std::string::npos;
 }
@@ -310,11 +305,10 @@ bool RequestParser::extractQueryString(std::string& uri) {
 	return true;
 }
 
-//the problem is here send help
 bool RequestParser::checkCgiScript() {
 	std::string& uri = _request.getRootedURI();
 	if (!hasCgiPrefix(uri)) {
-		std::cerr << "CGI: Your root folder should contain a CGI folder" << std::endl; //probably need to take this out
+		std::cerr << "CGI: Your root folder should contain a CGI folder" << std::endl;
 		return false;
 	}
 	if (extractQueryString(uri)) {

@@ -3,8 +3,6 @@
 Socket::Socket() 
 : socketfd(socket(AF_INET, SOCK_STREAM, 0)) {
     error_check(socketfd, "Socket Creation");
-	// int flags = fcntl(socketfd, F_GETFD);
-	// fcntl(socketfd, F_SETFD, flags | FD_CLOEXEC);
     int opt = 1;
 	setsockopt(socketfd, SOL_SOCKET, SO_REUSEPORT, &opt, sizeof(opt));
 	setsockopt(socketfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));;
@@ -25,7 +23,6 @@ void Socket::bindSocket(int port, u_long host) {
     addrlen = sizeof(server_addr);
     
     int val = bind(socketfd, reinterpret_cast<struct sockaddr *>(&server_addr), sizeof(server_addr));
-    std::cout << "Bind failed with errno " << errno << ": " << strerror(errno) << std::endl;
     error_check(val, "Binding Socket");
     std::cout << "Socket " << socketfd << " is binded to an IP & Port" << std::endl;
 }

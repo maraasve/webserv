@@ -16,7 +16,7 @@ void	sigHandler(int signal) {
 
 int main(int argc, char *argv[]) {
 	std::string configuration_file;
-	if (argc != 2) { //what if argc > 2?
+	if (argc != 2) {
 		configuration_file = "./configuration_files/default.conf";
 	} else {
 		configuration_file = argv[1];
