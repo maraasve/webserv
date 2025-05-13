@@ -8,14 +8,6 @@
 
 #define MAX_EVENTS 3000
 
-//the length of the struct epoll_events array pointed to by events;
-
-/*int epoll_create(int size)
--> Creates a new epoll() instance, since Linux 2.6.8 the size argument
-is ignored but it must be greater than zero.
--> It returns a file descriptor referring to the new epoll instance. It should be closed by close()
-*/
-
 class Epoll {
 private:
 

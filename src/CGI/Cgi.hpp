@@ -42,24 +42,24 @@ class Client;
 
 class Cgi : public EventHandler {
 private:
-		Client*						_client;
-		Request&					_request;
+		Client*				_client;
+		Request&			_request;
 		const std::string	_filePathString;
 		const std::string	_extension;
-		const char				*_filePath;
-		std::string	_execPath;
-		int								_exitStatus;
-		cgiState					_state;
-		int								_writeToChild[2];
-		int								_readFromChild[2];
-		pid_t							_cgiPid;
-		std::string				_body;
-		std::string				_method;
-		char							**_args;
-		char							**_env;
+		const char			*_filePath;
+		std::string			_execPath;
+		int					_exitStatus;
+		cgiState			_state;
+		int					_writeToChild[2];
+		int					_readFromChild[2];
+		pid_t				_cgiPid;
+		std::string			_body;
+		std::string			_method;
+		char				**_args;
+		char				**_env;
 	
 		char**				vecTo2DArray(std::vector<std::string>& vec);
-		void					freeArgs(char **array);
+		void				freeArgs(char **array);
 		char**				setArgs();
 public:
 									Cgi(Client* client);

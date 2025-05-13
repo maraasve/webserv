@@ -1,4 +1,3 @@
-//We should change the templates so they do not take end!!!!
 #pragma once
 
 template<typename T>
@@ -104,7 +103,7 @@ void ConfigParser::parseIndex(T &t, typename ConfigParser::TokenIt& it, typename
 		error("Index directive: invalid file name \"" + index + "\"");
 	}
 	t.setIndex(index);
-	required_directives.has_index = true; //maybe there is a better way to do this?
+	required_directives.has_index = true;
 	++it;
 }
 
@@ -163,5 +162,16 @@ void ConfigParser::parseErrorPage(T &t, typename ConfigParser::TokenIt& it, type
 		error("Error Page: Invalid error page path \"" + error_page_path + "\"");
 	}
 	t.setErrorPage(error_code, error_page_path);
+	++it;
+}
+
+template<typename T>
+void ConfigParser::parseUploadDir(T &t, typename ConfigParser::TokenIt& it, typename ConfigParser::TokenIt& end) {
+	std::string upload_dir = it->value;
+	(void)end;
+	if (!isValidPath(upload_dir)) {
+		error("Upload Dir: Invalid path " + upload_dir);
+	}
+	t.setUploadDir("." + upload_dir);
 	++it;
 }

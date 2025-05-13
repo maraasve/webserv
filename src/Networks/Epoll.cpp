@@ -2,14 +2,12 @@
 
 Epoll::Epoll(): epollfd(epoll_create(1024)), ready_fds(0) {
 	error_check(epollfd, "Epoll create");
-	// int flags = fcntl(epollfd, F_GETFD);
-	// fcntl(epollfd, F_SETFD, flags | FD_CLOEXEC);
 	std::cout << "Epoll instance created" << std::endl;
 }
 
 Epoll::~Epoll() {
 	if (epollfd > 0) {
-		close(epollfd); //close can fail you need to protect that
+		close(epollfd);
 	}
 	std::cout << "Epoll instance closed" << std::endl;
 }

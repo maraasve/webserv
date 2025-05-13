@@ -62,7 +62,8 @@
         "ranges": "cpp",
         "span": "cpp",
         "cinttypes": "cpp",
-        "*.tpp": "cpp"
+        "*.tpp": "cpp",
+        "csignal": "cpp"
     },
     "github.copilot.enable": {
         "*": false,

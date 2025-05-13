@@ -63,7 +63,6 @@ void	Cgi::handleIncoming() {
 	ssize_t bytes = read(_readFromChild[0], buffer, sizeof(buffer));
 	std::cout << "CGI: bytes read " << bytes << std::endl;
 	if (bytes > 0) {
-		//printf("CGI: Output of the child %s\n", buffer);
 		_body.append(buffer, bytes);
 	} else if (bytes < 0) {
 		errorHandler(_args);
@@ -97,7 +96,7 @@ void	Cgi::handleOutgoing() {
 			_body.erase(0, bytes);
 			std::cout << "CGI: SENDING_BODY" << std::endl;
 		} else if (bytes < 0) {
-			close(_writeToChild[1]); //we have to close the reading end as well but only once we know the child has done reading from it
+			close(_writeToChild[1]);
 			_writeToChild[1] = -1;
 			errorHandler(_args);
 			_client->handleIncoming();
@@ -263,6 +262,16 @@ char** Cgi::setUpEnvironment() {
 	if (!_request.getQueryString().empty()) {
 		env_strings.push_back("QUERY_STRING=" + _request.getQueryString());
 	}
+	if (_client->getLocation().getUploadDir().empty()) {
+		if (_request.getBaseRoot().empty()) {
+			_client->getLocation().setUploadDir("./uploads");
+		}
+		_client->getLocation().setUploadDir(_request.getBaseRoot());
+	}
+	if (_client->getLocation().getUploadDir()[0] != '.') {
+		_client->getLocation().setUploadDir("." + _client->getLocation().getUploadDir());
+	}
+	env_strings.push_back("UPLOAD_DIR=" + _client->getLocation().getUploadDir());
 	return vecTo2DArray(env_strings);
 }
 

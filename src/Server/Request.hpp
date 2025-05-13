@@ -55,17 +55,14 @@ class	Request {
 		ssize_t 																		getContentLength() const;
 		int																				getFileType() const;
 
-
-
-		// better to pass const std::string& in all of these:
 		void	setErrorCode(std::string code);
 		void	setErrorPagePath(std::string error_path);
 		void	setURI(std::string uri);
 		void	setPath(std::string path);
 		void	setQueryString(std::string query_string);
 		void	setHTTPVersion(std::string httpVersion);
-		void	setBody(std::string body); //maybe change this to appendBody
-		void	setHeaders(std::unordered_map<std::string, std::string> headers); //don't know if i need this anymore
+		void	setBody(std::string body);
+		void	setHeaders(std::unordered_map<std::string, std::string> headers);
 		void	setHost(std::string host);
 		void	setPort(std::string port);
 		void	setMethod(std::string method);

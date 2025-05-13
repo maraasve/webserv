@@ -7,22 +7,20 @@ static void printLocationDetails(Location& loc) {
     std::cout << "      index:           " << loc.getIndex() << "\n";
     std::cout << "      auto_index:      " << (loc.getAutoIndex() ? "on" : "off") << "\n";
     std::cout << "      client_max_body: " << loc.getClientMaxBody() << "\n";
+	std::cout << "		upload_dir:		 " << loc.getUploadDir() << "\n";
 
-    // allowed methods
     std::cout << "      allowed_methods:";
     for (const std::string& m : loc.getAllowedMethods()) {
         std::cout << " " << m;
     }
     std::cout << "\n";
 
-    // error pages
     std::cout << "      error_pages:\n";
     for (const auto& kv : loc.getErrorPage()) {
         std::cout << "        " << kv.first
                   << " -> " << kv.second << "\n";
     }
 
-    // redirection
     const std::pair<std::string,std::string>& redir = loc.getRedirection();
     if (!redir.first.empty()) {
         std::cout << "      redirection:     "
@@ -34,33 +32,27 @@ static void printLocationDetails(Location& loc) {
 void ConfigParser::printServerDetails(Server& s) {
     std::cout << "=== Server Details ===\n";
 
-    // port and host
     std::cout << "  port:              " << s.getPort() << "\n";
     std::cout << "  host_string:       " << s.getHost_string() << "\n";
-    // if you want the numeric form:
     std::cout << "  host_u_long:       " << s.getHost_u_long() << "\n";
 
-    // server names
     std::cout << "  server_names:";
     for (const std::string& name : s.getServerNames()) {
         std::cout << " " << name;
     }
     std::cout << "\n";
 
-    // root / index / auto_index / client_max_body
     std::cout << "  root:              " << s.getRoot() << "\n";
     std::cout << "  index:             " << s.getIndex() << "\n";
     std::cout << "  auto_index:        " << (s.getAutoIndex() ? "on" : "off") << "\n";
     std::cout << "  client_max_body:   " << s.getClientMaxBody() << "\n";
 
-    // error pages
     std::cout << "  error_pages:\n";
     for (const auto& kv : s.getErrorPage()) {
         std::cout << "    " << kv.first
                   << " -> " << kv.second << "\n";
     }
 
-    // locations
     std::vector<Location>& locs = s.getLocations();
     if (!locs.empty()) {
         std::cout << "\n  locations:\n";
@@ -77,9 +69,6 @@ ConfigParser::ConfigParser(const std::string &filename, std::vector<Server> &web
 	: open_braces(0), servers(webservers){
 	initParsers();
 	auto tokens = loadTokensFromFile(filename);
-	// for (auto tokens : Tokenizer.getTokens()) {
-	// 	std::cout << printEnum(tokens.token_type) << " --> " << tokens.value << std::endl;
-	// }
 	parseConfigFile(tokens);
 	for(auto& server : servers) {
 		printServerDetails(server);
@@ -111,6 +100,7 @@ void ConfigParser::initParsers() {
 	_locationParsers["error_page"] = wrapParser(&ConfigParser::parseErrorPage<Location>);
 	_locationParsers["allowed_methods"] = wrapParser(&ConfigParser::parseAllowedMethods<Location>);
 	_locationParsers["return"] = wrapParser(&ConfigParser::parseReturn<Location>);
+	_locationParsers["upload_dir"] = wrapParser(&ConfigParser::parseUploadDir<Location>);
 }
 
 void ConfigParser::expectTokenType(TokenType expected_type, TokenIt& it, TokenIt& end) {
@@ -183,7 +173,6 @@ void ConfigParser::parseConfigFile(std::vector<Token>& tokens) {
 void ConfigParser::parseServerBlock(Server &s, TokenIt &it, TokenIt &end) {
 	while (it != end && it->token_type != BRACE_CLOSE) {
 		std::string directive = it->value;
-		// std::cout << directive << std::endl;
 		auto parser_it = _serverParsers.find(directive);
 		if (parser_it == _serverParsers.end()) {
 			error("Unknown directive: " + directive);
@@ -191,9 +180,7 @@ void ConfigParser::parseServerBlock(Server &s, TokenIt &it, TokenIt &end) {
 		assertNotDuplicate(directive, seenDirectiveServer, {"location", "error_page"});
 		++it;
 		expectTokenType(KEYWORD, it, end);
-		// std::cout << it->value << std::endl;
 		parser_it->second(s, it, end);
-		// std::cout << it->value << std::endl;
 		if (directive == "location") {
 			continue;
 		}
