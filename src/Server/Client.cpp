@@ -6,7 +6,7 @@
 /*   By: andmadri <andmadri@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:06:22 by maraasve          #+#    #+#             */
-/*   Updated: 2025/05/12 17:52:45 by andmadri         ###   ########.fr       */
+/*   Updated: 2025/05/14 11:54:03 by andmadri         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -147,7 +147,8 @@ bool Client::shouldRunCgi() {
 bool	Client::resolveLocation(std::string uri) {
 	if (_serverPtr->getLocations().empty()) {
 		std::cout << "No location on Config File, making one" << std::endl;
-		_location = _serverPtr->getLocations().emplace_back();
+		_serverPtr->getLocations().emplace_back();
+		_location = _serverPtr->getLocations().back();
 		_location.setPath("/");
 		_location.setRoot(_serverPtr->getRoot());
 		_location.setIndex( _serverPtr->getIndex());

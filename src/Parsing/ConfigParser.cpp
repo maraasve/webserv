@@ -200,7 +200,8 @@ void ConfigParser::parseLocationBlock(Server &s, TokenIt &it, TokenIt &end) {
 	++open_braces;
 	expectTokenType(KEYWORD, it, end);
 	resetLocationRequirements();
-	Location& loc = s.getLocations().emplace_back();
+	s.getLocations().emplace_back();
+	Location& loc = s.getLocations().back();
 	loc.setPath(loc_path);
 	while (it != end && it->token_type != BRACE_CLOSE) {
 		std::string directive = it->value;

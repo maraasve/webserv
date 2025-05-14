@@ -1,8 +1,8 @@
 NAME = webserv
 CPP = c++
-CPPFLAGS = -Wall -Werror -Wextra -std=c++17 -MMD -g3 -fPIE
-# CPPFLAGS += -fno-limit-debug-info
-LDFLAGS = -pie
+CPPFLAGS = -Wall -Werror -Wextra -std=c++17 -MMD -fPIE -g3
+CPPFLAGS += -fno-limit-debug-info
+LDFLAGS = -lstdc++fs
 RM = rm -rf
 SRC_DIR = src
 OBJ_DIR = obj
