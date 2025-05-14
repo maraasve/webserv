@@ -26,9 +26,6 @@
 # include "../Server/EventHandler.hpp"
 # include "../Server/WebServer.hpp"
 
-
-# define TIMEOUT 5000
-
 enum class cgiState {
 	INITIALIZED = 0,
 	SENDING_BODY,
@@ -41,51 +38,51 @@ enum class cgiState {
 class Client;
 
 class Cgi : public EventHandler {
-private:
-		Client*				_client;
-		Request&			_request;
-		const std::string	_filePathString;
-		const std::string	_extension;
-		const char			*_filePath;
-		std::string			_execPath;
-		int					_exitStatus;
-		cgiState			_state;
-		int					_writeToChild[2];
-		int					_readFromChild[2];
-		pid_t				_cgiPid;
-		std::string			_body;
-		std::string			_method;
-		char				**_args;
-		char				**_env;
-	
-		char**				vecTo2DArray(std::vector<std::string>& vec);
-		void				freeArgs(char **array);
-		char**				setArgs();
-public:
-									Cgi(Client* client);
-									~Cgi();
-
-		void					startCgi();
-		void					executeChildProcess();
-
-		void					setBody(std::string body);
-		char**				setUpEnvironment();
-	
-		void					handleIncoming() override;
-		void					handleOutgoing() override;
-		void					errorHandler(char **array);
+	private:
+			Client*				_client;
+			Request&			_request;
+			const std::string	_filePathString;
+			const std::string	_extension;
+			const char			*_filePath;
+			std::string			_execPath;
+			int					_exitStatus;
+			cgiState			_state;
+			int					_writeToChild[2];
+			int					_readFromChild[2];
+			pid_t				_cgiPid;
+			std::string			_body;
+			std::string			_method;
+			char				**_args;
+			char				**_env;
 		
-		bool					childExited();
-		bool					init();
-		cgiState			getState() const;
-		int						getExitStatus() const;
+			char**				vecTo2DArray(std::vector<std::string>& vec);
+			void				freeArgs(char **array);
+			char**				setArgs();
+	public:
+		Cgi(Client* client);
+		~Cgi();
+		
+		void	startCgi();
+		void	executeChildProcess();
+		void	setBody(std::string body);
+		char**	setUpEnvironment();
+	
+		void	handleIncoming() override;
+		void	handleOutgoing() override;
+		void	errorHandler(char **array);
+		
+		bool			childExited();
+		bool			init();
+		cgiState		getState() const;
+		int				getExitStatus() const;
 		int         	getWriteFd();
-		int						getReadFd();
+		int				getReadFd();
 		std::string		getExecPath();
 		std::string		getBody() const;
+		pid_t			getPid();
 
-		std::function<void(int)> onCgiPipeDone;
-		std::function<void()> closeInheritedFds;
+		std::function<void(int)>	onCgiPipeDone;
+		std::function<void()>		closeInheritedFds;
 };
 
 #endif

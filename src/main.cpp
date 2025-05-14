@@ -9,24 +9,32 @@
 
 volatile sig_atomic_t shutdownRequested = 0;
 
-void	sigHandler(int signal) {
+void sigHandler(int signal)
+{
 	(void)signal;
 	shutdownRequested = 1;
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
 	std::string configuration_file;
-	if (argc != 2) {
+	if (argc != 2)
+	{
 		configuration_file = "./configuration_files/default.conf";
-	} else {
+	}
+	else
+	{
 		configuration_file = argv[1];
 	}
 	signal(SIGINT, sigHandler);
 	signal(SIGPIPE, SIG_IGN);
-	try {
+	try
+	{
 		WebServer webserver(configuration_file);
 		webserver.run();
-	} catch (const std::runtime_error& e) {
+	}
+	catch (const std::runtime_error &e)
+	{
 		std::cerr << "Error: " << e.what() << std::endl;
 		return 1;
 	}

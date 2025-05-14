@@ -1,12 +1,26 @@
 NAME = webserv
 CPP = c++
-CPPFLAGS = -Wall -Werror -Wextra -std=c++17 -MMD -fPIE -g3
-CPPFLAGS += -fno-limit-debug-info
+CPPFLAGS_BASE = -Wall -Werror -Wextra -std=c++17 -MMD -fPIE
+DEBUGFLAGS = -fno-limit-debug-info -g3
 LDFLAGS = -lstdc++fs
 RM = rm -rf
+
 SRC_DIR = src
-OBJ_DIR = obj
-SRCS = $(wildcard $(SRC_DIR)/*.cpp) $(wildcard $(SRC_DIR)/Networks/*.cpp) $(wildcard $(SRC_DIR)/Parsing/*.cpp) $(wildcard $(SRC_DIR)/Server/*.cpp) $(wildcard $(SRC_DIR)/CGI/*.cpp)
+OBJ_DIR_BASE = obj
+OBJ_DIR = $(OBJ_DIR_BASE)
+ifeq ($(BUILD_TYPE),debug)
+	CPPFLAGS := $(CPPFLAGS_BASE) $(DEBUGFLAGS)
+	OBJ_DIR := $(OBJ_DIR_BASE)_debug
+else
+	CPPFLAGS := $(CPPFLAGS_BASE)
+endif
+
+SRCS = $(wildcard $(SRC_DIR)/*.cpp) \
+       $(wildcard $(SRC_DIR)/Networks/*.cpp) \
+       $(wildcard $(SRC_DIR)/Parsing/*.cpp) \
+       $(wildcard $(SRC_DIR)/Server/*.cpp) \
+       $(wildcard $(SRC_DIR)/CGI/*.cpp)
+
 OBJS = $(SRCS:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 DEPS = $(OBJS:.o=.d)
 
@@ -19,22 +33,23 @@ $(OBJ_DIR):
 	mkdir -p $(OBJ_DIR)/Server
 	mkdir -p $(OBJ_DIR)/CGI
 
-
-$(NAME):$(OBJS)
-	$(CPP) $(OBJS) -o $(NAME) $(LDFLAGS)
+$(NAME): $(OBJS)
+	$(CPP) $(CPPFLAGS) $(OBJS) -o $(NAME) $(LDFLAGS)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp | $(OBJ_DIR)
-	$(CPP) -c $< -o $@
+	$(CPP) $(CPPFLAGS) -c $< -o $@
 
 -include $(DEPS)
 
 clean:
-	$(RM) $(OBJ_DIR)
+	$(RM) obj obj_debug
 
 fclean: clean
 	$(RM) $(NAME)
 
 re: fclean all
 
-.PHONY: all clean fclean re
+debug:
+	$(MAKE) BUILD_TYPE=debug
 
+.PHONY: all clean fclean re debug

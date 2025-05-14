@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: andmadri <andmadri@student.42.fr>          +#+  +:+       +#+        */
+/*   By: maraasve <maraasve@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:06:59 by maraasve          #+#    #+#             */
-/*   Updated: 2025/05/14 12:07:05 by andmadri         ###   ########.fr       */
+/*   Updated: 2025/05/14 17:17:30 by maraasve         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,11 +21,15 @@
 # include "EventHandler.hpp"
 # include "../CGI/Cgi.hpp"
 
+# include <chrono>
 # include <string>
 # include <unordered_map>
 # include <optional>
 # include <set>
 # include <experimental/filesystem>
+
+# define TIMEOUT 5
+# define TIMEOUT_CGI 1
 
 enum class clientState {
 	READING_HEADERS = 0,
@@ -37,55 +41,55 @@ enum class clientState {
 };
 
 class Client : public EventHandler {
-private:
-	clientState				_state = clientState::READING_HEADERS;
-	int						_fd;
-	Server*					_serverPtr;
-	Location				_location;
-	Epoll&					_epoll;
-	id_t					_socketFd;
-	std::string				_requestString;
-	std::string				_responseString; 
-	Request					_request;
-	RequestParser			_requestParser;
-	std::shared_ptr<Cgi>	_Cgi;
-	std::string				_cgi_extension;
+	private:
+		clientState				_state = clientState::READING_HEADERS;
+		int						_fd;
+		Server*					_serverPtr;
+		Location				_location;
+		Epoll&					_epoll;
+		id_t					_socketFd;
+		std::string				_requestString;
+		std::string				_responseString; 
+		Request					_request;
+		RequestParser			_requestParser;
+		std::shared_ptr<Cgi>	_Cgi;
+		std::string				_cgi_extension;
+		std::chrono::steady_clock::time_point	_startTimeCgi;
+		std::chrono::steady_clock::time_point	_startTime;
 
-public:
-	Client(int fd, Epoll& epoll, int socket_fd);
-	~Client();
+	public:
+		Client(int fd, Epoll& epoll, int socket_fd);
+		~Client();
 
+		void	handleIncoming() override;
+		void	handleOutgoing() override;
+		void	handleHeaderState();
+		void	handleBodyState();
+		void	handleParsingCheckState();
+		void	handleCgiState();
+		void	handleResponseState();
+		void	handleErrorState();
+		bool	resolveLocation(std::string uri);
 	
-	void									handleIncoming() override;
-	void									handleOutgoing() override;
-	void									handleHeaderState();
-	void									handleBodyState();
-	void									handleParsingCheckState();
-	void									handleCgiState();
-	void									handleResponseState();
-	void									handleErrorState();
-	bool									resolveLocation(std::string uri);
-	
-	void									setRequestStr(std::string request);
-	void									setResponseStr(Request& request);
-	void									setServer(Server& server);
-	
-	int						getFd();
-	int						getSocketFd();
-	std::string&			getRequestStr();
-	std::string&			getResponseStr();
-	Server*					getServer();
-	Request&				getRequest();
-	RequestParser&			getRequestParser();
-	std::shared_ptr<Cgi>	getCgi();
-	std::string&			getCgiExtension();
-	Location&				getLocation();
-	
-	bool					shouldRunCgi();
+		void	setRequestStr(std::string request);
+		void	setServer(Server& server);
+		
+		int						getFd();
+		int						getSocketFd();
+		std::string&			getRequestStr();
+		std::string&			getResponseStr();
+		Server*					getServer();
+		Request&				getRequest();
+		RequestParser&			getRequestParser();
+		std::shared_ptr<Cgi>	getCgi();
+		std::string&			getCgiExtension();
+		Location&				getLocation();
+		
+		bool					shouldRunCgi();
 
-	std::function<void(Client& client)>		assignServer;
-	std::function<void(int, int)>			onCgiAccepted;
-	std::function<void(int)>				closeClientConnection;
+		std::function<void(Client& client)>		assignServer;
+		std::function<void(int, int)>			onCgiAccepted;
+		std::function<void(int)>				closeClientConnection;
 };
 
 #endif

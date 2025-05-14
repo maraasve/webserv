@@ -24,84 +24,84 @@ struct ServerValidationState {
 };
 
 class ConfigParser {
-private:
-	using TokenIt = std::vector<Token>::iterator;
-	using ServerHandler = std::function<void(Server&, TokenIt&, TokenIt&)>;
-	using LocationHandler = std::function<void(Location&, TokenIt&, TokenIt&)>;
-	
-	std::unordered_map<std::string, ServerHandler> _serverParsers;
-	std::unordered_map<std::string, LocationHandler> _locationParsers;
-	std::unordered_map<std::string, bool> seenDirectiveServer;
-	std::unordered_map<std::string, bool> seenDirectiveLocation;
+	private:
+		using TokenIt = std::vector<Token>::iterator;
+		using ServerHandler = std::function<void(Server&, TokenIt&, TokenIt&)>;
+		using LocationHandler = std::function<void(Location&, TokenIt&, TokenIt&)>;
+		
+		std::unordered_map<std::string, ServerHandler> _serverParsers;
+		std::unordered_map<std::string, LocationHandler> _locationParsers;
+		std::unordered_map<std::string, bool> seenDirectiveServer;
+		std::unordered_map<std::string, bool> seenDirectiveLocation;
 
 
-	int open_braces;
-	std::vector<Server> servers;
-	ServerValidationState required_directives;
+		int open_braces;
+		std::vector<Server> servers;
+		ServerValidationState required_directives;
 
-public:
-	ConfigParser(const std::string &filename, std::vector<Server>& webservers);
+	public:
+		ConfigParser(const std::string &filename, std::vector<Server>& webservers);
 
-	void	initParsers();
-	void	expectTokenType(TokenType expected_type, TokenIt& it, TokenIt& end);
-	void	parseConfigFile(std::vector<Token>& tokens);
-	void	parseServerBlock(Server &s, TokenIt &it, TokenIt &end);
-	void	parseLocationBlock(Server &s, TokenIt &it, TokenIt &end);
-	void assertNotDuplicate(const std::string& directive, std::unordered_map<std::string, bool>& seenDirectives, const std::set<std::string>& allowDuplicates);
-	std::vector<Token>	loadTokensFromFile(const std::string& filename);
+		void	initParsers();
+		void	expectTokenType(TokenType expected_type, TokenIt& it, TokenIt& end);
+		void	parseConfigFile(std::vector<Token>& tokens);
+		void	parseServerBlock(Server &s, TokenIt &it, TokenIt &end);
+		void	parseLocationBlock(Server &s, TokenIt &it, TokenIt &end);
+		void 	assertNotDuplicate(const std::string& directive, std::unordered_map<std::string, bool>& seenDirectives, const std::set<std::string>& allowDuplicates);
+		
+		std::vector<Token>	loadTokensFromFile(const std::string& filename);
+		
+		unsigned long long	isValidClientBodySize(std::string& client_body_size);
+		bool				isValidPath(std::string& path);
+		bool				isValidServerName(std::string& server_name);
+		bool				isValidPort(std::string& port);
+		bool				isValidIndex(std::string& index);
+		bool				isValidErrorCode(std::string& error_code);
+		void				resetServerRequirements();
+		void				resetLocationRequirements();
 
-	bool isValidPath(std::string& path);
-	bool isValidServerName(std::string& server_name);
-	bool isValidPort(std::string& port);
-	bool isValidIndex(std::string& index);
-	unsigned long long isValidClientBodySize(std::string& client_body_size);
-	bool isValidErrorCode(std::string& error_code);
-	void resetServerRequirements();
-	void resetLocationRequirements();
+		u_long	convertHost(const std::string &host);
+		void	error(const std::string &msg) const;
 
-	u_long convertHost(const std::string &host);
-	void error(const std::string &msg) const;
+		void						printServerDetails(Server& server);
+		std::string					printTokenType(int i);
+		const std::vector<Server>	&getServers() const;
 
-	std::string printEnum(int i);
-	void printServerDetails(Server& server);
-	std::string printTokenType(int i);
-	const std::vector<Server> &getServers() const;
+		template<typename T>
+		std::function<void(T&, TokenIt&, TokenIt&)> wrapParser(void (ConfigParser::*fn)(T&, TokenIt&, TokenIt&));
 
-	template<typename T>
-	std::function<void(T&, TokenIt&, TokenIt&)> wrapParser(void (ConfigParser::*fn)(T&, TokenIt&, TokenIt&));
+		template<typename T>
+		void parseReturn(T &t, TokenIt &it, TokenIt &end);
 
-	template<typename T>
-	void parseReturn(T &t, TokenIt &it, TokenIt &end);
+		template<typename T>
+		void parseAllowedMethods(T &t, TokenIt &it, TokenIt &end);
 
-	template<typename T>
-	void parseAllowedMethods(T &t, TokenIt &it, TokenIt &end);
+		template<typename T>
+		void parseListen(T &t, TokenIt &it, TokenIt &end);
 
-	template<typename T>
-	void parseListen(T &t, TokenIt &it, TokenIt &end);
+		template<typename T>
+		void parseHost(T &t, TokenIt &it, TokenIt &end);
 
-	template<typename T>
-	void parseHost(T &t, TokenIt &it, TokenIt &end);
+		template<typename T>
+		void parseRoot(T &t, TokenIt &it, TokenIt &end);
 
-	template<typename T>
-	void parseRoot(T &t, TokenIt &it, TokenIt &end);
+		template<typename T>
+		void parseIndex(T &t, TokenIt &it, TokenIt &end);
 
-	template<typename T>
-	void parseIndex(T &t, TokenIt &it, TokenIt &end);
+		template<typename T>
+		void parseServerNames(T &t, TokenIt &it, TokenIt &end);
 
-	template<typename T>
-	void parseServerNames(T &t, TokenIt &it, TokenIt &end);
+		template<typename T>
+		void parseAutoIndex(T &t, TokenIt &it, TokenIt &end);
 
-	template<typename T>
-	void parseAutoIndex(T &t, TokenIt &it, TokenIt &end);
+		template<typename T>
+		void parseClientMaxBody(T &t, TokenIt &it, TokenIt &end);
 
-	template<typename T>
-	void parseClientMaxBody(T &t, TokenIt &it, TokenIt &end);
+		template<typename T>
+		void parseErrorPage(T &t, TokenIt &it, TokenIt &end);
 
-	template<typename T>
-	void parseErrorPage(T &t, TokenIt &it, TokenIt &end);
-
-	template<typename T>
-	void parseUploadDir(T &t, TokenIt& it, TokenIt& end);
+		template<typename T>
+		void parseUploadDir(T &t, TokenIt& it, TokenIt& end);
 };
 
 #include "./ConfigParser.tpp"

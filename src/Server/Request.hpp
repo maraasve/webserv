@@ -17,43 +17,43 @@
 
 class	Request {
 	private:
-		std::string																		_method;
-		std::string																		_uri;
-		std::string																		_host;
-		std::string																		_port;
-		std::string																		_base_root;
-		std::string																		_rooted_uri;
-		std::string																		_path;
-		std::string																		_http_version;
-		std::string																		_body;
-		std::unordered_map<std::string, std::string>									_headers;
-		std::string																		_error_code = "200";
-		std::string																		_error_page_path;
-		ssize_t																			_content_length;
-		std::string																		_query_string;
-		std::string																		_redirection_uri;
-		int																				_file_type = -1;
+		std::string										_method;
+		std::string										_uri;
+		std::string										_host;
+		std::string										_port;
+		std::string										_base_root;
+		std::string										_rooted_uri;
+		std::string										_path;
+		std::string										_http_version;
+		std::string										_body;
+		std::unordered_map<std::string, std::string>	_headers;
+		std::string										_error_code = "200";
+		std::string										_error_page_path;
+		ssize_t											_content_length;
+		std::string										_query_string;
+		std::string										_redirection_uri;
+		int												_file_type = -1;
 
 	public:
 		Request() = default;
 		~Request();
 
-		std::string																		getHost() const;
-		std::string																		getMethod() const;
-		std::string																		getPath() const;
-		std::string																		getURI() const;
-		std::string&																	getRootedURI();
-		std::string&																	getBaseRoot();
-		std::string																		getRootedURI() const;
-		std::string																		getQueryString() const;
-		std::string																		getHTTPVersion() const;
-		std::string																		getBody() const;
-		std::string																		getErrorCode() const;
-		std::string&																	getErrorPagePath();
-		std::string																		getRedirectionURI() const;
-		std::unordered_map<std::string, std::string>									getHeaders() const;
-		ssize_t 																		getContentLength() const;
-		int																				getFileType() const;
+		std::string										getHost() const;
+		std::string										getMethod() const;
+		std::string										getPath() const;
+		std::string										getURI() const;
+		std::string&									getRootedURI();
+		std::string&									getBaseRoot();
+		std::string										getRootedURI() const;
+		std::string										getQueryString() const;
+		std::string										getHTTPVersion() const;
+		std::string										getBody() const;
+		std::string										getErrorCode() const;
+		std::string&									getErrorPagePath();
+		std::string										getRedirectionURI() const;
+		std::unordered_map<std::string, std::string>	getHeaders() const;
+		ssize_t 										getContentLength() const;
+		int												getFileType() const;
 
 		void	setErrorCode(std::string code);
 		void	setErrorPagePath(std::string error_path);
