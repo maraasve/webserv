@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: andmadri <andmadri@student.42.fr>          +#+  +:+       +#+        */
+/*   By: maraasve <maraasve@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:06:59 by maraasve          #+#    #+#             */
-/*   Updated: 2025/05/21 16:11:26 by andmadri         ###   ########.fr       */
+/*   Updated: 2025/05/21 17:53:54 by maraasve         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,7 +28,7 @@
 # include <set>
 # include <experimental/filesystem>
 
-# define TIMEOUT_CLIENT 5
+# define TIMEOUT_CLIENT 30
 
 enum class clientState {
 	READING_HEADERS = 0,
@@ -71,6 +71,7 @@ class Client : public EventHandler {
 	
 		void	setRequestStr(std::string request);
 		void	setServer(Server& server);
+		void	setState(clientState state);
 		
 		int						getFd();
 		int						getSocketFd();
@@ -82,6 +83,7 @@ class Client : public EventHandler {
 		std::shared_ptr<Cgi>	getCgi();
 		std::string&			getCgiExtension();
 		Location&				getLocation();
+		std::chrono::steady_clock::time_point getStartTime() const;
 		
 		bool					shouldRunCgi();
 

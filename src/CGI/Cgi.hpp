@@ -27,7 +27,7 @@
 # include "../Server/EventHandler.hpp"
 # include "../Server/WebServer.hpp"
 
-# define TIMEOUT_CGI 100
+# define TIMEOUT_CGI 10
 
 enum class cgiState {
 	INITIALIZED = 0,
@@ -86,6 +86,9 @@ class Cgi : public EventHandler {
 		std::string		getExecPath();
 		std::string		getBody() const;
 		pid_t			getPid();
+		Client& 		getClient();
+
+		std::chrono::steady_clock::time_point getStartTime() const;
 
 		std::function<void(int)>	onCgiPipeDone;
 		std::function<void()>		closeInheritedFds;

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: andmadri <andmadri@student.42.fr>          +#+  +:+       +#+        */
+/*   By: maraasve <maraasve@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:06:22 by maraasve          #+#    #+#             */
-/*   Updated: 2025/05/21 16:09:13 by andmadri         ###   ########.fr       */
+/*   Updated: 2025/05/21 18:28:15 by maraasve         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,13 +25,6 @@ Client::~Client()
 
 void Client::handleIncoming()
 {
-	auto now = std::chrono::steady_clock::now();
-	auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - _startTime).count();
-	if (elapsed >= TIMEOUT_CLIENT)
-	{
-		closeClientConnection(_fd);
-		return;
-	}
 	switch (_state)
 	{
 		case clientState::READING_HEADERS:
@@ -221,9 +214,17 @@ void Client::handleErrorState()
 {
 	std::cout << "\n\t--Handle Error State--" << std::endl;
 	if (_Cgi && _Cgi->getState() == cgiState::TIMEOUT)
-	_request.setErrorCode("504");
+	{
+		_request.setErrorCode("504");
+	}
+	else if (_Cgi && _Cgi->getState() == cgiState::ERROR)
+	{
+		_request.setErrorCode("502");
+	}
 	else
+	{
 		_request.setErrorCode("500");
+	}
 	_state = clientState::RESPONDING;
 	handleIncoming();
 }
@@ -255,24 +256,18 @@ void Client::handleCgiState()
 		handleIncoming();
 		return;
 	}
-	
-	// auto now = std::chrono::steady_clock::now();
-	// auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - _startTimeCgi).count();
-	// // std::cout << elapsed_ms << ">=" << TIMEOUT_CGI << std::endl;
-	// if (elapsed_ms >= TIMEOUT_CGI) 
-	// {
-	// 	std::cout << "SEGFAULT HAPPENS HERE" << std::endl;
-	// 	_Cgi->onCgiPipeDone(_Cgi->getReadFd());
-	// 	if (_request.getMethod() == "POST")
-	// 	{
-	// 		_Cgi->onCgiPipeDone(_Cgi->getWriteFd());
-	// 	}
-	// 	kill(_Cgi->getPid(), SIGQUIT);
-	// 	_state = clientState::ERROR;
-	// 	_Cgi->setState(cgiState::TIMEOUT);
-	// 	handleIncoming();
-	// 	return;
-	// }
+	else if (_Cgi->getState() == cgiState::TIMEOUT)
+	{
+		_Cgi->onCgiPipeDone(_Cgi->getReadFd());
+		if (_request.getMethod() == "POST")
+		{
+			_Cgi->onCgiPipeDone(_Cgi->getWriteFd());
+		}
+		kill(_Cgi->getPid(), SIGQUIT);
+		_state = clientState::ERROR;
+		handleIncoming();
+		return;
+	}
 }
 
 void printRequestObject(Request &request)
@@ -305,6 +300,11 @@ void Client::setServer(Server &server)
 	_serverPtr = &server;
 }
 
+void Client::setState(clientState state)
+{
+	_state = state;
+}
+
 int Client::getSocketFd()
 {
 	return _socketFd;
@@ -313,6 +313,11 @@ int Client::getSocketFd()
 int Client::getFd()
 {
 	return _fd;
+}
+
+std::chrono::steady_clock::time_point Client::getStartTime() const
+{
+	return _startTime;
 }
 
 std::string &Client::getRequestStr()

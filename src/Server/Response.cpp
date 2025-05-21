@@ -140,12 +140,15 @@ void Response::serveDirectoryListing()
 	for (const auto &entry : std::experimental::filesystem::directory_iterator(path))
 	{
 		std::string name = entry.path().filename().string();
-		std::string href = name + (std::experimental::filesystem::is_directory(entry.path()) ? "/" : "");
-		dirc_listing << "<li><a href=\"" << href << "\">" << href << "</a></li>";
-		// if (std::experimental::filesystem::is_directory(entry.path())) {
-		// 	name += "/";
-		// }
-		// dirc_listing << "<li>" << name << "</li>";
+		if (std::experimental::filesystem::is_directory(entry.path())) 
+		{
+			name += "/";
+			dirc_listing << "<li>" << name << "</li>";
+		}
+		else
+		{
+			dirc_listing << "<li><a href=\"" << name << "\">" << name << "</a></li>";
+		}
 	}
 	dirc_listing << "</ul></body></html>";
 	_body = dirc_listing.str();

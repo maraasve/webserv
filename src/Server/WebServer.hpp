@@ -21,10 +21,11 @@ class WebServer
 		std::unordered_map<int, std::shared_ptr<EventHandler>>	_eventHandlers;
 		Epoll													_epoll;
 
-		void setupServerSockets(Epoll &epoll);
-		void handleNewClient(int client_fd, Server &server);
-		void assignServer(Client &client);
-		void cleanUpResources();
+		void	checkTimeouts();
+		void	setupServerSockets(Epoll &epoll);
+		void	handleNewClient(int client_fd, Server &server);
+		void	assignServer(Client &client);
+		void	cleanUpResources();
 
 	public:
 		WebServer(const std::string &config_file);

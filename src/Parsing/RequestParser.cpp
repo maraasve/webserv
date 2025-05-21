@@ -6,7 +6,7 @@
 /*   By: maraasve <maraasve@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:06:13 by maraasve          #+#    #+#             */
-/*   Updated: 2025/05/21 12:38:19 by maraasve         ###   ########.fr       */
+/*   Updated: 2025/05/21 18:16:38 by maraasve         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -290,10 +290,9 @@ bool RequestParser::checkMatchURI(const Server &server, Location &location)
 		return false;
 	}
 	std::string rest_uri = uri.substr(loc_path.size());
-	if (!rest_uri.empty() && rest_uri[0] != '/')
+	if (rest_uri[0] != '/')
 	{
-		_request.setRootedUri(_request.getBaseRoot());
-		return false;
+		rest_uri = "/" + rest_uri;
 	}
 	if (rest_uri.empty())
 	{

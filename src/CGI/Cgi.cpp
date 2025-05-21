@@ -10,8 +10,7 @@ Cgi::Cgi(Client *client) : _client(client), _request(client->getRequest()), _fil
 
 Cgi::~Cgi()
 {
-	int	status;
-	pid_t result = waitpid(_cgiPid, &status, WNOHANG);
+	pid_t result = waitpid(_cgiPid, &_exitStatus, WNOHANG);
 	if (result == 0)
 	{
 		kill(_cgiPid, SIGQUIT);
@@ -41,8 +40,7 @@ bool Cgi::init()
 
 bool Cgi::childExited()
 {
-	int status;
-	pid_t result = waitpid(_cgiPid, &status, WNOHANG);
+	pid_t result = waitpid(_cgiPid, &_exitStatus, WNOHANG);
 	if (result == _cgiPid)
 	{
 		return true;
@@ -58,21 +56,6 @@ bool Cgi::childExited()
 void Cgi::handleIncoming()
 {
 	char buffer[BUFSIZ];
-	auto now = std::chrono::steady_clock::now();
-	auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - _startTimeCgi).count();
-	// std::cout << elapsed_ms << ">=" << TIMEOUT_CGI << std::endl;
-	if (elapsed_ms >= TIMEOUT_CGI) 
-	{
-		onCgiPipeDone(_readFromChild[0]);
-		if (_request.getMethod() == "POST")
-		{
-			onCgiPipeDone(_writeToChild[1]);
-		}
-		kill(_cgiPid, SIGQUIT);
-		_state = cgiState::TIMEOUT;
-		handleIncoming();
-		return;
-	}
 	std::cout << "CGI: Parent reads output from Child" << std::endl;
 	ssize_t bytes = read(_readFromChild[0], buffer, sizeof(buffer));
 	if (bytes > 0)
@@ -87,14 +70,25 @@ void Cgi::handleIncoming()
 	}
 	if (childExited() || !bytes)
 	{
+		if (WIFEXITED(_exitStatus))
+		{
+			_exitStatus = WEXITSTATUS(_exitStatus);
+		}
+		if (_exitStatus)
+		{
+			_state = cgiState::ERROR;
+		}
+		else
+		{
+			_state = cgiState::COMPLETE;
+			std::cout << "CGI: COMPLETE" << std::endl;
+		}
 		if (onCgiPipeDone)
 		{
 			onCgiPipeDone(_readFromChild[0]);
 		}
 		close(_readFromChild[0]);
 		_readFromChild[0] = -1;
-		_state = cgiState::COMPLETE;
-		std::cout << "CGI: COMPLETE" << std::endl;
 		_client->handleIncoming();
 		return;
 	}
@@ -346,6 +340,11 @@ std::string Cgi::getBody() const
 	return _body;
 }
 
+std::chrono::steady_clock::time_point Cgi::getStartTime() const
+{
+	return _startTimeCgi;
+}
+
 cgiState Cgi::getState() const
 {
 	return _state;
@@ -359,6 +358,11 @@ int Cgi::getExitStatus() const
 pid_t	Cgi::getPid()
 {
 	return _cgiPid;
+}
+
+Client& Cgi::getClient()
+{
+	return *_client;
 }
 
 void Cgi::errorHandler(char **array)

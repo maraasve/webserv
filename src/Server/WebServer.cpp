@@ -23,6 +23,7 @@ void WebServer::run()
 
 	while (!shutdownRequested)
 	{
+		//checkTimeouts();
 		int ready_fds = _epoll.getReadyFd();
 		struct epoll_event *ready_events = _epoll.getEvents();
 		for (int i = 0; i < ready_fds; ++i)
@@ -44,6 +45,34 @@ void WebServer::run()
 		}
 	}
 	cleanUpResources();
+}
+
+void	WebServer::checkTimeouts()
+{
+	for (auto& [fd, handler] : _eventHandlers)
+	{
+		auto now = std::chrono::steady_clock::now();
+		if (std::shared_ptr<Cgi> cgi = std::dynamic_pointer_cast<Cgi>(handler))
+		{
+			auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - cgi->getStartTime()).count();
+			if (elapsed >= TIMEOUT_CGI)
+			{
+				cgi->setState(cgiState::TIMEOUT);
+				cgi->getClient().handleIncoming();
+				return;
+			}
+		}
+		if (std::shared_ptr<Client> client = std::dynamic_pointer_cast<Client>(handler))
+		{
+			auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - client->getStartTime()).count();
+			if (elapsed >= TIMEOUT_CLIENT)
+			{
+				client->setState(clientState::ERROR);
+				client->handleIncoming();
+				return;
+			}
+		}
+	}
 }
 
 void WebServer::handleNewClient(int client_fd, Server &server)
