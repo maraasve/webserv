@@ -6,7 +6,7 @@
 /*   By: maraasve <maraasve@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:06:22 by maraasve          #+#    #+#             */
-/*   Updated: 2025/05/21 18:28:15 by maraasve         ###   ########.fr       */
+/*   Updated: 2025/05/21 19:07:00 by maraasve         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -98,6 +98,14 @@ void Client::handleHeaderState()
 		{
 			_state = clientState::READING_BODY;
 			_requestParser.parseBody(_requestString, 0);
+			if (_requestParser.getRequest().getErrorCode() != "200")
+			{
+				_request = std::move(_requestParser).getRequest();
+				_state = clientState::RESPONDING;
+				handleIncoming();
+				return;
+			}
+
 		}
 		if (_requestParser.getState() == requestState::COMPLETE)
 		{

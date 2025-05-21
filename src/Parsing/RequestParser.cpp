@@ -6,7 +6,7 @@
 /*   By: maraasve <maraasve@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:06:13 by maraasve          #+#    #+#             */
-/*   Updated: 2025/05/21 18:16:38 by maraasve         ###   ########.fr       */
+/*   Updated: 2025/05/21 19:14:31 by maraasve         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -51,13 +51,18 @@ bool RequestParser::parseBody(std::string &requestStr, ssize_t bytes)
 		if (pos == std::string::npos)
 		{
 			_request.setBody("");
-			
 		}
 		else
 		{
 			_request.setBody(requestStr.substr(pos + 4, _bytes_read));
 		}
 		_state = requestState::COMPLETE;
+		return true;
+	}
+	if (_bytes_read > _request.getContentLength())
+	{
+		_request.setErrorCode("400");
+		_state = requestState::ERROR;
 		return true;
 	}
 	return false;
@@ -181,32 +186,38 @@ bool RequestParser::checkContentLength(const std::unordered_map<std::string, std
 {
 	const std::string &method = _request.getMethod();
 	int contentLength;
-	if (method == "POST")
+	auto it_content_length = headers.find("Content-Length");
+	if (it_content_length == headers.end())
 	{
-		if (headers.find("Content-Length") == headers.end())
+		if (method == "POST")
 		{
 			_request.setErrorCode("411");
+		}
+		return false;
+	}
+	if (method == "GET")
+	{
+		_request.setErrorCode("400");
+		return false;
+	}
+	if (method == "POST")
+	{
+		try
+		{
+			std::cout << "converting content length: " << it_content_length->second << std::endl;
+			std::cout << std::stol(it_content_length->second) << std::endl;
+			contentLength = static_cast<ssize_t>(std::stol(it_content_length->second));
+		}
+		catch (...)
+		{
+			std::cout << "\t\tError while converting content length\n\n"
+						<< std::endl;
+			_request.setErrorCode("500");
 			return false;
 		}
-		auto it = headers.find("Content-Length");
-		if (it != headers.end())
-		{
-			try
-			{
-				std::cout << "converting content length: " << it->second << std::endl;
-				std::cout << std::stol(it->second) << std::endl;
-				contentLength = static_cast<ssize_t>(std::stol(it->second));
-			}
-			catch (...)
-			{
-				std::cout << "\t\tError while converting content length\n\n"
-						  << std::endl;
-				_request.setErrorCode("500");
-				return false;
-			}
-			_request.setContentLength(contentLength);
-		}
+		_request.setContentLength(contentLength);
 	}
+
 	return true;
 }
 
