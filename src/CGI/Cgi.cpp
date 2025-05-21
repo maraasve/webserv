@@ -58,6 +58,21 @@ bool Cgi::childExited()
 void Cgi::handleIncoming()
 {
 	char buffer[BUFSIZ];
+	auto now = std::chrono::steady_clock::now();
+	auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - _startTimeCgi).count();
+	// std::cout << elapsed_ms << ">=" << TIMEOUT_CGI << std::endl;
+	if (elapsed_ms >= TIMEOUT_CGI) 
+	{
+		onCgiPipeDone(_readFromChild[0]);
+		if (_request.getMethod() == "POST")
+		{
+			onCgiPipeDone(_writeToChild[1]);
+		}
+		kill(_cgiPid, SIGQUIT);
+		_state = cgiState::TIMEOUT;
+		handleIncoming();
+		return;
+	}
 	std::cout << "CGI: Parent reads output from Child" << std::endl;
 	ssize_t bytes = read(_readFromChild[0], buffer, sizeof(buffer));
 	if (bytes > 0)
@@ -102,7 +117,6 @@ void Cgi::handleOutgoing()
 		if (bytes > 0)
 		{
 			_body.erase(0, bytes);
-			std::cout << "CGI: SENDING_BODY" << std::endl;
 		}
 		else if (bytes < 0)
 		{
@@ -118,7 +132,7 @@ void Cgi::handleOutgoing()
 		onCgiPipeDone(_writeToChild[1]);
 		close(_writeToChild[1]);
 		_writeToChild[1] = -1;
-		std::cout << "CGI: WRITE DONE!" << std::endl;
+		std::cout << "CGI: SENDING BODY DONE!" << std::endl;
 	}
 }
 
@@ -212,6 +226,7 @@ void Cgi::executeChildProcess()
 void Cgi::startCgi()
 {
 	std::cout << "CGI: Starting CGI" << std::endl;
+	_startTimeCgi = std::chrono::steady_clock::now();
 	if (_method == "POST")
 	{
 		if (pipe(_writeToChild) == -1)
@@ -283,6 +298,11 @@ void Cgi::freeArgs(char **array)
 void Cgi::setBody(std::string body)
 {
 	_body = body;
+}
+
+void Cgi::setState(cgiState state)
+{
+	_state = state;
 }
 
 char **Cgi::setUpEnvironment()

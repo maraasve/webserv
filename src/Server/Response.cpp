@@ -14,7 +14,8 @@ Response::Response(Request &request, Location *location, Server &server) : _requ
 																						 {"500", "Internal Server Error"},
 																						 {"501", "Not Implemented"},
 																						 {"502", "Bad Gateway"},
-																						 {"505", "HTTP Version Not Supported"}}) {}
+																						 {"505", "HTTP Version Not Supported"},
+																						 {"504", "Gateway Timeout"}}) {}
 
 void Response::setErrorCodeText()
 {
@@ -92,6 +93,10 @@ std::string Response::setContentType(const std::string &path)
 	{
 		return "image/png";
 	}
+	else if (extension == "ico")
+	{
+		return "image/x-icon";
+	}
 	else
 	{
 		return "application/octet-stream";
@@ -137,6 +142,10 @@ void Response::serveDirectoryListing()
 		std::string name = entry.path().filename().string();
 		std::string href = name + (std::experimental::filesystem::is_directory(entry.path()) ? "/" : "");
 		dirc_listing << "<li><a href=\"" << href << "\">" << href << "</a></li>";
+		// if (std::experimental::filesystem::is_directory(entry.path())) {
+		// 	name += "/";
+		// }
+		// dirc_listing << "<li>" << name << "</li>";
 	}
 	dirc_listing << "</ul></body></html>";
 	_body = dirc_listing.str();

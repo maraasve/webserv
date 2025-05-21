@@ -22,9 +22,12 @@
 # include <stdlib.h>
 # include <sys/wait.h>
 # include <signal.h>
+# include <chrono>
 
 # include "../Server/EventHandler.hpp"
 # include "../Server/WebServer.hpp"
+
+# define TIMEOUT_CGI 100
 
 enum class cgiState {
 	INITIALIZED = 0,
@@ -32,7 +35,8 @@ enum class cgiState {
 	RUNNING,
 	READING_OUTPUT,
 	COMPLETE,
-	ERROR
+	ERROR,
+	TIMEOUT
 };
 
 class Client;
@@ -54,6 +58,7 @@ class Cgi : public EventHandler {
 			std::string			_method;
 			char				**_args;
 			char				**_env;
+			std::chrono::steady_clock::time_point	_startTimeCgi;
 		
 			char**				vecTo2DArray(std::vector<std::string>& vec);
 			void				freeArgs(char **array);
@@ -65,6 +70,7 @@ class Cgi : public EventHandler {
 		void	startCgi();
 		void	executeChildProcess();
 		void	setBody(std::string body);
+		void	setState(cgiState state);
 		char**	setUpEnvironment();
 	
 		void	handleIncoming() override;

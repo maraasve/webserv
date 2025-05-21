@@ -15,7 +15,6 @@ void WebServer::cleanUpResources()
 	{
 		close(it.first);
 	}
-	// close(_epoll.getEpollFd());
 }
 
 void WebServer::run()

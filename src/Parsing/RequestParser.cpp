@@ -6,7 +6,7 @@
 /*   By: maraasve <maraasve@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 15:06:13 by maraasve          #+#    #+#             */
-/*   Updated: 2025/05/14 13:43:25 by maraasve         ###   ########.fr       */
+/*   Updated: 2025/05/21 12:38:19 by maraasve         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -51,6 +51,7 @@ bool RequestParser::parseBody(std::string &requestStr, ssize_t bytes)
 		if (pos == std::string::npos)
 		{
 			_request.setBody("");
+			
 		}
 		else
 		{

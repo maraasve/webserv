@@ -11,5 +11,5 @@ body = f"""
 </body>
 </html>
 """
-# print("Content-Type: text/html\r\n")
+while 
 print(body)

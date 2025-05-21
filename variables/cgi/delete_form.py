@@ -11,14 +11,10 @@ if file_param:
 	file_path = os.path.join(upload_dir, safe_filename)
 	try:
 		os.remove(file_path)
-		print("Content-Type: text/plain\n")
 		print(f"Deleted file: {safe_filename}")
 	except FileNotFoundError:
-		print("Content-Type: text/plain\n")
 		print("File not found.")
 	except Exception as e:
-		print("Content-Type: text/plain\n")
-	print(f"Error deleting file: {e}")
+		print(f"Error deleting file: {e}")
 else:
-	print("Content-Type: text/plain\n")
 	print("No file specified.")
