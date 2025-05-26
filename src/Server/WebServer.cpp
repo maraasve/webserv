@@ -23,7 +23,7 @@ void WebServer::run()
 
 	while (!shutdownRequested)
 	{
-		//checkTimeouts();
+		checkTimeouts();
 		int ready_fds = _epoll.getReadyFd();
 		struct epoll_event *ready_events = _epoll.getEvents();
 		for (int i = 0; i < ready_fds; ++i)
