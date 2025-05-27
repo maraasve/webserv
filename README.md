@@ -133,7 +133,147 @@ void WebServer::run()
 }
 ```
 
-## Servers
+### Setting Up Servers
+The `WebServer::setupServerSockets()` method is responsible for creating, binding, and listening on  appropriate sockets for each configured server. We avoid creating multiple sockets that bind to the same IP and port by keeping track of already-used (host, port) pairs. We create a hash map `addressToFd` to store a unique socket for each `(host, port)` pair.
+```
+std::unordered_map<std::pair<u_long, unsigned int>, std::shared_ptr<Socket>, hashPair>
+```
+For each Server instance, we retrieve its host and port. We check if this combination has already been bound. If it has not yet been bound, we create a new Socket object, the socket is bound and set to listen, then it is added to the `epoll` instance with `EPOLLIN`, so we get notified when clients connect. The `Server` is linked to this shared socket. A callback `onClientAccepted` is set to handle new client connections. The socket file descriptor is associated with the `Server` object in the `_eventHandlers` map for event dispatching. The `Server` object is been made a shared pointer, wich will be stored as an EventHandler pointer and therefore allowed to perfome the polymorphic dessign on the `Webserver::run()` function. In the case the combinantion of (host, port) has already been bound, it simply reuses the same Socket object. 
+
+```c++
+void WebServer::setupServerSockets(Epoll &epoll)
+{
+	std::unordered_map<std::pair<u_long, unsigned int>, std::shared_ptr<Socket>, hashPair> addressToFd;
+
+	for (auto &server : _servers)
+	{
+		u_long host = server.getHost_u_long();
+		unsigned int port = server.getPort();
+		std::pair<u_long, unsigned int> key = {host, port};
+
+		int socketFd;
+		if (addressToFd.find(key) == addressToFd.end())
+		{
+			auto serverSocket = std::make_shared<Socket>();
+			socketFd = serverSocket->getSocketFd();
+			serverSocket->bindSocket(port, host);
+			serverSocket->listenSocket();
+			epoll.addFd(socketFd, EPOLLIN);
+			addressToFd[key] = serverSocket;
+			server.setSocket(serverSocket);
+			server.onClientAccepted = [this, &server](int client_fd)
+			{
+				this->handleNewClient(client_fd, server);
+			};
+			_eventHandlers[socketFd] = std::make_shared<Server>(server);
+		}
+		else
+		{
+			server.setSocket(addressToFd[key]);
+		}
+	}
+}
+```
+
+## Server
+In the file descriptor pointed by `epoll_wait()` matches that of a saved server file descriptor in the `_eventHandlers` map. The corresponding `handleIncoming()` function from the `Server` will be called. This function will `acceptConnection()` to create a client socket and will call the previoulsy mentioned call back function defined when we set up the servers. 
+
+```c++
+void Server::handleIncoming()
+{
+	int client_fd = _serverSocket->acceptConnection();
+	if (client_fd > 0 && onClientAccepted)
+	{
+		onClientAccepted(client_fd);
+	}
+}
+```
+`onClientAccepted()` will call the function `handleNewClient()` which takes the client file descriptor passed by during the call to `handleIncoming()` and a reference to a Server object wich we catched through a lambda will setting up the servers. This function will create a new `Client` object which is been made a shared pointer to store it in the `_eventHandlers` map with its appropriate filedescriptor. Something interesting to point out, thanks to call back functionnality, is that because this function is defined in the `WebServer` context, we have access to this private member variables that do not exist for instance inside our `Server` or `Client` class. Afterwards we add the client file descriptor to epoll with `EPOLLIN` to monitor when the client wants to be read from. We continue to predefine call back functions which the client will be able to use during its execution through `handleIncoming()` such as being able to `assignServer()` als in the case of a `onCgiAccepted()` and when we need to `closeClientConnection()`.
+
+```c++
+void WebServer::handleNewClient(int client_fd, Server &server)
+{
+	auto newClient = std::make_shared<Client>(client_fd, _epoll, server.getSocketFd());
+	_eventHandlers[client_fd] = newClient;
+	_epoll.addFd(client_fd, EPOLLIN);
+
+	std::weak_ptr<Client> weakClient = newClient;
+	newClient->assignServer = [this](Client &client)
+	{
+		this->assignServer(client);
+	};
+	newClient->onCgiAccepted = [this, weakClient](int cgiFd, int event_type)
+	{
+		if (auto client = weakClient.lock())
+		{
+			_epoll.addFd(cgiFd, event_type);
+			auto newCgi = client->getCgi();
+			_eventHandlers[cgiFd] = newCgi;
+			newCgi->onCgiPipeDone = [this](int cgiFd)
+			{
+				_epoll.deleteFd(cgiFd);
+				_eventHandlers.erase(cgiFd);
+			};
+			newCgi->closeInheritedFds = [this]()
+			{
+				for (auto it : _eventHandlers)
+				{
+					close(it.first);
+				}
+				close(_epoll.getEpollFd());
+			};
+		}
+	};
+	newClient->closeClientConnection = [this](int client_fd)
+	{
+		_epoll.deleteFd(client_fd);
+		_eventHandlers.erase(client_fd);
+		close(client_fd);
+	};
+}
+```
+
+### Why a weak pointer?
+
+
+### How do we assign servers to clients?
+
+
+```c++
+void WebServer::assignServer(Client &client)
+{
+	int fd = client.getSocketFd();
+	std::string host = client.getRequestParser().getRequest().getHost();
+	Server *fallback = nullptr;
+	for (Server &server : _servers)
+	{
+		if (fd == server.getSocketFd())
+		{
+			for (std::string serverName : server.getServerNames())
+			{
+				if (strcasecmp(host.c_str(), serverName.c_str()) == 0)
+				{
+					client.setServer(server);
+					return;
+				}
+			}
+			if (!fallback)
+			{
+				fallback = &server;
+			}
+		}
+	}
+	if (fallback)
+	{
+		client.setServer(*fallback);
+	}
+	else
+	{
+		client.getRequest().setErrorCode("400");
+	}
+}
+```
+
 
 ## Clients
 
