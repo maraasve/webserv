@@ -188,6 +188,7 @@ void Server::handleIncoming()
 	}
 }
 ```
+
 `onClientAccepted()` will call the function `handleNewClient()` which takes the client file descriptor passed by during the call to `handleIncoming()` and a reference to a Server object wich we catched through a lambda will setting up the servers. This function will create a new `Client` object which is been made a shared pointer to store it in the `_eventHandlers` map with its appropriate filedescriptor. Something interesting to point out, thanks to call back functionnality, is that because this function is defined in the `WebServer` context, we have access to this private member variables that do not exist for instance inside our `Server` or `Client` class. Afterwards we add the client file descriptor to epoll with `EPOLLIN` to monitor when the client wants to be read from. We continue to predefine call back functions which the client will be able to use during its execution through `handleIncoming()` such as being able to `assignServer()` als in the case of a `onCgiAccepted()` and when we need to `closeClientConnection()`.
 
 ```c++
@@ -233,11 +234,56 @@ void WebServer::handleNewClient(int client_fd, Server &server)
 }
 ```
 
-### Why a weak pointer?
+### Why a shared & weak pointers?
+We use `shared_ptr` for objecst like `Server` `Client` and `CGI` because these objects are owned and managaed by multiple parts of the system. For example, both the `_eventHandlers` map and any lambdas/callbacks need to access and potentially keep them alive.
 
+- `shared_ptr`
+  Handles automatic memory management. When no more references to the object remain, it gets destroyed automatically. This prevents memory leaks and manual `delete` calls.
+  It allows safe, flexible ownership transfer and access across the event-driven architecture of our server.
+
+#### Why not only use `shared_ptr`?
+Using `shared_ptr` everywhere can lead to **cyclic references**, which cause **memory leaks** as the reference count of that `shared_ptr` never reach zero.
+
+#### What are **cyclic references**?
+They happen when two ore more `shared_ptr` instances reference each other, creating a *reference cycle*. This means that each object keeps the other alive by holding a `shared_ptr` to it. As a result, their reference counts *never reach zero*, and the objects are never destroyed, even if nothing else is using them. To avoid this, we need to make **one of the pointers** a `weak_ptr`. This way, the reference does not increase the count, allowinf proper cleanup.
+
+Lambdas can catch from the context you are defining them multiple things, they can catch references to objects or pointers. As an example, this caused a **cyclic reference**:
+
+```c++
+auto newClient = std::make_shared<Client>(client_fd, _epoll, server.getSocketFd());
+newClient->onCgiAccepted = [this, newClient](int cgiFd, int event_type)
+{	_epoll.addFd(cgiFd, event_type);
+	auto newCgi = newClient->getCgi();
+	_eventHandlers[cgiFd] = newCgi;
+
+	newCgi->onCgiPipeDone = [this](int cgiFd)
+	{
+		_epoll.deleteFd(cgiFd);
+		_eventHandlers.erase(cgiFd);
+	};
+};
+```
+
+As it can be seen above, after newClient is been made a `shared_ptr`, we are capturing this `shared_ptr` directly in the lambda by value, so the closure holds its own `shared_ptr<Clien>`. The lambda is assigned to a **member** of the Client object, `Client::onCgiAccepted`, so:
+- The **Client Object** (let's call it `A`) conatins the lambda.
+- The lambda contains a copy of `newClient`, which is the same as `shared_ptr<Client>` that points back to `A`.
+Therefore the reference count of C is at least two, one from the map and one from the lambda. Event when we erase `A` from our `_eventHandlers` map once we close the client connection, the lambda's copy remains, so the counf never drops to zero, and `A` is never destroyed.
+
+#### How does `weak_ptr` breaks the cycle?
+By changing the code so:
+
+```c++
+std::weak_ptr<Client> weakClient = newClient;
+newClient->onCgiAccepted = [this, weakClient](…){
+    if (auto client = weakClient.lock()) {
+        ...
+    }
+};
+```
+The lambda now holds a **non-owning** `weak_ptr`. This does not increment the reference count of `A`. When no more `shared_ptr` owners exist, `A` can be destroyed even if the lambda still exists. Therefore using a `weak_ptr` in the lambda **breaks** the self-referencing cycle and prevents memeory leaks. 
 
 ### How do we assign servers to clients?
-
+Although it might be intuitive to think that the `Server` object who accepted and created a `Client` is the corresponding `Server` to said `Client`, we can have to or more servers with the same host and port. Therefore the only way to truly know to which server the client belongs is to check the `server_names` of a server. 
 
 ```c++
 void WebServer::assignServer(Client &client)
@@ -274,16 +320,251 @@ void WebServer::assignServer(Client &client)
 }
 ```
 
-
 ## Clients
+The `Client` class represents a single HTTP connection and drives its lifecylce through a simple **state machine**, handling reading, parsing, optional CGI execution, and writing the response. 
+
+```c++
+enum class clientState {
+    READING_HEADERS,
+    READING_BODY,
+    PARSING_CHECKS,
+    CGI,
+    RESPONDING,
+    ERROR
+};
+
+
+void Client::handleIncoming()
+{
+	switch (_state)
+	{
+		case clientState::READING_HEADERS:
+			handleHeaderState();
+			break;
+		case clientState::READING_BODY:
+			handleBodyState();
+			break;
+		case clientState::PARSING_CHECKS:
+			handleParsingCheckState();
+			break;
+		case clientState::CGI:
+			handleCgiState();
+			break;
+		case clientState::ERROR:
+			handleErrorState();
+			break;
+		case clientState::RESPONDING:
+			handleResponseState();
+			break;
+	}
+}
+
+```
+
+The main function of `Client` is `handleIncoming()` which depending on the state of the current call the function proceeds to handling a certain state. All clients will first come to the `handleHeaderState()` function. This functinos reads bytes into a string where we save the HTTP request from the client. Depending on the type of the request, we move on to `READING_BODY`, `PARSING_CHECK` or `RESPONDING`. 
+
+```c++
+void Client::handleHeaderState()
+{
+	std::cout << "\n\t--Handling Header State--" << std::endl;
+	ssize_t bytes = readIncomingData(_requestString, _fd);
+	if (bytes == 0)
+	{
+		closeClientConnection(_fd);
+	}
+	if (bytes < 0)
+	{
+		_state = clientState::ERROR;
+		handleIncoming();
+		return;
+	}
+	if (_requestParser.parseHeader(_requestString))
+	{
+		if (_requestParser.getRequest().getErrorCode() != "200")
+		{
+			_request = std::move(_requestParser).getRequest();
+			assignServer(*this);
+			_state = clientState::RESPONDING;
+			handleIncoming();
+			return;
+		}
+		assignServer(*this);
+		if (_requestParser.getState() == requestState::PARSING_BODY)
+		{
+			_state = clientState::READING_BODY;
+			_requestParser.parseBody(_requestString, 0);
+			if (_requestParser.getRequest().getErrorCode() != "200")
+			{
+				_request = std::move(_requestParser).getRequest();
+				_state = clientState::RESPONDING;
+				handleIncoming();
+				return;
+			}
+
+		}
+		if (_requestParser.getState() == requestState::COMPLETE)
+		{
+			_state = clientState::PARSING_CHECKS;
+			handleIncoming();
+			return;
+		}
+	}
+}
+```
+
+`handleParsingCheckState()` will check to which location from our configuration file the URI from the request best matches, it will try to check if there are any non-allowed methods in said location to the corresponding method that the request had, if there is no Content-Length for the case of POST, if the file the client wants to GET has the right permissions, it inspects if the requested URI extension ends with .py or .php to decide if CGI is required, etc.
+
+## CGI
+The CGI enables our webserver to execute external programs or scripts. In accordance to NGINX, the webserver alone whouls be responsible of serving static files. If you want to check the time of the day or be able to upload a file or make a comment on a blog, a CGI is needed. 
+
+A **CGI** is a standard protocol where the webserver `forks()` a separate child process to run a script or program. The webserver and CGI proces communicate via **pipes**. The server writes the HTTP request body (for `POST`) to the child's **stdin** and the child writes its output (typically HTTP body) to **stdout**, which the server reads from a pipe and forwards a response back to the client. 
+
+First `Client::handleParsingCheckState()` calls `shouldRunCgi()` to check the URI extension. If we detect that there should be a CGI, we moved on to `Client::handleCgiState()`. Because this function will be call recursively, we first need to check if we do not already have a `shared_ptr` CGI initialized in our `Client` class. If we dont, then we make a new `shared_ptr` CGI and start the CGI process. 
+
+```c++
+if (!_Cgi) {
+  _Cgi = std::make_shared<Cgi>(this);
+  _Cgi->init();
+  _Cgi->startCgi();
+}
+```
+
+`startCgi()` creates two pipes: **_writeToChild** (server -> CGI stdin) for writing the body of the client request to the child process and **_readFromChild** (CGI stdout -> server) for reading the output of the child process which corresponds to the body of our response.
+
+One of the callback functions that have been previously mentioned is `onCgiAccepted`. This function will add the pipe file descriptor to epoll, and add said pipe file descriptor and the `shared_ptr` cgi to our `_eventHandlers` map so that polymorphism can do its magic and call the `handleIncoming()` and `handleOutgoing()` of the CGI. After we call the `fork()` function to start the CGI, the child process which is receives the process id of 0, will execute the script by dupping the pipes we created before to *stdin* and *stdout*.
+
+```c++
+void Cgi::startCgi()
+{
+	std::cout << "CGI: Starting CGI" << std::endl;
+	_startTimeCgi = std::chrono::steady_clock::now();
+	if (_method == "POST")
+	{
+		if (pipe(_writeToChild) == -1)
+		{
+			errorHandler(_args);
+			_client->handleIncoming();
+			return;
+		}
+		_client->onCgiAccepted(_writeToChild[1], EPOLLOUT);
+	}
+	if (pipe(_readFromChild) == -1)
+	{
+		errorHandler(_args);
+		_client->handleIncoming();
+		return;
+	}
+	_client->onCgiAccepted(_readFromChild[0], EPOLLIN | EPOLLHUP);
+	_cgiPid = fork();
+	if (_cgiPid < 0)
+	{
+		std::cerr << "CGI: Error Forking" << std::endl;
+		errorHandler(_args);
+		_client->handleIncoming();
+		return;
+	}
+	if (_cgiPid == 0)
+	{
+		executeChildProcess();
+	}
+	else
+	{
+		std::cout << "CGI: Parent Process Forked & Closing Unnecessary Pipes" << std::endl;
+		if (_method == "POST")
+		{
+			close(_writeToChild[0]);
+			_writeToChild[0] = -1;
+		}
+		close(_readFromChild[1]);
+		_readFromChild[1] = -1;
+	}
+}
+
+void Cgi::executeChildProcess()
+{
+	std::cout << "CGI: Child Executing" << std::endl;
+	if (_method == "POST")
+	{
+		close(_writeToChild[1]);
+		_writeToChild[1] = -1;
+		if (dup2(_writeToChild[0], STDIN_FILENO) == -1)
+		{
+			errorHandler(_args);
+			exit(1);
+		}
+		close(_writeToChild[0]);
+		_writeToChild[0] = -1;
+	}
+	close(_readFromChild[0]);
+	_readFromChild[0] = -1;
+	if (dup2(_readFromChild[1], STDOUT_FILENO) == -1)
+	{
+		errorHandler(_args);
+		exit(1);
+	}
+	close(_readFromChild[1]);
+	_readFromChild[1] = -1;
+	closeInheritedFds();
+	execve(_execPath.c_str(), _args, _env);
+	freeArgs(_args);
+	freeArgs(_env);
+	exit(1);
+}
+```
+
+In the main loop, once the child process indicates that is ready to be read, we will go to the CGI own overwritten `handleIncoming()`, which after checking the the child has exited successfully, we will call the _client->handleIncoming() function as now the _state of the CGI is changed to COMPLETE and we can continue to process the response for the client.
+
+```c++
+void Cgi::handleIncoming()
+{
+	char buffer[BUFSIZ];
+	std::cout << "CGI: Parent reads output from Child" << std::endl;
+	ssize_t bytes = read(_readFromChild[0], buffer, sizeof(buffer));
+	if (bytes > 0)
+	{
+		_body.append(buffer, bytes);
+	}
+	else if (bytes < 0)
+	{
+		errorHandler(_args);
+		_client->handleIncoming();
+		return;
+	}
+	if (childExited() || !bytes)
+	{
+		if (WIFEXITED(_exitStatus))
+		{
+			_exitStatus = WEXITSTATUS(_exitStatus);
+		}
+		if (_exitStatus)
+		{
+			_state = cgiState::ERROR;
+		}
+		else
+		{
+			_state = cgiState::COMPLETE;
+			std::cout << "CGI: COMPLETE" << std::endl;
+		}
+		if (onCgiPipeDone)
+		{
+			onCgiPipeDone(_readFromChild[0]);
+		}
+		close(_readFromChild[0]);
+		_readFromChild[0] = -1;
+		_client->handleIncoming();
+		return;
+	}
+```
+
+### Timeout Handling
+
+### Errors in CGI Script
 
 ### Request
 
 ### Response
 
-## CGI
 
-### Timeout Handling & Errors in Script
 
 
 
