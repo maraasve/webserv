@@ -556,13 +556,6 @@ void Cgi::handleIncoming()
 	}
 ```
 
-### Timeout Handling
-
-### Errors in CGI Script
-
-### Request
-
-### Response
 
 
 
